@@ -14,17 +14,17 @@ engine = create_engine(
     connect_args={"options": "-c client_encoding=utf8"}
 )
 
-abas = [
-    "BD VENDAS",
-    "Estoque Consolidado",
-    "Estoque 1",
-    "Full 1",
-    "Full 2"
-]
+print("Lendo arquivo Excel...")
+todas_abas = pd.read_excel(arquivo, sheet_name=None)
+total = len(todas_abas)
+print(f"{total} abas encontradas.\n")
 
-for aba in abas:
-    df = pd.read_excel(arquivo, sheet_name=aba)
+print("Iniciando upload...\n")
+
+for i, (aba, df) in enumerate(todas_abas.items(), start=1):
     nome_tabela = aba.lower().replace(" ", "_")
+    print(f"[{i}/{total}] Enviando '{aba}' → tabela '{nome_tabela}' ({len(df)} linhas)...")
     df.to_sql(nome_tabela, engine, if_exists="replace", index=False)
+    print(f"           Salva com sucesso!\n")
 
-print("\n[OK] Todas as abas foram enviadas com sucesso!")
+print("[OK] Todas as abas foram enviadas com sucesso!")
