@@ -17,11 +17,11 @@ from datetime import datetime, timedelta
 # CONFIGURAÇÃO — ajuste aqui para cada empresa
 # ─────────────────────────────────────────────
 DB_CONFIG = {
-    "host"    : "localhost",
+    "host"    : "37.60.236.200",
     "port"    : 5432,
     "database": "Lanzi",
     "user"    : "postgres",
-    "password": "1234",
+    "password": "131105Gv",
 }
 
 JANELA_MESES   = 6       # janela móvel em meses

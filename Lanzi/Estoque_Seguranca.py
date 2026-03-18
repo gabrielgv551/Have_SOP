@@ -3,11 +3,12 @@
 ║           S&OP Intelligence · Estoque de Segurança           ║
 ║  Fonte     : bd_vendas (últimos 12 meses) + curva_abc        ║
 ║  Método    : Desvio Padrão Mensal × Fator Z (curva ABC)      ║
+║              + Teto máximo em dias por curva ABC             ║
 ║  Banco     : PostgreSQL local (Lanzi)                        ║
 ╚══════════════════════════════════════════════════════════════╝
 
 FÓRMULA:
-ES = Fator_Z × Desvio_Padrão_Mensal × √(Lead_Time ÷ 30)
+ES = MIN( Fator_Z × Desvio_Padrão_Mensal × √(Lead_Time ÷ 30) , Teto_Dias × Demanda_Diária )
 
 FATOR Z POR CURVA ABC CRUZADA:
 AA          → 2.05  (99% nível de serviço)
@@ -15,6 +16,10 @@ AB / BA     → 1.88  (97%)
 BB/AC/CA    → 1.65  (95%)
 BC / CB     → 1.41  (92%)
 CC          → 1.28  (90%)
+
+TETO MÁXIMO EM DIAS DE COBERTURA:
+Curva A (AA, AB, BA, AC, CA) → 20 dias
+Curva B/C (BB, BC, CB, CC)   → 15 dias
 
 DEPENDÊNCIAS (rodar ANTES deste script):
   1. UPLOAD_ETL.py    → cria bd_vendas e cadastro_sku
@@ -39,8 +44,8 @@ INPUTS:
 OUTPUT:
   Tabela: estoque_seguranca
   Colunas: sku, media_mensal, desvio_padrao, lead_time, abc_cruzada,
-           fator_z, estoque_seguranca, meses_com_dados, confianca,
-           data_calculo
+           fator_z, es_estatistico, es_teto, estoque_seguranca,
+           teto_aplicado, meses_com_dados, confianca, data_calculo
 """
 
 import pandas as pd
@@ -52,11 +57,11 @@ from datetime import datetime, timedelta
 # CONFIGURAÇÃO — mesmo banco dos demais scripts
 # ─────────────────────────────────────────────
 DB_CONFIG = {
-    "host"    : "localhost",
+    "host"    : "37.60.236.200",
     "port"    : 5432,
     "database": "Lanzi",
     "user"    : "postgres",
-    "password": "1234",
+    "password": "131105Gv",
 }
 
 JANELA_MESES = 12
@@ -68,6 +73,14 @@ FATOR_Z = {
     "BC": 1.41, "CB": 1.41,
     "CC": 1.28,
 }
+
+# Teto máximo de dias de cobertura para o ES por curva ABC
+# O ES não pode ultrapassar esse número de dias de demanda
+TETO_DIAS = {
+    "AA": 20, "AB": 20, "BA": 20, "AC": 20, "CA": 20,  # Curva A → máx 20 dias
+    "BB": 15, "BC": 15, "CB": 15, "CC": 15,              # Curva B/C → máx 15 dias
+}
+
 
 # ─────────────────────────────────────────────
 # CONEXÃO
@@ -181,27 +194,41 @@ def ler_abc_e_leadtime(engine) -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────
-# 5. CALCULAR ESTOQUE DE SEGURANÇA
+# 5. CALCULAR ESTOQUE DE SEGURANÇA COM TETO
 # ─────────────────────────────────────────────
 def calcular_es(stats: pd.DataFrame, abc_lt: pd.DataFrame) -> pd.DataFrame:
     df = stats.merge(abc_lt, on="sku", how="left")
 
     # Fator Z da curva ABC (default CC se não encontrar)
-    df["fator_z"]   = df["abc_cruzada"].map(FATOR_Z).fillna(FATOR_Z["CC"])
+    df["fator_z"] = df["abc_cruzada"].map(FATOR_Z).fillna(FATOR_Z["CC"])
 
     # Lead time: default 30 dias se não cadastrado
     df["lead_time"] = df["lead_time"].fillna(30)
 
-    # Fórmula: ES = Z × σ × √(LT ÷ 30)
-    df["estoque_seguranca"] = (
+    # ES Estatístico: Z × σ × √(LT ÷ 30)
+    df["es_estatistico"] = (
         df["fator_z"] * df["desvio_padrao"] * np.sqrt(df["lead_time"] / 30)
+    ).clip(lower=0)
+
+    # Teto máximo: dias de cobertura × demanda diária
+    df["teto_dias"] = df["abc_cruzada"].map(TETO_DIAS).fillna(15)
+    df["es_teto"]   = (df["media_mensal"] / 30) * df["teto_dias"]
+
+    # ES Final = menor entre estatístico e teto
+    df["estoque_seguranca"] = (
+        df[["es_estatistico", "es_teto"]].min(axis=1)
     ).clip(lower=0).round(0).astype(int)
+
+    # Flag indicando se o teto foi aplicado
+    df["teto_aplicado"] = df["es_estatistico"] > df["es_teto"]
 
     # Nível de confiança por histórico disponível
     df["confianca"] = df["meses_com_dados"].apply(
         lambda x: "ALTA" if x >= 6 else ("MEDIA" if x >= 3 else "BAIXA")
     )
 
+    teto_count = df["teto_aplicado"].sum()
+    print(f"\n[i] Teto aplicado em {teto_count} SKUs ({teto_count/len(df)*100:.1f}%)")
     print(f"\n[i] Distribuição de confiança:")
     print(df["confianca"].value_counts().to_string())
     return df
@@ -214,11 +241,12 @@ def gravar(engine, df: pd.DataFrame):
     resultado = df[[
         "sku", "media_mensal", "desvio_padrao",
         "lead_time", "abc_cruzada", "fator_z",
-        "estoque_seguranca", "meses_com_dados", "confianca"
+        "es_estatistico", "es_teto", "estoque_seguranca",
+        "teto_aplicado", "meses_com_dados", "confianca"
     ]].copy()
 
     # Formatar decimais com vírgula (padrão BR)
-    for col in ["media_mensal", "desvio_padrao", "fator_z"]:
+    for col in ["media_mensal", "desvio_padrao", "fator_z", "es_estatistico", "es_teto"]:
         resultado[col] = resultado[col].apply(
             lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else ""
         )
@@ -230,8 +258,9 @@ def gravar(engine, df: pd.DataFrame):
     print(f"\n[i] Amostra:")
     print(
         resultado[[
-            "sku", "abc_cruzada", "media_mensal", "fator_z",
-            "estoque_seguranca", "confianca"
+            "sku", "abc_cruzada", "media_mensal",
+            "es_estatistico", "es_teto", "estoque_seguranca",
+            "teto_aplicado", "confianca"
         ]].head(10).to_string(index=False)
     )
 

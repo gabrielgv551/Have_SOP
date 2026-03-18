@@ -9,7 +9,18 @@ warnings.filterwarnings("ignore")
 # 1️⃣ Conexão com PostgreSQL
 # ==============================
 
-engine = create_engine("postgresql+psycopg2://postgres:1234@localhost:5432/Lanzi")
+DB_CONFIG = {
+    "host"    : "37.60.236.200",
+    "port"    : 5432,
+    "database": "Lanzi",
+    "user"    : "postgres",
+    "password": "131105Gv",
+}
+
+engine = create_engine(
+    f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}"
+    f"@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+)
 
 print("📥 Buscando dados do banco (sem cancelados)...")
 

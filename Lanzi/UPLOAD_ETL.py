@@ -3,14 +3,17 @@ from sqlalchemy import create_engine
 
 arquivo = r"C:\Users\HAVE\Desktop\Arquivos\Have I\Lanzi\ETL Lanzi.xlsx"
 
-usuario = "postgres"
-senha = "1234"
-host = "localhost"
-porta = "5432"
-banco = "Lanzi"
+DB_CONFIG = {
+    "host"    : "37.60.236.200",
+    "port"    : 5432,
+    "database": "Lanzi",
+    "user"    : "postgres",
+    "password": "131105Gv",
+}
 
 engine = create_engine(
-    f"postgresql+psycopg2://{usuario}:{senha}@{host}:{porta}/{banco}",
+    f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}"
+    f"@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}",
     connect_args={"options": "-c client_encoding=utf8"}
 )
 
