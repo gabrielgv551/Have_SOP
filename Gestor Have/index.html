@@ -1193,31 +1193,8 @@ td {
 </style></head><body>< !-- ── LOGIN PAGE ── --><div id="login-page"><div class="login-bg"></div><div class="login-card"><div class="login-logo"><div class="login-logo-icon">H</div><div class="login-logo-text"><div class="brand">Have</div><div class="sub">Gestor Inteligente</div></div></div><div class="login-title">Bem-vindo de volta</div><div class="login-subtitle">Selecione sua empresa e entre no painel</div><div class="company-label">Empresa</div><div class="company-grid" id="company-grid"><div class="company-btn selected" data-company="lanzi" onclick="selectCompany(this)"><div class="company-dot" style="background:#4f7fff"></div><div><div class="company-btn-name">Lanzi</div><div class="company-btn-tag">S&OP · PostgreSQL</div></div></div><div class="company-btn disabled" data-company="" onclick=""><div class="company-dot" style="background:#6b6b80"></div><div><div class="company-btn-name">Nova Empresa</div><div class="company-btn-tag"><span class="coming-badge">Em breve</span></div></div></div></div><div class="form-group"><label>Usuário</label><input type="text" id="username" placeholder="seu usuário" value=""></div><div class="form-group"><label>Senha</label><input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div><button class="login-btn" onclick="doLogin()">Entrar no painel →</button><div class="login-error" id="login-error">Usuário ou senha incorretos.</div></div></div>< !-- ── DASHBOARD ── --><div id="dashboard-page"><div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div><nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="sidebar-logo-icon">H</div><div class="sidebar-logo-text"><div class="brand">Have</div><div class="company" id="sidebar-company">Lanzi</div></div></div><div class="sidebar-nav"><div class="nav-section-label">Visão Geral</div><div class="nav-item active" onclick="showPanel('overview')"><span class="nav-icon">◈</span>Dashboard </div><div class="nav-section-label" style="margin-top:12px">S&OP</div><div class="nav-item" onclick="showPanel('curva-abc')"><span class="nav-icon">◉</span>Curva ABC </div><div class="nav-item" onclick="showPanel('ponto-pedido')"><span class="nav-icon">⬡</span>Ponto de Pedido <span class="nav-badge" id="badge-ruptura">–</span></div><div class="nav-item" onclick="showPanel('estoque-seguranca')"><span class="nav-icon">◻</span>Estoque de Segurança </div><div class="nav-item" onclick="showPanel('ppr')"><span class="nav-icon">⟁</span>PPR · Performance </div><div class="nav-item" onclick="showPanel('forecast')"><span class="nav-icon">∿</span>Forecast 12M </div><div class="nav-section-label" style="margin-top:12px">Semana</div><div class="nav-item" onclick="showPanel('semana')"><span class="nav-icon">▦</span>Lista Semanal <span class="nav-badge green" id="badge-semana">–</span></div></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">H</div><div><div class="user-name" id="user-name-display">–</div><div class="user-role">Gestor</div></div><button class="logout-btn" onclick="doLogout()" title="Sair">⇥</button></div></div></nav><div class="main-content"><div class="topbar"><div class="topbar-left"><button class="hamburger" onclick="toggleSidebar()">☰</button><div class="topbar-title" id="topbar-title">Dashboard</div></div><div class="topbar-right"><div class="db-status"><div class="db-dot" id="db-dot"></div><span id="db-status-text">Conectando...</span></div><div class="topbar-date" id="topbar-date"></div><button class="refresh-btn" onclick="refreshCurrentPanel()">↻ Atualizar</button></div></div>< !-- OVERVIEW --><div class="panel active" id="panel-overview"><div class="kpi-grid" id="kpi-grid"><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap" id="overview-tables"><div class="table-card" style="padding:20px"><div class="section-title" style="margin-bottom:16px;font-size:14px">Alertas Críticos</div><div id="overview-alertas"><div class="loading-skeleton" style="height:200px"></div></div></div><div class="table-card" style="padding:20px"><div class="section-title" style="margin-bottom:16px;font-size:14px">Distribuição ABC</div><div id="overview-abc"><div class="loading-skeleton" style="height:200px"></div></div></div></div></div>< !-- CURVA ABC --><div class="panel" id="panel-curva-abc"><div class="section-header"><div class="section-title">Curva ABC Cruzada</div><div class="section-actions"><input class="search-input" id="abc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('abc')"><select class="filter-select" id="abc-filter" onchange="filterTable('abc')"><option value="">Todos</option><option>AA</option><option>AB</option><option>BA</option><option>BB</option><option>AC</option><option>CA</option><option>BC</option><option>CB</option><option>CC</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC Cruzada</th><th>Volume Total</th><th>Margem Total</th><th>ABC Volume</th><th>ABC Margem</th><th>Nível Serviço</th></tr></thead><tbody id="abc-tbody"><tr class="loading-row"><td colspan="7"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="abc-pagination"></div></div></div>< !-- PONTO DE PEDIDO --><div class="panel" id="panel-ponto-pedido"><div class="section-header"><div class="section-title">Ponto de Pedido</div><div class="section-actions"><input class="search-input" id="pp-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('pp')"><select class="filter-select" id="pp-filter" onchange="filterTable('pp')"><option value="">Todos Alertas</option><option>RUPTURA IMINENTE</option><option>PEDIR AGORA</option><option>OK</option><option>EXCESSO</option><option>SEM MOVIMENTO</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Alerta</th><th>Est. Atual</th><th>Ped. Aberto</th><th>Ponto Pedido</th><th>Est. Seg.</th><th>Qtd Sugerida</th><th>Data Pedido</th><th>Confiança</th></tr></thead><tbody id="pp-tbody"><tr class="loading-row"><td colspan="10"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="pp-pagination"></div></div></div>< !-- ESTOQUE DE SEGURANÇA --><div class="panel" id="panel-estoque-seguranca"><div class="section-header"><div class="section-title">Estoque de Segurança</div><div class="section-actions"><input class="search-input" id="es-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('es')"><select class="filter-select" id="es-conf" onchange="filterTable('es')"><option value="">Todas Confiança</option><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Média Mensal</th><th>Desvio Padrão</th><th>Lead Time</th><th>Fator Z</th><th>ES Estatístico</th><th>ES Teto</th><th>ES Final</th><th>Teto?</th><th>Confiança</th></tr></thead><tbody id="es-tbody"><tr class="loading-row"><td colspan="11"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="es-pagination"></div></div></div>< !-- PPR --><div class="panel" id="panel-ppr"><div class="section-header"><div class="section-title">PPR · Performance de Vendas</div><div class="section-actions"><input class="search-input" id="ppr-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('ppr')"><select class="filter-select" id="ppr-tend" onchange="filterTable('ppr')"><option value="">Todas Tendências</option><option>ACELERANDO</option><option>ESTÁVEL</option><option>DESACELERANDO</option><option>SEM DADOS</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Qtd 7d</th><th>Qtd 14d</th><th>Qtd 21d</th><th>Qtd 1m</th><th>Qtd 3m</th><th>Tend. Curto</th><th>Tend. Médio</th></tr></thead><tbody id="ppr-tbody"><tr class="loading-row"><td colspan="9"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="ppr-pagination"></div></div></div>< !-- FORECAST --><div class="panel" id="panel-forecast"><div class="section-header"><div class="section-title">Forecast 12 Meses</div><div class="section-actions"><input class="search-input" id="fc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('fc')"><select class="filter-select" id="fc-metodo" onchange="filterTable('fc')"><option value="">Todos Métodos</option><option>WindowAverage_6m</option><option>ADIDA</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>Data</th><th>Método</th><th>Prev. Qtd</th><th>Prev. Mín</th><th>Prev. Máx</th></tr></thead><tbody id="fc-tbody"><tr class="loading-row"><td colspan="6"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="fc-pagination"></div></div></div>< !-- SEMANA PEDIDOS --><div class="panel" id="panel-semana"><div class="section-header"><div class="section-title">Lista Semanal de Pedidos</div><div class="section-actions"><input class="search-input" id="sw-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('sw')"><select class="filter-select" id="sw-alert" onchange="filterTable('sw')"><option value="">Todos</option><option>RUPTURA IMINENTE</option><option>PEDIR AGORA</option><option>OK</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Alerta</th><th>Est. Atual</th><th>Ped. Aberto</th><th>Qtd Sugerida</th><th>Data Pedido</th><th>Data Entrega</th><th>Semana</th></tr></thead><tbody id="sw-tbody"><tr class="loading-row"><td colspan="9"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="sw-pagination"></div></div></div></div>< !-- /main-content --></div>< !-- /dashboard-page -->< !-- Toast --><div id="toast"></div><script> // ══════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════
-const API_URL='https://have-api.vercel.app/api'; // proxy intermediário
-// Como não podemos conectar direto ao PostgreSQL do browser,
-// usamos o backend proxy que já existe no servidor.
-// O backend aceita queries SQL via POST e retorna JSON.
-
-// Credenciais das empresas
-const COMPANIES= {
-    lanzi: {
-
-        name: 'Lanzi',
-        users: {
-            'admin': 'lanzi2024',
-                'gestor': 'have2024',
-                'have': 'lanzi@2024'
-        }
-
-        ,
-        color: '#4f7fff',
-        db: {
-            host: '37.60.236.200', port:5432, database:'Lanzi', user:'postgres', password:'131105Gv'
-        }
-    }
-}
-
-;
+// Credenciais estão seguras no backend Vercel + JWT tokens
+// Frontend não armazena nenhuma credencial de banco de dados
 
 // ══════════════════════════════════════════════
 // STATE
@@ -1248,98 +1225,86 @@ function selectCompany(el) {
 // ══════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════
-function doLogin() {
-    const user=document.getElementById('username').value.trim().toLowerCase();
-    const pass=document.getElementById('password').value;
-    const co=COMPANIES[currentCompany];
-    const err=document.getElementById('login-error');
+// ══════════════════════════════════════════════
+// AUTH (Agora via API Segura no Vercel com JWT)
+// ══════════════════════════════════════════════
+const API_BASE = 'https://have-gestor-api.vercel.app/api';
 
-    if ( !co) {
-        err.style.display='block';
-        err.textContent='Selecione uma empresa.';
+async function doLogin() {
+    const user = document.getElementById('username').value.trim().toLowerCase();
+    const pass = document.getElementById('password').value;
+    const err = document.getElementById('login-error');
+
+    if (!currentCompany) {
+        err.style.display = 'block';
+        err.textContent = 'Selecione uma empresa.';
         return;
     }
 
-    if ( !user || !pass) {
-        err.style.display='block';
-        err.textContent='Preencha usuário e senha.';
-        return;
+    try {
+        const res = await fetch(`${API_BASE}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company: currentCompany, user, password: pass })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro no login');
+
+        localStorage.setItem('have_token', data.token);
+        localStorage.setItem('have_user', data.user);
+        localStorage.setItem('have_company', currentCompany);
+
+        startDashboard(currentCompany, data.user, data.companyName);
+    } catch (e) {
+        err.style.display = 'block';
+        err.textContent = e.message;
     }
-
-    if (co.users[user] !==pass) {
-        err.style.display='block';
-        err.textContent='Usuário ou senha incorretos.';
-        return;
-    }
-
-    err.style.display='none';
-
-    localStorage.setItem('have_session', JSON.stringify({
-            company:currentCompany, user, ts:Date.now()
-        }));
-startDashboard(currentCompany, user);
 }
 
 function doLogout() {
-    localStorage.removeItem('have_session');
-    document.getElementById('dashboard-page').style.display='none';
-    document.getElementById('login-page').style.display='flex';
-    document.getElementById('password').value='';
+    localStorage.removeItem('have_token');
+    localStorage.removeItem('have_user');
+    localStorage.removeItem('have_company');
+    window.location.reload();
 }
 
-// Check existing session
-const sess=(()=> {
-        try {
-            return JSON.parse(localStorage.getItem('have_session'));
-        }
-
-        catch {
-            return null;
-        }
-    })();
-
-if (sess && sess.ts > Date.now() - 8*3600*1000) {
-    startDashboard(sess.company, sess.user);
+// Verifica sessão ao carregar
+const token = localStorage.getItem('have_token');
+const savedUser = localStorage.getItem('have_user');
+const savedCompany = localStorage.getItem('have_company');
+if (token && savedUser && savedCompany) {
+    startDashboard(savedCompany, savedUser, 'Lanzi');
 }
 
-function startDashboard(company, user) {
-    currentCompany=company;
-    const co=COMPANIES[company];
-    document.getElementById('login-page').style.display='none';
-    document.getElementById('dashboard-page').style.display='block';
-    document.getElementById('sidebar-company').textContent=co.name;
-    document.getElementById('user-name-display').textContent=user;
-    document.getElementById('user-avatar').textContent=user[0].toUpperCase();
+function startDashboard(company, user, companyName) {
+    currentCompany = company;
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('dashboard-page').style.display = 'block';
+    document.getElementById('sidebar-company').textContent = companyName;
+    document.getElementById('user-name-display').textContent = user;
+    document.getElementById('user-avatar').textContent = user[0].toUpperCase();
     loadAllData();
 }
 
 // ══════════════════════════════════════════════
-// DB QUERY via PostgREST / proxy
+// DB QUERY via API com JWT Token
 // ══════════════════════════════════════════════
-async function queryDB(sql) {
-    // We use a simple fetch to our proxy that forwards SQL to PostgreSQL
-    // The proxy is a serverless function that safely executes readonly queries
-    const co=COMPANIES[currentCompany].db;
+async function queryDB(tabela) {
+    const token = localStorage.getItem('have_token');
+    if (!token) throw new Error('Token não disponível. Faça login novamente.');
 
-    const res=await fetch('https://have-gestor-api.vercel.app/query', {
-
-        method:'POST',
+    const res = await fetch(`${API_BASE}/data?tabela=${tabela}`, {
+        method: 'GET',
         headers: {
-            'Content-Type':'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         }
+    });
 
-        ,
-        body: JSON.stringify({
-            host:co.host, port:co.port, database:co.database, user:co.user, password:co.password, sql
-        })
-});
-
-if ( !res.ok) throw new Error(`HTTP $ {
-        res.status
-    }
-
-    `);
-return res.json();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Erro ao buscar ${tabela}`);
+    return data;
 }
 
 // ══════════════════════════════════════════════
@@ -1376,16 +1341,41 @@ function setDbStatus(txt, ok) {
 
 async function loadOverview() {
     try {
-        const [abcData,
-        ppData]=await Promise.all([ queryDB('SELECT abc_cruzada, COUNT(*) as cnt, SUM(volume_total) as vol, SUM(margem_total) as marg FROM curva_abc GROUP BY abc_cruzada ORDER BY abc_cruzada'),
-            queryDB('SELECT alerta, COUNT(*) as cnt FROM ponto_pedido GROUP BY alerta')]);
+        const [abcRaw, ppRaw] = await Promise.all([
+            queryDB('curva_abc'),
+            queryDB('ponto_pedido')
+        ]);
 
-        const totalSkus=abcData.reduce((s, r)=>s+(+r.cnt), 0);
-        const totalMargem=abcData.reduce((s, r)=>s+(+r.marg||0), 0);
-        const ruptura=ppData.find(r=>r.alerta==='RUPTURA IMINENTE');
-        const pedir=ppData.find(r=>r.alerta==='PEDIR AGORA');
-        const countR=ruptura ?+ruptura.cnt: 0;
-        const countP=pedir ?+pedir.cnt: 0;
+        // Agregação em JavaScript: GROUP BY abc_cruzada
+        const abcData = [];
+        const abcMap = {};
+        abcRaw.forEach(r => {
+            if (!abcMap[r.abc_cruzada]) {
+                abcMap[r.abc_cruzada] = { abc_cruzada: r.abc_cruzada, cnt: 0, vol: 0, marg: 0 };
+                abcData.push(abcMap[r.abc_cruzada]);
+            }
+            abcMap[r.abc_cruzada].cnt += 1;
+            abcMap[r.abc_cruzada].vol += (+r.volume_total || 0);
+            abcMap[r.abc_cruzada].marg += (+r.margem_total || 0);
+        });
+
+        // Agregação em JavaScript: GROUP BY alerta
+        const ppData = [];
+        const ppMap = {};
+        ppRaw.forEach(r => {
+            if (!ppMap[r.alerta]) {
+                ppMap[r.alerta] = { alerta: r.alerta, cnt: 0 };
+                ppData.push(ppMap[r.alerta]);
+            }
+            ppMap[r.alerta].cnt += 1;
+        });
+
+        const totalSkus = abcData.reduce((s, r) => s + r.cnt, 0);
+        const totalMargem = abcData.reduce((s, r) => s + (r.marg || 0), 0);
+        const ruptura = ppData.find(r => r.alerta === 'RUPTURA IMINENTE');
+        const pedir = ppData.find(r => r.alerta === 'PEDIR AGORA');
+        const countR = ruptura ? ruptura.cnt : 0;
+        const countP = pedir ? pedir.cnt : 0;
 
         document.getElementById('badge-ruptura').textContent=countR+countP;
         document.getElementById('badge-semana').textContent=countR+countP;
@@ -1451,73 +1441,71 @@ async function loadOverview() {
 
 async function loadCurvaAbc() {
     try {
-        const data=await queryDB('SELECT sku, abc_cruzada, volume_total, margem_total, abc_volume, abc_margem, nivel_servico FROM curva_abc ORDER BY abc_cruzada, volume_total DESC LIMIT 2000');
-        state.abc=data;
+        const data = await queryDB('curva_abc');
+        state.abc = data;
         renderTable('abc', data);
-    }
-
-    catch(e) {
+    } catch(e) {
         console.error('abc', e);
     }
 }
 
 async function loadPontoPedido() {
     try {
-        const data=await queryDB('SELECT sku, abc_cruzada, alerta, estoque_atual, pedidos_aberto, ponto_pedido, estoque_seguranca, qty_sugerida, data_sugerida_pedido, confianca FROM ponto_pedido ORDER BY CASE alerta WHEN \'RUPTURA IMINENTE\' THEN 1 WHEN \'PEDIR AGORA\' THEN 2 WHEN \'OK\' THEN 3 WHEN \'EXCESSO\' THEN 4 ELSE 5 END, sku LIMIT 3000');
-        state.pp=data;
+        const data = await queryDB('ponto_pedido');
+        state.pp = data;
         renderTable('pp', data);
-    }
-
-    catch(e) {
+    } catch(e) {
         console.error('pp', e);
     }
 }
 
 async function loadEstoqueSeguranca() {
     try {
-        const data=await queryDB('SELECT sku, abc_cruzada, media_mensal, desvio_padrao, lead_time, fator_z, es_estatistico, es_teto, estoque_seguranca, teto_aplicado, confianca FROM estoque_seguranca ORDER BY sku LIMIT 3000');
-        state.es=data;
+        const data = await queryDB('estoque_seguranca');
+        state.es = data;
         renderTable('es', data);
-    }
-
-    catch(e) {
+    } catch(e) {
         console.error('es', e);
     }
 }
 
 async function loadPPR() {
     try {
-        const data=await queryDB('SELECT sku, abc_cruzada, qtd_7d, qtd_14d, qtd_21d, qtd_1m, qtd_3m, tendencia_curto_prazo, tendencia_medio_prazo FROM ppr_sku ORDER BY qtd_7d DESC LIMIT 3000');
-        state.ppr=data;
+        const data = await queryDB('ppr_sku');
+        state.ppr = data;
         renderTable('ppr', data);
-    }
-
-    catch(e) {
+    } catch(e) {
         console.error('ppr', e);
     }
 }
 
 async function loadForecast() {
     try {
-        const data=await queryDB('SELECT "Sku" as sku, "Data" as data, "Metodo" as metodo, "Previsao_Quantidade" as prev_qtd, "Previsao_Minima" as prev_min, "Previsao_Maxima" as prev_max FROM forecast_12m ORDER BY "Sku", "Data" LIMIT 5000');
-        state.fc=data;
-        renderTable('fc', data);
-    }
-
-    catch(e) {
+        const data = await queryDB('forecast_12m');
+        // Normalize column names if needed (API might return different names)
+        const normalized = data.map(r => ({
+            sku: r.Sku || r.sku,
+            data: r.Data || r.data,
+            metodo: r.Metodo || r.metodo,
+            prev_qtd: r.Previsao_Quantidade || r.prev_qtd,
+            prev_min: r.Previsao_Minima || r.prev_min,
+            prev_max: r.Previsao_Maxima || r.prev_max,
+            ...r
+        }));
+        state.fc = normalized;
+        renderTable('fc', normalized);
+    } catch(e) {
         console.error('fc', e);
     }
 }
 
 async function loadSemana() {
     try {
-        const data=await queryDB('SELECT sku, abc_cruzada, alerta, estoque_atual, pedidos_aberto, qty_sugerida, data_sugerida_pedido, data_prevista_entrega, semana_inicio, semana_fim FROM semana_pedidos ORDER BY CASE alerta WHEN \'RUPTURA IMINENTE\' THEN 1 WHEN \'PEDIR AGORA\' THEN 2 ELSE 3 END, data_sugerida_pedido LIMIT 1000');
-        state.sw=data;
+        const data = await queryDB('semana_pedidos');
+        state.sw = data;
         renderTable('sw', data);
-        document.getElementById('badge-semana').textContent=data.length;
-    }
-
-    catch(e) {
+        document.getElementById('badge-semana').textContent = data.length;
+    } catch(e) {
         console.error('sw', e);
     }
 }
