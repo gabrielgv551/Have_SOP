@@ -119,12 +119,11 @@ async function handleCreateUsuario(req, res) {
 /**
  * PATCH /api/admin/usuarios/:id - Update user
  */
-async function handleUpdateUsuario(req, res) {
+async function handleUpdateUsuario(req, res, id) {
   const payload = verifyAdminToken(req, res);
   if (!payload) return;
 
   try {
-    const id = req.query['[...]'][0]; // Get ID from dynamic route segment
     const { nome, perfil, ativo } = req.body;
 
     if (!id) {
@@ -160,13 +159,11 @@ async function handleUpdateUsuario(req, res) {
 /**
  * DELETE /api/admin/usuarios/:id - Deactivate user
  */
-async function handleDeleteUsuario(req, res) {
+async function handleDeleteUsuario(req, res, id) {
   const payload = verifyAdminToken(req, res);
   if (!payload) return;
 
   try {
-    const id = req.query['[...]'][0]; // Get ID from dynamic route segment
-
     if (!id) {
       return res.status(400).json({ error: 'User ID required' });
     }
@@ -187,18 +184,15 @@ async function handleDeleteUsuario(req, res) {
 /**
  * PUT /api/admin/usuarios/:id/reset-password - Reset user password
  */
-async function handleResetPassword(req, res) {
+async function handleResetPassword(req, res, userId) {
   const payload = verifyAdminToken(req, res);
   if (!payload) return;
 
   try {
-    const segments = req.query['[...]'];
-    const id = segments[0];
-    const resetAction = segments[1];
     const { tempPassword } = req.body;
 
-    if (!id || resetAction !== 'reset-password') {
-      return res.status(400).json({ error: 'Invalid endpoint' });
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID required' });
     }
 
     if (!tempPassword) {
@@ -215,9 +209,9 @@ async function handleResetPassword(req, res) {
     const senhaHash = await auth.hashPassword(tempPassword);
 
     // Update password
-    const updatedUser = await db.resetPassword(payload.company, parseInt(id), senhaHash);
+    const updatedUser = await db.resetPassword(payload.company, parseInt(userId), senhaHash);
 
-    console.log(`[ADMIN] Password reset for user ID ${id} by ${payload.user}`);
+    console.log(`[ADMIN] Password reset for user ID ${userId} by ${payload.user}`);
     res.json({
       message: 'Senha atualizada com sucesso',
       user: updatedUser
@@ -238,7 +232,27 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const segments = req.query['[...]'] || [];
+  // Extract dynamic route segments
+  // In Vercel, [...] becomes an array in req.query with key '...'
+  let segments = [];
+
+  if (req.query && typeof req.query === 'object') {
+    // Check for the dynamic parameter
+    segments = req.query['...'] || [];
+    if (typeof segments === 'string') {
+      segments = [segments];
+    }
+  }
+
+  // Fallback: parse from URL if needed
+  if (!segments || segments.length === 0) {
+    const urlPath = req.url || '';
+    const parts = urlPath.split('/').filter(Boolean);
+    // Filter out 'api' and 'admin' parts
+    segments = parts.slice(parts.indexOf('admin') + 1);
+  }
+
+  console.log('[ADMIN] Request:', { method: req.method, url: req.url, segments });
 
   try {
     // /api/admin/usuarios - GET (list) or POST (create)
@@ -253,18 +267,20 @@ module.exports = async (req, res) => {
 
     // /api/admin/usuarios/:id - PATCH (update) or DELETE (deactivate)
     if (segments[0] === 'usuarios' && segments[1] && !segments[2]) {
+      const userId = segments[1];
       if (req.method === 'PATCH') {
-        return await handleUpdateUsuario(req, res);
+        return await handleUpdateUsuario(req, res, userId);
       }
       if (req.method === 'DELETE') {
-        return await handleDeleteUsuario(req, res);
+        return await handleDeleteUsuario(req, res, userId);
       }
     }
 
     // /api/admin/usuarios/:id/reset-password - PUT
     if (segments[0] === 'usuarios' && segments[1] && segments[2] === 'reset-password') {
+      const userId = segments[1];
       if (req.method === 'PUT') {
-        return await handleResetPassword(req, res);
+        return await handleResetPassword(req, res, userId);
       }
     }
 
