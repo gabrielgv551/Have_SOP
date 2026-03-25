@@ -129,7 +129,7 @@ async function handleUpdateUsuario(req, res) {
   if (!payload) return;
 
   try {
-    const { id } = req.params;
+    const id = req.userId;
     const { nome, perfil, ativo } = req.body;
 
     if (!id) {
@@ -170,7 +170,7 @@ async function handleDeleteUsuario(req, res) {
   if (!payload) return;
 
   try {
-    const { id } = req.params;
+    const id = req.userId;
 
     if (!id) {
       return res.status(400).json({ error: 'User ID required' });
@@ -198,7 +198,7 @@ async function handleResetPassword(req, res) {
   if (!payload) return;
 
   try {
-    const { id } = req.params;
+    const id = req.userId;
     const { tempPassword } = req.body;
 
     if (!id) {
@@ -243,15 +243,20 @@ module.exports = async (req, res) => {
   }
 
   const path = req.url.split('?')[0]; // Remove query string
-  const segments = path.split('/').filter(Boolean); // ['admin', 'usuarios', '1', 'reset-password']
+  const segments = path.split('/').filter(Boolean); // ['api', 'admin', 'usuarios'] or ['admin', 'usuarios']
 
   try {
-    if (segments[0] !== 'admin') {
+    // Handle both /api/admin/... and /admin/... paths
+    const adminIndex = segments.indexOf('admin');
+    if (adminIndex === -1) {
       return res.status(404).json({ error: 'Not found' });
     }
 
+    // Get the segments after 'admin'
+    const adminSegments = segments.slice(adminIndex + 1);
+
     // /api/admin/usuarios - GET (list) or POST (create)
-    if (segments[1] === 'usuarios' && !segments[2]) {
+    if (adminSegments[0] === 'usuarios' && !adminSegments[1]) {
       if (req.method === 'GET') {
         return await handleGetUsuarios(req, res);
       }
@@ -261,7 +266,8 @@ module.exports = async (req, res) => {
     }
 
     // /api/admin/usuarios/:id - PATCH (update) or DELETE (deactivate)
-    if (segments[1] === 'usuarios' && segments[2] && !segments[3]) {
+    if (adminSegments[0] === 'usuarios' && adminSegments[1] && !adminSegments[2]) {
+      req.userId = adminSegments[1];
       if (req.method === 'PATCH') {
         return await handleUpdateUsuario(req, res);
       }
@@ -271,7 +277,8 @@ module.exports = async (req, res) => {
     }
 
     // /api/admin/usuarios/:id/reset-password - PUT
-    if (segments[1] === 'usuarios' && segments[2] && segments[3] === 'reset-password') {
+    if (adminSegments[0] === 'usuarios' && adminSegments[1] && adminSegments[2] === 'reset-password') {
+      req.userId = adminSegments[1];
       if (req.method === 'PUT') {
         return await handleResetPassword(req, res);
       }
