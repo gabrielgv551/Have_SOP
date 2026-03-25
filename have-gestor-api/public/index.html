@@ -1511,11 +1511,7 @@ function renderFallback() {
     'ppr',
     'fc',
     'sw'].forEach(k=> {
-            const el=document.getElementById(`${
-                    k
-                }
-
-                -tbody`);
+            const el=document.getElementById(`${k}-tbody`);
             if(el) el.innerHTML=`<tr><td colspan="20" ><div class="empty-state" ><div class="empty-icon" >🔌</div><div class="empty-title" >Sem conexão com o banco</div><div class="empty-sub" >Conecte-se à rede e atualize a página</div></div></td></tr>`;
         });
 }
@@ -1528,33 +1524,9 @@ const paginationState= {}
 ;
 
 function renderTable(key, rawData, page=1) {
-    const search=(document.getElementById(`${
-                key
-            }
+    const search=(document.getElementById(`${key}-search`)?.value||'').toLowerCase();
 
-            -search`)?.value||'').toLowerCase();
-
-    const filter=document.getElementById(`${
-            key
-        }
-
-        -filter`)?.value || document.getElementById(`${
-            key
-        }
-
-        -conf`)?.value || document.getElementById(`${
-            key
-        }
-
-        -tend`)?.value || document.getElementById(`${
-            key
-        }
-
-        -alert`)?.value || document.getElementById(`${
-            key
-        }
-
-        -metodo`)?.value || '';
+    const filter=document.getElementById(`${key}-filter`)?.value || document.getElementById(`${key}-conf`)?.value || document.getElementById(`${key}-tend`)?.value || document.getElementById(`${key}-alert`)?.value || document.getElementById(`${key}-metodo`)?.value || '';
 
     let data=rawData.filter(r=> {
             const skuMatch=(r.sku||'').toLowerCase().includes(search);
@@ -1582,11 +1554,7 @@ function renderTable(key, rawData, page=1) {
     ;
     const slice=data.slice((p-1)*PAGE_SIZE, p*PAGE_SIZE);
 
-    const tbody=document.getElementById(`${
-            key
-        }
-
-        -tbody`);
+    const tbody=document.getElementById(`${key}-tbody`);
     if ( !tbody) return;
 
     if (slice.length===0) {
@@ -1601,282 +1569,32 @@ function renderTable(key, rawData, page=1) {
 }
 
 function rowHTML(key, r) {
-    if (key==='abc') return `<tr><td><span class="sku-code">${
-        esc(r.sku)
-    }
+    if (key==='abc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada)}</span></td><td>${fmtN(r.volume_total)}</td><td>R$ ${fmtN(r.margem_total)}</td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${esc(r.abc_volume)}</span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${esc(r.abc_margem)}</span></td><td>${fmtPct(r.nivel_servico)}</td></tr>`;
 
-    </span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${
-        esc(r.abc_cruzada)
-    }
+    if (key==='pp') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada||'–')}</span></td><td>${alertBadge(r.alerta)}</td><td>${fmtN(r.estoque_atual)}</td><td>${fmtN(r.pedidos_aberto)}</td><td>${fmtN(r.ponto_pedido)}</td><td>${fmtN(r.estoque_seguranca)}</td><td><strong>${fmtN(r.qty_sugerida)}</strong></td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido): '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca||'–')}</span></td></tr>`;
 
-    </span></td><td>${
-        fmtN(r.volume_total)
-    }
+    if (key==='es') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada||'–')}</span></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.desvio_padrao)}</td><td>${fmtN(r.lead_time)}</td><td>${fmtBR(r.fator_z)}</td><td>${fmtBR(r.es_estatistico)}</td><td>${fmtBR(r.es_teto)}</td><td><strong>${fmtN(r.estoque_seguranca)}</strong></td><td>${r.teto_aplicado==='true' ||r.teto_aplicado===true?'<span style="color:var(--orange)">✓ Sim</span>': '<span style="color:var(--muted)">Não</span>'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca||'–')}</span></td></tr>`;
 
-    </td><td>R$ ${
-        fmtN(r.margem_total)
-    }
+    if (key==='ppr') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada||'–')}</span></td><td>${fmtN(r.qtd_7d)}</td><td>${fmtN(r.qtd_14d)}</td><td>${fmtN(r.qtd_21d)}</td><td>${fmtN(r.qtd_1m)}</td><td>${fmtN(r.qtd_3m)}</td><td><span class="trend-${trendKey(r.tendencia_curto_prazo)}">${trendIcon(r.tendencia_curto_prazo)} ${esc(r.tendencia_curto_prazo||'–')}</span></td><td><span class="trend-${trendKey(r.tendencia_medio_prazo)}">${trendIcon(r.tendencia_medio_prazo)} ${esc(r.tendencia_medio_prazo||'–')}</span></td></tr>`;
 
-    </td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${
-        esc(r.abc_volume)
-    }
+    if (key==='fc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td>${fmtDate(r.data)}</td><td><span style="font-size:11px;color:var(--muted)">${esc(r.metodo)}</span></td><td>${fmtN(r.prev_qtd)}</td><td>${fmtN(r.prev_min)}</td><td>${fmtN(r.prev_max)}</td></tr>`;
 
-    </span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${
-        esc(r.abc_margem)
-    }
-
-    </span></td><td>${
-        fmtPct(r.nivel_servico)
-    }
-
-    </td></tr>`;
-
-    if (key==='pp') return `<tr><td><span class="sku-code">${
-        esc(r.sku)
-    }
-
-    </span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${
-        esc(r.abc_cruzada||'–')
-    }
-
-    </span></td><td>${
-        alertBadge(r.alerta)
-    }
-
-    </td><td>${
-        fmtN(r.estoque_atual)
-    }
-
-    </td><td>${
-        fmtN(r.pedidos_aberto)
-    }
-
-    </td><td>${
-        fmtN(r.ponto_pedido)
-    }
-
-    </td><td>${
-        fmtN(r.estoque_seguranca)
-    }
-
-    </td><td><strong>${
-        fmtN(r.qty_sugerida)
-    }
-
-    </strong></td><td>${
-        r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido): '–'
-    }
-
-    </td><td><span class="conf-${r.confianca}">${
-        esc(r.confianca||'–')
-    }
-
-    </span></td></tr>`;
-
-    if (key==='es') return `<tr><td><span class="sku-code">${
-        esc(r.sku)
-    }
-
-    </span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${
-        esc(r.abc_cruzada||'–')
-    }
-
-    </span></td><td>${
-        fmtBR(r.media_mensal)
-    }
-
-    </td><td>${
-        fmtBR(r.desvio_padrao)
-    }
-
-    </td><td>${
-        fmtN(r.lead_time)
-    }
-
-    d</td><td>${
-        fmtBR(r.fator_z)
-    }
-
-    </td><td>${
-        fmtBR(r.es_estatistico)
-    }
-
-    </td><td>${
-        fmtBR(r.es_teto)
-    }
-
-    </td><td><strong>${
-        fmtN(r.estoque_seguranca)
-    }
-
-    </strong></td><td>${
-        r.teto_aplicado==='true' ||r.teto_aplicado===true?'<span style="color:var(--orange)">✓ Sim</span>': '<span style="color:var(--muted)">Não</span>'
-    }
-
-    </td><td><span class="conf-${r.confianca}">${
-        esc(r.confianca||'–')
-    }
-
-    </span></td></tr>`;
-
-    if (key==='ppr') return `<tr><td><span class="sku-code">${
-        esc(r.sku)
-    }
-
-    </span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${
-        esc(r.abc_cruzada||'–')
-    }
-
-    </span></td><td>${
-        fmtN(r.qtd_7d)
-    }
-
-    </td><td>${
-        fmtN(r.qtd_14d)
-    }
-
-    </td><td>${
-        fmtN(r.qtd_21d)
-    }
-
-    </td><td>${
-        fmtN(r.qtd_1m)
-    }
-
-    </td><td>${
-        fmtN(r.qtd_3m)
-    }
-
-    </td><td><span class="trend-${trendKey(r.tendencia_curto_prazo)}">${
-        trendIcon(r.tendencia_curto_prazo)
-    }
-
-    ${
-        esc(r.tendencia_curto_prazo||'–')
-    }
-
-    </span></td><td><span class="trend-${trendKey(r.tendencia_medio_prazo)}">${
-        trendIcon(r.tendencia_medio_prazo)
-    }
-
-    ${
-        esc(r.tendencia_medio_prazo||'–')
-    }
-
-    </span></td></tr>`;
-
-    if (key==='fc') return `<tr><td><span class="sku-code">${
-        esc(r.sku)
-    }
-
-    </span></td><td>${
-        fmtDate(r.data)
-    }
-
-    </td><td><span style="font-size:11px;color:var(--muted)">${
-        esc(r.metodo)
-    }
-
-    </span></td><td>${
-        fmtN(r.prev_qtd)
-    }
-
-    </td><td>${
-        fmtN(r.prev_min)
-    }
-
-    </td><td>${
-        fmtN(r.prev_max)
-    }
-
-    </td></tr>`;
-
-    if (key==='sw') return `<tr><td><span class="sku-code">${
-        esc(r.sku)
-    }
-
-    </span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${
-        esc(r.abc_cruzada||'–')
-    }
-
-    </span></td><td>${
-        alertBadge(r.alerta)
-    }
-
-    </td><td>${
-        fmtN(r.estoque_atual)
-    }
-
-    </td><td>${
-        fmtN(r.pedidos_aberto)
-    }
-
-    </td><td><strong>${
-        fmtN(r.qty_sugerida)
-    }
-
-    </strong></td><td>${
-        r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido): '–'
-    }
-
-    </td><td>${
-        r.data_prevista_entrega ? fmtDate(r.data_prevista_entrega): '–'
-    }
-
-    </td><td style="font-size:11px;color:var(--muted)">${
-        r.semana_inicio ? fmtDate(r.semana_inicio)+' → '+fmtDate(r.semana_fim): '–'
-    }
-
-    </td></tr>`;
+    if (key==='sw') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada||'–')}</span></td><td>${alertBadge(r.alerta)}</td><td>${fmtN(r.estoque_atual)}</td><td>${fmtN(r.pedidos_aberto)}</td><td><strong>${fmtN(r.qty_sugerida)}</strong></td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido): '–'}</td><td>${r.data_prevista_entrega ? fmtDate(r.data_prevista_entrega): '–'}</td><td style="font-size:11px;color:var(--muted)">${r.semana_inicio ? fmtDate(r.semana_inicio)+' → '+fmtDate(r.semana_fim): '–'}</td></tr>`;
 
     return '<tr><td>–</td></tr>';
 }
 
 function renderPagination(key) {
-    const el=document.getElementById(`${
-            key
-        }
-
-        -pagination`);
+    const el=document.getElementById(`${key}-pagination`);
     if ( !el) return;
     const ps=paginationState[key];
     if ( !ps) return;
 
-    const {
-        current,
-        total,
-        count
-    }
-
-    =ps;
+    const { current, total, count } = ps;
     const start=(current-1)*PAGE_SIZE+1;
     const end=Math.min(current*PAGE_SIZE, count);
 
-    el.innerHTML=` <span>${
-        start
-    }
-
-    –${
-        end
-    }
-
-    de ${
-        count.toLocaleString('pt-BR')
-    }
-
-    </span><div class="page-btns"><button class="page-btn" onclick="changePage('${key}',${current-1})"${
-        current<=1?'disabled': ''
-    }
-
-    >‹</button>${
-        pageButtons(current, total, key)
-    }
-
-    <button class="page-btn" onclick="changePage('${key}',${current+1})"${
-        current>=total?'disabled': ''
-    }
-
-    >›</button></div>`;
+    el.innerHTML=` <span>${start}–${end} de ${count.toLocaleString('pt-BR')}</span><div class="page-btns"><button class="page-btn" onclick="changePage('${key}',${current-1})"${current<=1?'disabled': ''}>‹</button>${pageButtons(current, total, key)}<button class="page-btn" onclick="changePage('${key}',${current+1})"${current>=total?'disabled': ''}>›</button></div>`;
 }
 
 function pageButtons(current, total, key) {
@@ -1887,11 +1605,7 @@ function pageButtons(current, total, key) {
     for (const p of [...show].sort((a, b)=>a-b)) {
         if (last && p-last>1) pages.push('<button class="page-btn" disabled>…</button>');
 
-        pages.push(`<button class="page-btn ${p===current?'active':''}" onclick="changePage('${key}',${p})" >${
-                p
-            }
-
-            </button>`);
+        pages.push(`<button class="page-btn ${p===current?'active':''}" onclick="changePage('${key}',${p})">${p}</button>`);
         last=p;
     }
 
@@ -2007,11 +1721,7 @@ function alertBadge(a) {
     lbl]=map[a]||['alert-SEM',
     esc(a)];
 
-    return `<span class="alert-badge ${cls}">${
-        lbl
-    }
-
-    </span>`;
+    return `<span class="alert-badge ${cls}">${lbl}</span>`;
 }
 
 function trendKey(t) {
