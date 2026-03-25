@@ -1,0 +1,10 @@
+{
+  "name": "have-gestor-api",
+  "version": "1.0.0",
+  "description": "API backend do Have Gestor Inteligente",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
+  }
+}

@@ -1190,7 +1190,7 @@ td {
     cursor: not-allowed;
 }
 
-</style></head><body>< !-- ── LOGIN PAGE ── --><div id="login-page"><div class="login-bg"></div><div class="login-card"><div class="login-logo"><div class="login-logo-icon">H</div><div class="login-logo-text"><div class="brand">Have</div><div class="sub">Gestor Inteligente</div></div></div><div class="login-title">Bem-vindo de volta</div><div class="login-subtitle">Selecione sua empresa e entre no painel</div><div class="company-label">Empresa</div><div class="company-grid" id="company-grid"><div class="company-btn selected" data-company="lanzi" onclick="selectCompany(this)"><div class="company-dot" style="background:#4f7fff"></div><div><div class="company-btn-name">Lanzi</div><div class="company-btn-tag">S&OP · PostgreSQL</div></div></div><div class="company-btn disabled" data-company="" onclick=""><div class="company-dot" style="background:#6b6b80"></div><div><div class="company-btn-name">Nova Empresa</div><div class="company-btn-tag"><span class="coming-badge">Em breve</span></div></div></div></div><div class="form-group"><label>Usuário</label><input type="text" id="username" placeholder="seu usuário" value=""></div><div class="form-group"><label>Senha</label><input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div><button class="login-btn" onclick="doLogin()">Entrar no painel →</button><div class="login-error" id="login-error">Usuário ou senha incorretos.</div></div></div>< !-- ── DASHBOARD ── --><div id="dashboard-page"><div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div><nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="sidebar-logo-icon">H</div><div class="sidebar-logo-text"><div class="brand">Have</div><div class="company" id="sidebar-company">Lanzi</div></div></div><div class="sidebar-nav"><div class="nav-section-label">Visão Geral</div><div class="nav-item active" onclick="showPanel('overview')"><span class="nav-icon">◈</span>Dashboard </div><div class="nav-section-label" style="margin-top:12px">S&OP</div><div class="nav-item" onclick="showPanel('curva-abc')"><span class="nav-icon">◉</span>Curva ABC </div><div class="nav-item" onclick="showPanel('ponto-pedido')"><span class="nav-icon">⬡</span>Ponto de Pedido <span class="nav-badge" id="badge-ruptura">–</span></div><div class="nav-item" onclick="showPanel('estoque-seguranca')"><span class="nav-icon">◻</span>Estoque de Segurança </div><div class="nav-item" onclick="showPanel('ppr')"><span class="nav-icon">⟁</span>PPR · Performance </div><div class="nav-item" onclick="showPanel('forecast')"><span class="nav-icon">∿</span>Forecast 12M </div><div class="nav-section-label" style="margin-top:12px">Semana</div><div class="nav-item" onclick="showPanel('semana')"><span class="nav-icon">▦</span>Lista Semanal <span class="nav-badge green" id="badge-semana">–</span></div></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">H</div><div><div class="user-name" id="user-name-display">–</div><div class="user-role">Gestor</div></div><button class="logout-btn" onclick="doLogout()" title="Sair">⇥</button></div></div></nav><div class="main-content"><div class="topbar"><div class="topbar-left"><button class="hamburger" onclick="toggleSidebar()">☰</button><div class="topbar-title" id="topbar-title">Dashboard</div></div><div class="topbar-right"><div class="db-status"><div class="db-dot" id="db-dot"></div><span id="db-status-text">Conectando...</span></div><div class="topbar-date" id="topbar-date"></div><button class="refresh-btn" onclick="refreshCurrentPanel()">↻ Atualizar</button></div></div>< !-- OVERVIEW --><div class="panel active" id="panel-overview"><div class="kpi-grid" id="kpi-grid"><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap" id="overview-tables"><div class="table-card" style="padding:20px"><div class="section-title" style="margin-bottom:16px;font-size:14px">Alertas Críticos</div><div id="overview-alertas"><div class="loading-skeleton" style="height:200px"></div></div></div><div class="table-card" style="padding:20px"><div class="section-title" style="margin-bottom:16px;font-size:14px">Distribuição ABC</div><div id="overview-abc"><div class="loading-skeleton" style="height:200px"></div></div></div></div></div>< !-- CURVA ABC --><div class="panel" id="panel-curva-abc"><div class="section-header"><div class="section-title">Curva ABC Cruzada</div><div class="section-actions"><input class="search-input" id="abc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('abc')"><select class="filter-select" id="abc-filter" onchange="filterTable('abc')"><option value="">Todos</option><option>AA</option><option>AB</option><option>BA</option><option>BB</option><option>AC</option><option>CA</option><option>BC</option><option>CB</option><option>CC</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC Cruzada</th><th>Volume Total</th><th>Margem Total</th><th>ABC Volume</th><th>ABC Margem</th><th>Nível Serviço</th></tr></thead><tbody id="abc-tbody"><tr class="loading-row"><td colspan="7"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="abc-pagination"></div></div></div>< !-- PONTO DE PEDIDO --><div class="panel" id="panel-ponto-pedido"><div class="section-header"><div class="section-title">Ponto de Pedido</div><div class="section-actions"><input class="search-input" id="pp-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('pp')"><select class="filter-select" id="pp-filter" onchange="filterTable('pp')"><option value="">Todos Alertas</option><option>RUPTURA IMINENTE</option><option>PEDIR AGORA</option><option>OK</option><option>EXCESSO</option><option>SEM MOVIMENTO</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Alerta</th><th>Est. Atual</th><th>Ped. Aberto</th><th>Ponto Pedido</th><th>Est. Seg.</th><th>Qtd Sugerida</th><th>Data Pedido</th><th>Confiança</th></tr></thead><tbody id="pp-tbody"><tr class="loading-row"><td colspan="10"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="pp-pagination"></div></div></div>< !-- ESTOQUE DE SEGURANÇA --><div class="panel" id="panel-estoque-seguranca"><div class="section-header"><div class="section-title">Estoque de Segurança</div><div class="section-actions"><input class="search-input" id="es-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('es')"><select class="filter-select" id="es-conf" onchange="filterTable('es')"><option value="">Todas Confiança</option><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Média Mensal</th><th>Desvio Padrão</th><th>Lead Time</th><th>Fator Z</th><th>ES Estatístico</th><th>ES Teto</th><th>ES Final</th><th>Teto?</th><th>Confiança</th></tr></thead><tbody id="es-tbody"><tr class="loading-row"><td colspan="11"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="es-pagination"></div></div></div>< !-- PPR --><div class="panel" id="panel-ppr"><div class="section-header"><div class="section-title">PPR · Performance de Vendas</div><div class="section-actions"><input class="search-input" id="ppr-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('ppr')"><select class="filter-select" id="ppr-tend" onchange="filterTable('ppr')"><option value="">Todas Tendências</option><option>ACELERANDO</option><option>ESTÁVEL</option><option>DESACELERANDO</option><option>SEM DADOS</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Qtd 7d</th><th>Qtd 14d</th><th>Qtd 21d</th><th>Qtd 1m</th><th>Qtd 3m</th><th>Tend. Curto</th><th>Tend. Médio</th></tr></thead><tbody id="ppr-tbody"><tr class="loading-row"><td colspan="9"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="ppr-pagination"></div></div></div>< !-- FORECAST --><div class="panel" id="panel-forecast"><div class="section-header"><div class="section-title">Forecast 12 Meses</div><div class="section-actions"><input class="search-input" id="fc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('fc')"><select class="filter-select" id="fc-metodo" onchange="filterTable('fc')"><option value="">Todos Métodos</option><option>WindowAverage_6m</option><option>ADIDA</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>Data</th><th>Método</th><th>Prev. Qtd</th><th>Prev. Mín</th><th>Prev. Máx</th></tr></thead><tbody id="fc-tbody"><tr class="loading-row"><td colspan="6"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="fc-pagination"></div></div></div>< !-- SEMANA PEDIDOS --><div class="panel" id="panel-semana"><div class="section-header"><div class="section-title">Lista Semanal de Pedidos</div><div class="section-actions"><input class="search-input" id="sw-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('sw')"><select class="filter-select" id="sw-alert" onchange="filterTable('sw')"><option value="">Todos</option><option>RUPTURA IMINENTE</option><option>PEDIR AGORA</option><option>OK</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Alerta</th><th>Est. Atual</th><th>Ped. Aberto</th><th>Qtd Sugerida</th><th>Data Pedido</th><th>Data Entrega</th><th>Semana</th></tr></thead><tbody id="sw-tbody"><tr class="loading-row"><td colspan="9"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="sw-pagination"></div></div></div></div>< !-- /main-content --></div>< !-- /dashboard-page -->< !-- Toast --><div id="toast"></div><script> // ══════════════════════════════════════════════
+</style></head><body>< !-- ── LOGIN PAGE ── --><div id="login-page"><div class="login-bg"></div><div class="login-card"><div class="login-logo"><div class="login-logo-icon">H</div><div class="login-logo-text"><div class="brand">Have</div><div class="sub">Gestor Inteligente</div></div></div><div class="login-title">Bem-vindo de volta</div><div class="login-subtitle">Selecione sua empresa e entre no painel</div><div class="company-label">Empresa</div><div class="company-grid" id="company-grid"><div class="company-btn selected" data-company="lanzi" onclick="selectCompany(this)"><div class="company-dot" style="background:#4f7fff"></div><div><div class="company-btn-name">Lanzi</div><div class="company-btn-tag">S&OP · PostgreSQL</div></div></div><div class="company-btn disabled" data-company="" onclick=""><div class="company-dot" style="background:#6b6b80"></div><div><div class="company-btn-name">Nova Empresa</div><div class="company-btn-tag"><span class="coming-badge">Em breve</span></div></div></div></div><div class="form-group"><label>Usuário</label><input type="text" id="username" placeholder="seu usuário" value=""></div><div class="form-group"><label>Senha</label><input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div><button class="login-btn" onclick="doLogin()">Entrar no painel →</button><div class="login-error" id="login-error">Usuário ou senha incorretos.</div></div></div>< !-- ── DASHBOARD ── --><div id="dashboard-page"><div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div><nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="sidebar-logo-icon">H</div><div class="sidebar-logo-text"><div class="brand">Have</div><div class="company" id="sidebar-company">Lanzi</div></div></div><div class="sidebar-nav"><div class="nav-section-label">Visão Geral</div><div class="nav-item active" onclick="showPanel('overview')"><span class="nav-icon">◈</span>Dashboard </div><div class="nav-section-label" style="margin-top:12px">S&OP</div><div class="nav-item" onclick="showPanel('curva-abc')"><span class="nav-icon">◉</span>Curva ABC </div><div class="nav-item" onclick="showPanel('ponto-pedido')"><span class="nav-icon">⬡</span>Ponto de Pedido <span class="nav-badge" id="badge-ruptura">–</span></div><div class="nav-item" onclick="showPanel('estoque-seguranca')"><span class="nav-icon">◻</span>Estoque de Segurança </div><div class="nav-item" onclick="showPanel('ppr')"><span class="nav-icon">⟁</span>PPR · Performance </div><div class="nav-item" onclick="showPanel('forecast')"><span class="nav-icon">∿</span>Forecast 12M </div><div class="nav-section-label" style="margin-top:12px">Semana</div><div class="nav-item" onclick="showPanel('semana')"><span class="nav-icon">▦</span>Lista Semanal <span class="nav-badge green" id="badge-semana">–</span></div><div class="nav-section-label" style="margin-top:12px" id="admin-section">Administração</div><div class="nav-item" id="admin-nav" onclick="showPanel('admin-usuarios')" style="display:none"><span class="nav-icon">⚙</span>Gerenciar Usuários</div></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">H</div><div><div class="user-name" id="user-name-display">–</div><div class="user-role">Gestor</div></div><button class="logout-btn" onclick="doLogout()" title="Sair">⇥</button></div></div></nav><div class="main-content"><div class="topbar"><div class="topbar-left"><button class="hamburger" onclick="toggleSidebar()">☰</button><div class="topbar-title" id="topbar-title">Dashboard</div></div><div class="topbar-right"><div class="db-status"><div class="db-dot" id="db-dot"></div><span id="db-status-text">Conectando...</span></div><div class="topbar-date" id="topbar-date"></div><button class="refresh-btn" onclick="refreshCurrentPanel()">↻ Atualizar</button></div></div>< !-- OVERVIEW --><div class="panel active" id="panel-overview"><div class="kpi-grid" id="kpi-grid"><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div><div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap" id="overview-tables"><div class="table-card" style="padding:20px"><div class="section-title" style="margin-bottom:16px;font-size:14px">Alertas Críticos</div><div id="overview-alertas"><div class="loading-skeleton" style="height:200px"></div></div></div><div class="table-card" style="padding:20px"><div class="section-title" style="margin-bottom:16px;font-size:14px">Distribuição ABC</div><div id="overview-abc"><div class="loading-skeleton" style="height:200px"></div></div></div></div></div>< !-- CURVA ABC --><div class="panel" id="panel-curva-abc"><div class="section-header"><div class="section-title">Curva ABC Cruzada</div><div class="section-actions"><input class="search-input" id="abc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('abc')"><select class="filter-select" id="abc-filter" onchange="filterTable('abc')"><option value="">Todos</option><option>AA</option><option>AB</option><option>BA</option><option>BB</option><option>AC</option><option>CA</option><option>BC</option><option>CB</option><option>CC</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC Cruzada</th><th>Volume Total</th><th>Margem Total</th><th>ABC Volume</th><th>ABC Margem</th><th>Nível Serviço</th></tr></thead><tbody id="abc-tbody"><tr class="loading-row"><td colspan="7"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="abc-pagination"></div></div></div>< !-- PONTO DE PEDIDO --><div class="panel" id="panel-ponto-pedido"><div class="section-header"><div class="section-title">Ponto de Pedido</div><div class="section-actions"><input class="search-input" id="pp-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('pp')"><select class="filter-select" id="pp-filter" onchange="filterTable('pp')"><option value="">Todos Alertas</option><option>RUPTURA IMINENTE</option><option>PEDIR AGORA</option><option>OK</option><option>EXCESSO</option><option>SEM MOVIMENTO</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Alerta</th><th>Est. Atual</th><th>Ped. Aberto</th><th>Ponto Pedido</th><th>Est. Seg.</th><th>Qtd Sugerida</th><th>Data Pedido</th><th>Confiança</th></tr></thead><tbody id="pp-tbody"><tr class="loading-row"><td colspan="10"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="pp-pagination"></div></div></div>< !-- ESTOQUE DE SEGURANÇA --><div class="panel" id="panel-estoque-seguranca"><div class="section-header"><div class="section-title">Estoque de Segurança</div><div class="section-actions"><input class="search-input" id="es-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('es')"><select class="filter-select" id="es-conf" onchange="filterTable('es')"><option value="">Todas Confiança</option><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Média Mensal</th><th>Desvio Padrão</th><th>Lead Time</th><th>Fator Z</th><th>ES Estatístico</th><th>ES Teto</th><th>ES Final</th><th>Teto?</th><th>Confiança</th></tr></thead><tbody id="es-tbody"><tr class="loading-row"><td colspan="11"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="es-pagination"></div></div></div>< !-- PPR --><div class="panel" id="panel-ppr"><div class="section-header"><div class="section-title">PPR · Performance de Vendas</div><div class="section-actions"><input class="search-input" id="ppr-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('ppr')"><select class="filter-select" id="ppr-tend" onchange="filterTable('ppr')"><option value="">Todas Tendências</option><option>ACELERANDO</option><option>ESTÁVEL</option><option>DESACELERANDO</option><option>SEM DADOS</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Qtd 7d</th><th>Qtd 14d</th><th>Qtd 21d</th><th>Qtd 1m</th><th>Qtd 3m</th><th>Tend. Curto</th><th>Tend. Médio</th></tr></thead><tbody id="ppr-tbody"><tr class="loading-row"><td colspan="9"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="ppr-pagination"></div></div></div>< !-- FORECAST --><div class="panel" id="panel-forecast"><div class="section-header"><div class="section-title">Forecast 12 Meses</div><div class="section-actions"><input class="search-input" id="fc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('fc')"><select class="filter-select" id="fc-metodo" onchange="filterTable('fc')"><option value="">Todos Métodos</option><option>WindowAverage_6m</option><option>ADIDA</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>Data</th><th>Método</th><th>Prev. Qtd</th><th>Prev. Mín</th><th>Prev. Máx</th></tr></thead><tbody id="fc-tbody"><tr class="loading-row"><td colspan="6"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="fc-pagination"></div></div></div>< !-- SEMANA PEDIDOS --><div class="panel" id="panel-semana"><div class="section-header"><div class="section-title">Lista Semanal de Pedidos</div><div class="section-actions"><input class="search-input" id="sw-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('sw')"><select class="filter-select" id="sw-alert" onchange="filterTable('sw')"><option value="">Todos</option><option>RUPTURA IMINENTE</option><option>PEDIR AGORA</option><option>OK</option></select></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>SKU</th><th>ABC</th><th>Alerta</th><th>Est. Atual</th><th>Ped. Aberto</th><th>Qtd Sugerida</th><th>Data Pedido</th><th>Data Entrega</th><th>Semana</th></tr></thead><tbody id="sw-tbody"><tr class="loading-row"><td colspan="9"><div class="loading-skeleton" style="width:100%"></div></td></tr></tbody></table></div><div class="pagination" id="sw-pagination"></div></div></div></div>< !-- /main-content --></div>< !-- /dashboard-page -->< !-- Toast --><div id="toast"></div><script> // ══════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════
 // Credenciais estão seguras no backend Vercel + JWT tokens
@@ -1284,6 +1284,35 @@ function startDashboard(company, user, companyName) {
     document.getElementById('sidebar-company').textContent = companyName;
     document.getElementById('user-name-display').textContent = user;
     document.getElementById('user-avatar').textContent = user[0].toUpperCase();
+
+    // Decode JWT to check user role
+    try {
+        const token = localStorage.getItem('have_token');
+        if (token) {
+            const parts = token.split('.');
+            const payload = JSON.parse(atob(parts[1]));
+
+            // Show admin section if user is admin
+            if (payload.perfil === 'admin') {
+                document.getElementById('admin-section').style.display = 'block';
+                document.getElementById('admin-nav').style.display = 'flex';
+            }
+
+            // Update user role display
+            const roleDisplay = document.querySelector('.user-role');
+            if (roleDisplay) {
+                const roleNames = {
+                    'admin': 'Administrador',
+                    'gestor': 'Gestor',
+                    'have': 'Have'
+                };
+                roleDisplay.textContent = roleNames[payload.perfil] || 'Usuário';
+            }
+        }
+    } catch (e) {
+        console.error('Failed to decode JWT:', e);
+    }
+
     loadAllData();
 }
 
@@ -1926,7 +1955,7 @@ const panelTitles= {
     'overview': 'Dashboard', 'curva-abc':'Curva ABC Cruzada',
         'ponto-pedido':'Ponto de Pedido', 'estoque-seguranca':'Estoque de Segurança',
         'ppr':'PPR · Performance de Vendas', 'forecast':'Forecast 12 Meses',
-        'semana':'Lista Semanal de Pedidos'
+        'semana':'Lista Semanal de Pedidos', 'admin-usuarios':'Gerenciar Usuários'
 }
 
 ;
@@ -2063,4 +2092,107 @@ function showToast(msg, type='info') {
         , 3500);
 }
 
-</script></body></html>
+// Load admin panel functions
+const adminScript = document.createElement('script');
+adminScript.src = 'admin-panel.js';
+document.head.appendChild(adminScript);
+</script>
+
+<!-- ADMIN PANEL - Inserted by admin integration -->
+<div class="panel" id="panel-admin-usuarios" style="display:none">
+    <div class="section-header">
+        <div class="section-title">Gerenciar Usuários</div>
+        <div class="section-actions">
+            <button class="btn-primary" onclick="openCreateUsuario()">+ Novo Usuário</button>
+        </div>
+    </div>
+    <div class="table-card">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Usuário</th>
+                        <th>Perfil</th>
+                        <th>Status</th>
+                        <th>Data Criação</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-usuarios-tbody">
+                    <tr class="loading-row"><td colspan="6"><div class="loading-skeleton" style="width:100%"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Admin User Modal -->
+<div id="admin-modal">
+    <div class="admin-modal-content">
+        <h2 id="admin-form-title">Novo Usuário</h2>
+        <form onsubmit="event.preventDefault(); submitAdminForm();">
+            <div class="admin-form-group">
+                <label>Nome Completo *</label>
+                <input type="text" id="admin-form-nome" required>
+            </div>
+            <div class="admin-form-group">
+                <label>Usuário (login) *</label>
+                <input type="text" id="admin-form-usuario" required>
+            </div>
+            <div class="admin-form-group" id="admin-form-senha-row" style="display:none">
+                <label>Senha (min. 8 caracteres) *</label>
+                <input type="password" id="admin-form-password">
+            </div>
+            <div class="admin-form-group" id="admin-form-senha-confirm-row" style="display:none">
+                <label>Confirmar Senha *</label>
+                <input type="password" id="admin-form-password-confirm">
+            </div>
+            <div class="admin-form-group">
+                <label>Perfil *</label>
+                <select id="admin-form-perfil" required>
+                    <option value="gestor">Gestor</option>
+                    <option value="admin">Administrador</option>
+                    <option value="have">Have</option>
+                </select>
+            </div>
+            <div class="admin-form-group">
+                <label>Empresa *</label>
+                <select id="admin-form-empresa" required>
+                    <option value="lanzi">Lanzi</option>
+                </select>
+            </div>
+            <div class="admin-form-group" id="admin-form-ativo-row" style="display:none">
+                <label>
+                    <input type="checkbox" id="admin-form-ativo" checked> Ativo
+                </label>
+            </div>
+            <div class="admin-modal-actions">
+                <button type="submit" class="btn-submit">Salvar</button>
+                <button type="button" class="btn-cancel" onclick="closeAdminModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- CSS for admin panel (injected by admin-panel.js) -->
+
+<style>
+.btn-primary {
+    padding: 10px 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: #3d68ff;
+    transform: translateY(-1px);
+}
+</style>
+
+</body></html>

@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "functions": {
+    "api/login.js": { "maxDuration": 10 },
+    "api/data.js":  { "maxDuration": 30 }
+  }
+}
