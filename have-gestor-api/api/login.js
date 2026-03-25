@@ -1,80 +1,107 @@
-const companies = require('../lib/companies');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const auth = require('../lib/auth');
-const db = require('../lib/db');
+const companies = require('../lib/companies');
+
+// Cache simple de pools
+const pools = {};
+function getPool(companySlug) {
+  const company = companySlug.toLowerCase();
+  if (pools[company]) return pools[company];
+
+  const key = (companies[company] && companies[company].dbEnvKey) || 'LANZI';
+  
+  pools[company] = new Pool({
+    host:     process.env[`${key}_HOST`],
+    port:     parseInt(process.env[`${key}_PORT`] || '5432'),
+    database: process.env[`${key}_DB`],
+    user:     process.env[`${key}_USER`],
+    password: process.env[`${key}_PASSWORD`],
+    ssl:      { rejectUnauthorized: false },
+    max:      2,
+  });
+  return pools[company];
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
-  const { company, user, password } = req.body || {};
+  let body = req.body || {};
+  if (typeof body === 'string') {
+     try { body = JSON.parse(body); } catch(e) {}
+  }
 
-  if (!company || !user || !password)
-    return res.status(400).json({ error: 'Campos obrigatórios: company, user, password' });
+  const { email, password, company = 'lanzi' } = body;
+  const usuarioInput = (email || '').toLowerCase().trim();
 
-  const co = companies[company];
-  if (!co)
-    return res.status(401).json({ error: 'Empresa não encontrada' });
+  if (!usuarioInput || !password) {
+    return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+  }
 
   try {
-    // Try to authenticate from database first
-    const pool = db.getPool(company);
-    const dbUser = await auth.validateUserInDB(pool, company, user, password);
+    // 1. TENTATIVA VIA BANCO DE DADOS
+    const pool = getPool(company);
+    const result = await pool.query('SELECT * FROM usuarios WHERE usuario = $1 AND ativo = TRUE', [usuarioInput]);
+    const dbUser = result.rows[0];
 
     if (dbUser) {
-      // User found in database and password matches
-      const token = jwt.sign(
-        { company, user: dbUser.usuario, perfil: dbUser.perfil, companyName: co.name },
-        process.env.JWT_SECRET,
-        { expiresIn: '8h' }
-      );
-
-      console.log(`[LOGIN] User '${user}' authenticated from database for company '${company}'`);
-      return res.json({ token, companyName: co.name, user: dbUser.usuario, perfil: dbUser.perfil });
+      const isPasswordValid = await bcrypt.compare(password, dbUser.senha_hash);
+      if (isPasswordValid) {
+        const token = jwt.sign(
+          { userId: dbUser.id, email: dbUser.email, user: dbUser.usuario, role: dbUser.perfil, company: company },
+          process.env.JWT_SECRET,
+          { expiresIn: '8h' }
+        );
+        return res.status(200).json({ 
+          token, 
+          userName: dbUser.nome, 
+          user: dbUser.usuario, 
+          userRole: dbUser.perfil, 
+          companyName: company.charAt(0).toUpperCase() + company.slice(1) 
+        });
+      }
     }
 
-    // Fall back to environment variables (backward compatibility)
-    // Only try this if database lookup failed
-    if (co.users[user] && co.users[user] === password) {
-      // Determine perfil from env var key (default to 'gestor')
-      let perfil = 'gestor';
-      if (user === 'admin') perfil = 'admin';
-      else if (user === 'have') perfil = 'have';
-
-      const token = jwt.sign(
-        { company, user, perfil, companyName: co.name },
-        process.env.JWT_SECRET,
-        { expiresIn: '8h' }
-      );
-
-      console.log(`[LOGIN] User '${user}' authenticated from env vars for company '${company}' (fallback)`);
-      return res.json({ token, companyName: co.name, user, perfil });
+    // 2. FALLBACK VIA VARIÁVEIS DE AMBIENTE (Configuradas no Vercel)
+    const companyConfig = companies[company];
+    if (companyConfig && companyConfig.users) {
+      // O campo email pode ser 'admin', 'gestor' ou 'have'
+      const envPassword = companyConfig.users[usuarioInput];
+      
+      if (envPassword && password === envPassword) {
+        const role = usuarioInput; // admin, gestor ou have
+        const token = jwt.sign(
+          { userId: 0, email: `${usuarioInput}@have.com.br`, user: usuarioInput, role: role, company: company },
+          process.env.JWT_SECRET,
+          { expiresIn: '8h' }
+        );
+        return res.status(200).json({ 
+          token, 
+          userName: usuarioInput.charAt(0).toUpperCase() + usuarioInput.slice(1), 
+          user: usuarioInput, 
+          userRole: role, 
+          companyName: companyConfig.name 
+        });
+      }
     }
 
-    // Neither database nor env vars worked
-    console.warn(`[LOGIN] Failed login attempt for user '${user}' at company '${company}'`);
-    return res.status(401).json({ error: 'Usuário ou senha incorretos' });
-  } catch (e) {
-    console.error('[LOGIN] Authentication error:', e.message);
-    // On error, still allow fallback to env vars
-    if (co.users[user] && co.users[user] === password) {
-      let perfil = 'gestor';
-      if (user === 'admin') perfil = 'admin';
-      else if (user === 'have') perfil = 'have';
+    // Se chegou aqui, nada funcionou
+    return res.status(401).json({ error: 'Credenciais inválidas' });
 
-      const token = jwt.sign(
-        { company, user, perfil, companyName: co.name },
-        process.env.JWT_SECRET,
-        { expiresIn: '8h' }
-      );
-
-      return res.json({ token, companyName: co.name, user, perfil });
+  } catch (error) {
+    console.error('Erro no login:', error);
+    // Mesmo com erro no banco, tenta o fallback antes de desistir
+    const companyConfig = companies[company];
+    if (companyConfig && companyConfig.users[usuarioInput] === password) {
+       const role = usuarioInput;
+       const token = jwt.sign({ userId: 0, user: usuarioInput, role, company }, process.env.JWT_SECRET, { expiresIn: '8h' });
+       return res.status(200).json({ token, userName: usuarioInput, user: usuarioInput, userRole: role, companyName: companyConfig.name });
     }
-
-    return res.status(500).json({ error: 'Erro ao autenticar. Tente novamente.' });
+    res.status(500).json({ error: 'Erro interno no servidor de autenticação' });
   }
 };

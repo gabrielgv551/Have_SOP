@@ -1,14 +1,20 @@
 import pandas as pd
 from sqlalchemy import create_engine
+import sys
+import os
 
-arquivo = r"C:\Users\HAVE\Desktop\Arquivos\Have I\Lanzi\ETL Lanzi.xlsx"
+# Se um caminho for passado como argumento, use-o. Senão, use o padrão.
+if len(sys.argv) > 1:
+    arquivo = sys.argv[1]
+else:
+    arquivo = r"C:\Users\HAVE\Desktop\Arquivos\Have I\Lanzi\ETL Lanzi.xlsx"
 
-DB_CONFIG = {
-    "host"    : "37.60.236.200",
-    "port"    : 5432,
-    "database": "Lanzi",
-    "user"    : "postgres",
-    "password": "131105Gv",
+DB_CONFIG = { # Recomenda-se usar variáveis de ambiente aqui também
+    "host"    : os.getenv("LANZI_HOST", "37.60.236.200"),
+    "port"    : os.getenv("LANZI_PORT", 5432),
+    "database": os.getenv("LANZI_DB", "Lanzi"),
+    "user"    : os.getenv("LANZI_USER", "postgres"),
+    "password": os.getenv("LANZI_PASSWORD"), # A senha deve vir do ambiente
 }
 
 engine = create_engine(

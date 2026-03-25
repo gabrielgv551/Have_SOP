@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vercel deploy:*)",
+      "Bash(ADMIN_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55IjoibGFuemkiLCJ1c2VyIjoiYWRtaW4iLCJwZXJmaWwiOiJhZG1pbiIsImNvbXBhbnlOYW1lIjoiTGFuemkiLCJpYXQiOjE3NzQ0MDQ4OTcsImV4cCI6MTc3NDQzMzY5N30.LzfE2VuxCK6dpi9O25H2LW9FKajoeTgYciCWgLN2O2M\" __NEW_LINE_dbed4836480da44a__ echo \"=== Test 1: List users ===\" curl -s -X GET https://have-gestor-api.vercel.app/api/admin/usuarios -H \"Authorization: Bearer $ADMIN_TOKEN\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(cd \"/c/Users/HAVE/Desktop/Arquivos/Have I/have-gestor-api\" ls -la)",
+      "Bash(cd:*)",
+      "Bash(grep -n \"getElementById\\(\\\\`\" \"/c/Users/HAVE/Desktop\\\\Arquivos\\\\Have I\\\\Gestor Have\\\\index.html\")"
+    ]
+  }
+}
