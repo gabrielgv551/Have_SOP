@@ -2049,43 +2049,69 @@
                     <div class="section-header">
                         <div class="section-title">DFS · Base de dados</div>
                         <div class="section-actions">
+                            <button class="refresh-btn" onclick="downloadDfsTemplate()">📄 Baixar modelo</button>
+                        </div>
+                    </div>
+                    <p class="dfs-intro">Envie o balanço mês a mês. Selecione o período, importe a planilha e os dados serão salvos no banco de dados.
+                        Colunas esperadas: <code>Conta</code> · <code>Nome</code> · <code>Saldo anterior</code> · <code>Débito</code> · <code>Crédito</code> · <code>Saldo Atual</code></p>
+
+                    <!-- Upload Section -->
+                    <div class="table-card" style="padding:20px; margin-bottom:16px;">
+                        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label style="font-size:13px; font-weight:600;">Mês/Ano:</label>
+                                <select id="dfs-upload-mes" style="padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px;">
+                                    <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                                    <option value="3">Março</option><option value="4">Abril</option>
+                                    <option value="5">Maio</option><option value="6">Junho</option>
+                                    <option value="7">Julho</option><option value="8">Agosto</option>
+                                    <option value="9">Setembro</option><option value="10">Outubro</option>
+                                    <option value="11">Novembro</option><option value="12">Dezembro</option>
+                                </select>
+                                <select id="dfs-upload-ano" style="padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select>
+                            </div>
                             <input type="file" id="dfs-file-input" accept=".xlsx,.xls,.csv" style="display:none"
                                 onchange="handleDfsBaseUpload(this.files)">
-                            <button class="refresh-btn" onclick="document.getElementById('dfs-file-input').click();">⬆ Importar planilha</button>
-                            <button class="refresh-btn" onclick="downloadDfsBase('csv')">⬇ Baixar CSV</button>
-                            <button class="refresh-btn" onclick="downloadDfsBase('xlsx')">⬇ Baixar Excel</button>
+                            <button class="btn-primary" onclick="document.getElementById('dfs-file-input').click();" style="font-size:13px;">⬆ Enviar planilha deste mês</button>
                         </div>
-                    </div>
-                    <p class="dfs-intro">Balanço consolidado — importe a planilha-base ou visualize os dados carregados.
-                        Colunas: <code>Conta</code> · <code>Nome</code> · <code>Saldo anterior</code> · <code>Débito</code> · <code>Crédito</code> · <code>Saldo Atual</code></p>
-
-                    <!-- Dropzone (shown when no data) -->
-                    <div class="table-card" id="dfs-base-dropzone-card" style="padding:20px">
-                        <div class="dfs-dropzone" id="dfs-dropzone" onclick="document.getElementById('dfs-file-input').click()"
+                        <div class="dfs-dropzone" id="dfs-dropzone"
+                            onclick="document.getElementById('dfs-file-input').click()"
                             ondragover="event.preventDefault(); this.classList.add('dfs-dragover');"
                             ondragleave="this.classList.remove('dfs-dragover');"
-                            ondrop="event.preventDefault(); this.classList.remove('dfs-dragover'); handleDfsBaseUpload(event.dataTransfer.files);">
+                            ondrop="event.preventDefault(); this.classList.remove('dfs-dragover'); handleDfsBaseUpload(event.dataTransfer.files);"
+                            style="padding:24px;">
                             <div class="dfs-dropzone-icon">⬆</div>
-                            <div class="dfs-dropzone-title">Arraste o arquivo ou clique para selecionar</div>
-                            <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong>, <strong>.xls</strong> ou
-                                <strong>.csv</strong> com as colunas: Conta, Nome, Saldo anterior, Débito, Crédito, Saldo Atual</div>
-                            <button type="button" class="refresh-btn" onclick="event.stopPropagation(); document.getElementById('dfs-file-input').click();">Escolher arquivo</button>
+                            <div class="dfs-dropzone-title">Arraste o arquivo aqui ou clique para selecionar</div>
+                            <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong>, <strong>.xls</strong> ou <strong>.csv</strong></div>
                         </div>
                     </div>
 
-                    <!-- Data table (shown when data is loaded) -->
-                    <div class="table-card" id="dfs-base-table-card" style="display:none">
+                    <!-- Months Summary -->
+                    <div class="table-card">
+                        <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+                            <span style="font-size:14px; font-weight:600;">Meses enviados</span>
+                            <button class="refresh-btn" onclick="loadDfsMeses()" style="font-size:12px;">↻ Atualizar</button>
+                        </div>
+                        <div id="dfs-meses-list" style="padding:12px 16px;">
+                            <div style="text-align:center; padding:30px; color:var(--muted); font-size:13px;">Carregando...</div>
+                        </div>
+                    </div>
+
+                    <!-- Detail table (shown when clicking a month) -->
+                    <div class="table-card" id="dfs-base-table-card" style="display:none; margin-top:16px;">
                         <div style="padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border);">
                             <div style="display:flex; align-items:center; gap:12px;">
-                                <span style="font-size:13px; font-weight:600;" id="dfs-base-file-name">—</span>
+                                <span style="font-size:14px; font-weight:600;" id="dfs-base-detail-title">—</span>
                                 <span style="font-size:11px; color:var(--muted);" id="dfs-base-row-count">0 linhas</span>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center;">
-                                <input type="text" class="search-input" id="dfs-base-search" placeholder="Buscar conta ou nome..." oninput="filterDfsBaseTable()">
-                                <button class="refresh-btn" onclick="clearDfsBase()" style="color:var(--red); border-color:rgba(220,38,38,0.3);">✕ Limpar</button>
+                                <input type="text" class="search-input" id="dfs-base-search" placeholder="Buscar conta ou nome..." oninput="filterDfsBaseTable()" style="font-size:12px; padding:5px 10px;">
+                                <button class="refresh-btn" onclick="downloadDfsMonth('csv')" style="font-size:12px;">⬇ CSV</button>
+                                <button class="refresh-btn" onclick="downloadDfsMonth('xlsx')" style="font-size:12px;">⬇ Excel</button>
+                                <button class="refresh-btn" onclick="closeDfsDetail()" style="font-size:12px;">✕ Fechar</button>
                             </div>
                         </div>
-                        <div class="table-scroll" style="max-height:600px; overflow-y:auto;">
+                        <div class="table-scroll" style="max-height:500px; overflow-y:auto;">
                             <table id="dfs-base-table">
                                 <thead>
                                     <tr>
@@ -2722,6 +2748,7 @@
                     loadPPR(),
                     loadForecast(),
                     loadSemana()]);
+                    loadDfsMeses();
                     setDbStatus('Online', true);
                     showToast('Dados carregados com sucesso', 'success');
                     // Inicializa ordenação de tabelas após carregar todos os dados
@@ -3173,15 +3200,33 @@
             }
 
             // ══════════════════════════════════════════════
-            // DFS BASE DE DADOS
+            // DFS BASE DE DADOS (mês a mês → banco de dados)
             // ══════════════════════════════════════════════
-            let dfsBaseData = [];        // parsed rows: [{conta, nome, saldo_anterior, debito, credito, saldo_atual}]
-            let dfsBaseFiltered = [];    // after search filter
+            const DFS_MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+            let dfsBaseData = [];
+            let dfsBaseFiltered = [];
             let dfsBaseSortCol = null;
             let dfsBaseSortAsc = true;
-            let dfsBaseFileName = '';
+            let dfsDetailAno = null;
+            let dfsDetailMes = null;
 
-            // Load SheetJS (XLSX) library on demand
+            // Populate year selector
+            function initDfsYearSelect() {
+                const sel = document.getElementById('dfs-upload-ano');
+                if (!sel) return;
+                const y = new Date().getFullYear();
+                for (let i = y; i >= y - 5; i--) {
+                    const opt = document.createElement('option');
+                    opt.value = i; opt.textContent = i;
+                    sel.appendChild(opt);
+                }
+                // Set current month
+                const mSel = document.getElementById('dfs-upload-mes');
+                if (mSel) mSel.value = new Date().getMonth() + 1;
+            }
+            initDfsYearSelect();
+
+            // Load SheetJS on demand
             let sheetJSLoaded = false;
             function loadSheetJS() {
                 return new Promise((resolve, reject) => {
@@ -3194,7 +3239,6 @@
                 });
             }
 
-            // Normalize column name to match expected fields
             function normalizeDfsCol(col) {
                 const c = (col || '').toString().toLowerCase().trim()
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -3208,10 +3252,41 @@
                 return c;
             }
 
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Download empty template
+            async function downloadDfsTemplate() {
+                try {
+                    await loadSheetJS();
+                    const sample = [
+                        { 'Conta': '1.01', 'Nome': 'Caixa e equivalentes', 'Saldo Anterior': 0, 'Débito': 0, 'Crédito': 0, 'Saldo Atual': 0 },
+                        { 'Conta': '1.02', 'Nome': 'Contas a receber', 'Saldo Anterior': 0, 'Débito': 0, 'Crédito': 0, 'Saldo Atual': 0 },
+                        { 'Conta': '2.01', 'Nome': 'Fornecedores', 'Saldo Anterior': 0, 'Débito': 0, 'Crédito': 0, 'Saldo Atual': 0 },
+                    ];
+                    const ws = XLSX.utils.json_to_sheet(sample);
+                    ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Modelo');
+                    XLSX.writeFile(wb, 'modelo_balanco_dfs.xlsx');
+                    showToast('Modelo baixado com sucesso', 'success');
+                } catch (e) {
+                    showToast('Erro ao gerar modelo: ' + e.message, 'error');
+                }
+            }
+
+            // Upload file for selected month → parse + send to API
             async function handleDfsBaseUpload(fileList) {
                 if (!fileList || !fileList.length) return;
                 const file = fileList[0];
-                dfsBaseFileName = file.name;
+                const mes = parseInt(document.getElementById('dfs-upload-mes').value);
+                const ano = parseInt(document.getElementById('dfs-upload-ano').value);
 
                 try {
                     await loadSheetJS();
@@ -3219,27 +3294,22 @@
 
                     const data = await file.arrayBuffer();
                     const wb = XLSX.read(data, { type: 'array' });
-                    const sheetName = wb.SheetNames[0];
-                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+                    const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
 
-                    if (!rows.length) {
-                        showToast('Arquivo vazio ou sem dados', 'error');
-                        return;
-                    }
+                    if (!rawRows.length) { showToast('Arquivo vazio', 'error'); return; }
 
-                    // Map columns
-                    const origCols = Object.keys(rows[0]);
+                    const origCols = Object.keys(rawRows[0]);
                     const colMap = {};
                     origCols.forEach(oc => { colMap[normalizeDfsCol(oc)] = oc; });
 
                     const required = ['conta', 'nome', 'saldo_anterior', 'debito', 'credito', 'saldo_atual'];
                     const missing = required.filter(r => !colMap[r]);
                     if (missing.length) {
-                        showToast('Colunas não encontradas: ' + missing.join(', '), 'error');
+                        showToast('Colunas nao encontradas: ' + missing.join(', ') + '. Baixe o modelo para referencia.', 'error');
                         return;
                     }
 
-                    dfsBaseData = rows.map(r => ({
+                    const rows = rawRows.map(r => ({
                         conta: String(r[colMap['conta']] || ''),
                         nome: String(r[colMap['nome']] || ''),
                         saldo_anterior: parseFloat(String(r[colMap['saldo_anterior']]).replace(/\./g, '').replace(',', '.')) || 0,
@@ -3248,167 +3318,191 @@
                         saldo_atual: parseFloat(String(r[colMap['saldo_atual']]).replace(/\./g, '').replace(',', '.')) || 0,
                     }));
 
-                    // Save to localStorage for persistence
-                    try {
-                        localStorage.setItem('have_dfs_base', JSON.stringify({ name: dfsBaseFileName, data: dfsBaseData, at: new Date().toISOString() }));
-                    } catch (e) { /* storage full, ignore */ }
-
-                    dfsBaseFiltered = [...dfsBaseData];
-                    renderDfsBaseTable();
-                    showDfsBaseTable(true);
-                    showToast(dfsBaseData.length + ' linhas importadas de ' + file.name, 'success');
+                    // Send to API
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(API_BASE + '/dfs-base', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ ano, mes, rows })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || 'HTTP ' + res.status);
+                    }
+                    const result = await res.json();
+                    showToast(result.count + ' contas salvas para ' + DFS_MESES_NOMES[mes] + '/' + ano, 'success');
+                    loadDfsMeses();
                 } catch (e) {
-                    console.error('DFS Base upload error:', e);
-                    showToast('Erro ao processar arquivo: ' + e.message, 'error');
+                    console.error('DFS upload error:', e);
+                    showToast('Erro: ' + e.message, 'error');
                 }
-                // Reset file input
                 document.getElementById('dfs-file-input').value = '';
             }
 
-            function showDfsBaseTable(show) {
-                document.getElementById('dfs-base-dropzone-card').style.display = show ? 'none' : 'block';
-                document.getElementById('dfs-base-table-card').style.display = show ? 'block' : 'none';
+            // Load months summary from API
+            async function loadDfsMeses() {
+                const el = document.getElementById('dfs-meses-list');
+                if (!el) return;
+                const token = localStorage.getItem('have_token');
+                if (!token) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Faça login primeiro</div>'; return; }
+
+                try {
+                    const res = await fetch(API_BASE + '/dfs-base', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+
+                    if (!data.meses || !data.meses.length) {
+                        el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px;">Nenhum mês enviado ainda. Selecione o período acima e envie a planilha.</div>';
+                        return;
+                    }
+
+                    el.innerHTML = '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px;">' +
+                        data.meses.map(m => {
+                            const dt = m.ultima_atualizacao ? new Date(m.ultima_atualizacao).toLocaleString('pt-BR') : '—';
+                            return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;background:var(--bg);" ' +
+                                'onmouseover="this.style.borderColor=\'var(--accent)\';this.style.boxShadow=\'0 2px 8px rgba(0,124,220,0.1)\'" ' +
+                                'onmouseout="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'" ' +
+                                'onclick="viewDfsMonth(' + m.ano + ',' + m.mes + ')">' +
+                                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                                '<span style="font-weight:700;font-size:15px;color:var(--accent);">' + DFS_MESES_NOMES[m.mes] + ' / ' + m.ano + '</span>' +
+                                '<span style="font-size:11px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:20px;">' + m.total_contas + ' contas</span>' +
+                                '</div>' +
+                                '<div style="font-size:12px;color:var(--muted);display:flex;gap:12px;">' +
+                                '<span>Deb: <strong>' + fmtBR(m.total_debito) + '</strong></span>' +
+                                '<span>Cred: <strong>' + fmtBR(m.total_credito) + '</strong></span>' +
+                                '</div>' +
+                                '<div style="font-size:11px;color:var(--muted);margin-top:6px;">Atualizado: ' + dt + '</div>' +
+                                '<div style="display:flex;gap:6px;margin-top:8px;">' +
+                                '<button class="refresh-btn" onclick="event.stopPropagation();deleteDfsMonth(' + m.ano + ',' + m.mes + ')" style="font-size:11px;color:var(--red);border-color:rgba(220,38,38,0.3);">Excluir</button>' +
+                                '</div></div>';
+                        }).join('') + '</div>';
+                } catch (e) {
+                    console.error('loadDfsMeses error:', e);
+                    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar: ' + esc(e.message) + '</div>';
+                }
             }
 
+            // View detail of a specific month
+            async function viewDfsMonth(ano, mes) {
+                dfsDetailAno = ano;
+                dfsDetailMes = mes;
+                const token = localStorage.getItem('have_token');
+                try {
+                    showToast('Carregando ' + DFS_MESES_NOMES[mes] + '/' + ano + '...', 'info');
+                    const res = await fetch(API_BASE + '/dfs-base?ano=' + ano + '&mes=' + mes, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+                    dfsBaseData = (data.rows || []).map(r => ({
+                        conta: r.conta, nome: r.nome,
+                        saldo_anterior: parseFloat(r.saldo_anterior) || 0,
+                        debito: parseFloat(r.debito) || 0,
+                        credito: parseFloat(r.credito) || 0,
+                        saldo_atual: parseFloat(r.saldo_atual) || 0,
+                    }));
+                    dfsBaseFiltered = [...dfsBaseData];
+                    dfsBaseSortCol = null;
+                    document.getElementById('dfs-base-search').value = '';
+                    document.getElementById('dfs-base-detail-title').textContent = DFS_MESES_NOMES[mes] + ' / ' + ano;
+                    renderDfsBaseTable();
+                    document.getElementById('dfs-base-table-card').style.display = 'block';
+                    document.getElementById('dfs-base-table-card').scrollIntoView({ behavior: 'smooth' });
+                } catch (e) {
+                    showToast('Erro ao carregar mes: ' + e.message, 'error');
+                }
+            }
+
+            function closeDfsDetail() {
+                document.getElementById('dfs-base-table-card').style.display = 'none';
+                dfsBaseData = []; dfsBaseFiltered = [];
+            }
+
+            // Delete a month
+            async function deleteDfsMonth(ano, mes) {
+                if (!confirm('Excluir dados de ' + DFS_MESES_NOMES[mes] + '/' + ano + '?')) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(API_BASE + '/dfs-base?ano=' + ano + '&mes=' + mes, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    showToast(DFS_MESES_NOMES[mes] + '/' + ano + ' excluido', 'success');
+                    closeDfsDetail();
+                    loadDfsMeses();
+                } catch (e) {
+                    showToast('Erro ao excluir: ' + e.message, 'error');
+                }
+            }
+
+            // Download current month detail
+            async function downloadDfsMonth(format) {
+                if (!dfsBaseData.length) { showToast('Nenhum dado para exportar', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const exportData = dfsBaseData.map(r => ({
+                        'Conta': r.conta, 'Nome': r.nome,
+                        'Saldo Anterior': r.saldo_anterior, 'Débito': r.debito,
+                        'Crédito': r.credito, 'Saldo Atual': r.saldo_atual,
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+                    const fname = 'balanco_' + (dfsDetailMes||0) + '_' + (dfsDetailAno||0);
+                    if (format === 'csv') {
+                        const csv = XLSX.utils.sheet_to_csv(ws, { FS: ';' });
+                        downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }), fname + '.csv');
+                    } else {
+                        const wb2 = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb2, ws, 'Balanco');
+                        XLSX.writeFile(wb2, fname + '.xlsx');
+                    }
+                    showToast('Download iniciado', 'success');
+                } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // Table rendering, filter, sort
             function renderDfsBaseTable() {
                 const tbody = document.getElementById('dfs-base-tbody');
                 if (!tbody) return;
-
-                document.getElementById('dfs-base-file-name').textContent = dfsBaseFileName || '—';
                 document.getElementById('dfs-base-row-count').textContent = dfsBaseFiltered.length + ' de ' + dfsBaseData.length + ' linhas';
-
                 if (!dfsBaseFiltered.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">Nenhum registro encontrado</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">Nenhum registro</td></tr>';
                     return;
                 }
-
-                tbody.innerHTML = dfsBaseFiltered.map(r => `<tr>
-                    <td><span class="sku-code">${esc(r.conta)}</span></td>
-                    <td>${esc(r.nome)}</td>
-                    <td class="dfs-num">${fmtBR(r.saldo_anterior)}</td>
-                    <td class="dfs-num">${fmtBR(r.debito)}</td>
-                    <td class="dfs-num">${fmtBR(r.credito)}</td>
-                    <td class="dfs-num" style="font-weight:600;">${fmtBR(r.saldo_atual)}</td>
-                </tr>`).join('');
-
-                // Update sort indicators
-                document.querySelectorAll('#dfs-base-table thead th').forEach(th => {
-                    th.classList.remove('sort-asc', 'sort-desc');
-                });
-                if (dfsBaseSortCol) {
-                    const idx = ['conta', 'nome', 'saldo_anterior', 'debito', 'credito', 'saldo_atual'].indexOf(dfsBaseSortCol);
-                    if (idx >= 0) {
-                        const th = document.querySelectorAll('#dfs-base-table thead th')[idx];
-                        if (th) th.classList.add(dfsBaseSortAsc ? 'sort-asc' : 'sort-desc');
-                    }
-                }
+                tbody.innerHTML = dfsBaseFiltered.map(r => '<tr>' +
+                    '<td><span class="sku-code">' + esc(r.conta) + '</span></td>' +
+                    '<td>' + esc(r.nome) + '</td>' +
+                    '<td class="dfs-num">' + fmtBR(r.saldo_anterior) + '</td>' +
+                    '<td class="dfs-num">' + fmtBR(r.debito) + '</td>' +
+                    '<td class="dfs-num">' + fmtBR(r.credito) + '</td>' +
+                    '<td class="dfs-num" style="font-weight:600;">' + fmtBR(r.saldo_atual) + '</td></tr>'
+                ).join('');
             }
 
             function filterDfsBaseTable() {
                 const q = (document.getElementById('dfs-base-search').value || '').toLowerCase().trim();
-                dfsBaseFiltered = q
-                    ? dfsBaseData.filter(r => r.conta.toLowerCase().includes(q) || r.nome.toLowerCase().includes(q))
-                    : [...dfsBaseData];
+                dfsBaseFiltered = q ? dfsBaseData.filter(r => r.conta.toLowerCase().includes(q) || r.nome.toLowerCase().includes(q)) : [...dfsBaseData];
                 if (dfsBaseSortCol) applySortDfsBase();
                 else renderDfsBaseTable();
             }
 
             function sortDfsBase(col) {
-                if (dfsBaseSortCol === col) {
-                    dfsBaseSortAsc = !dfsBaseSortAsc;
-                } else {
-                    dfsBaseSortCol = col;
-                    dfsBaseSortAsc = true;
-                }
+                if (dfsBaseSortCol === col) dfsBaseSortAsc = !dfsBaseSortAsc;
+                else { dfsBaseSortCol = col; dfsBaseSortAsc = true; }
                 applySortDfsBase();
             }
 
             function applySortDfsBase() {
-                const col = dfsBaseSortCol;
-                const asc = dfsBaseSortAsc;
                 dfsBaseFiltered.sort((a, b) => {
-                    let va = a[col], vb = b[col];
-                    if (typeof va === 'string') {
-                        return asc ? va.localeCompare(vb, 'pt-BR') : vb.localeCompare(va, 'pt-BR');
-                    }
-                    return asc ? va - vb : vb - va;
+                    let va = a[dfsBaseSortCol], vb = b[dfsBaseSortCol];
+                    if (typeof va === 'string') return dfsBaseSortAsc ? va.localeCompare(vb, 'pt-BR') : vb.localeCompare(va, 'pt-BR');
+                    return dfsBaseSortAsc ? va - vb : vb - va;
                 });
                 renderDfsBaseTable();
             }
-
-            function clearDfsBase() {
-                dfsBaseData = [];
-                dfsBaseFiltered = [];
-                dfsBaseFileName = '';
-                dfsBaseSortCol = null;
-                localStorage.removeItem('have_dfs_base');
-                document.getElementById('dfs-base-search').value = '';
-                showDfsBaseTable(false);
-                showToast('Dados limpos', 'info');
-            }
-
-            async function downloadDfsBase(format) {
-                if (!dfsBaseData.length) {
-                    showToast('Nenhum dado para exportar. Importe uma planilha primeiro.', 'error');
-                    return;
-                }
-
-                try {
-                    await loadSheetJS();
-                    const exportData = dfsBaseData.map(r => ({
-                        'Conta': r.conta,
-                        'Nome': r.nome,
-                        'Saldo Anterior': r.saldo_anterior,
-                        'Débito': r.debito,
-                        'Crédito': r.credito,
-                        'Saldo Atual': r.saldo_atual,
-                    }));
-
-                    const ws = XLSX.utils.json_to_sheet(exportData);
-                    // Set column widths
-                    ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
-
-                    if (format === 'csv') {
-                        const csv = XLSX.utils.sheet_to_csv(ws, { FS: ';' });
-                        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                        downloadBlob(blob, 'balanco_base.csv');
-                    } else {
-                        const wb = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(wb, ws, 'Balanço');
-                        XLSX.writeFile(wb, 'balanco_base.xlsx');
-                    }
-                    showToast('Download iniciado', 'success');
-                } catch (e) {
-                    console.error('Download error:', e);
-                    showToast('Erro ao gerar arquivo: ' + e.message, 'error');
-                }
-            }
-
-            function downloadBlob(blob, filename) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            // Restore DFS base data from localStorage on load
-            function restoreDfsBase() {
-                try {
-                    const saved = JSON.parse(localStorage.getItem('have_dfs_base') || 'null');
-                    if (saved && saved.data && saved.data.length) {
-                        dfsBaseData = saved.data;
-                        dfsBaseFiltered = [...dfsBaseData];
-                        dfsBaseFileName = saved.name || 'Arquivo anterior';
-                        renderDfsBaseTable();
-                        showDfsBaseTable(true);
-                    }
-                } catch (e) { /* ignore */ }
-            }
-            restoreDfsBase();
 
             function fmtN(v) {
                 const n = parseFloat(v);
