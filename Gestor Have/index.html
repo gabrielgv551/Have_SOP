@@ -10,19 +10,19 @@
             rel="stylesheet">
         <style>
             :root {
-                --bg: #0a0a0f;
-                --surface: #111118;
-                --surface2: #1a1a24;
-                --border: rgba(255, 255, 255, 0.07);
-                --text: #f0f0f5;
-                --muted: #6b6b80;
-                --accent: #4f7fff;
-                --accent2: #7c5cff;
+                --bg: #ffffff;
+                --surface: #f4f7f9;
+                --surface2: #ffffff;
+                --border: rgba(50, 48, 49, 0.12);
+                --text: #323031;
+                --muted: rgba(50, 48, 49, 0.7);
+                --accent: #007cdc;
+                --accent2: #3aa0ff;
                 --green: #2dd4a0;
-                --red: #ff5a5a;
+                --red: #dc3545;
                 --orange: #ff9f43;
                 --yellow: #ffd43b;
-                --glow: rgba(79, 127, 255, 0.15);
+                --glow: rgba(0, 124, 220, 0.16);
             }
 
             * {
@@ -73,8 +73,8 @@
                 position: absolute;
                 inset: 0;
                 z-index: 0;
-                background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(79, 127, 255, 0.12) 0%, transparent 70%),
-                    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(124, 92, 255, 0.08) 0%, transparent 60%);
+                background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 124, 220, 0.14) 0%, transparent 70%),
+                    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(58, 160, 255, 0.12) 0%, transparent 60%);
             }
 
             .login-bg::before {
@@ -92,12 +92,12 @@
                 width: 100%;
                 max-width: 440px;
                 margin: 24px;
-                background: rgba(17, 17, 24, 0.85);
-                backdrop-filter: blur(20px);
+                background: rgba(255, 255, 255, 0.92);
+                backdrop-filter: blur(16px);
                 border: 1px solid var(--border);
                 border-radius: 24px;
                 padding: 48px 40px;
-                box-shadow: 0 0 80px rgba(79, 127, 255, 0.08), 0 32px 64px rgba(0, 0, 0, 0.5);
+                box-shadow: 0 0 80px rgba(0, 124, 220, 0.08), 0 24px 48px rgba(50, 48, 49, 0.12);
                 animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
             }
 
@@ -120,6 +120,23 @@
                 margin-bottom: 40px;
             }
 
+            .brand-logo {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .brand-logo svg {
+                display: block;
+                height: 44px;
+                width: auto;
+            }
+
+            .sidebar-header .brand-logo svg {
+                height: 36px;
+            }
+
             .login-logo-icon {
                 width: 44px;
                 height: 44px;
@@ -132,7 +149,7 @@
                 font-weight: 800;
                 font-size: 20px;
                 color: #fff;
-                box-shadow: 0 0 20px rgba(79, 127, 255, 0.4);
+                box-shadow: 0 0 20px rgba(0, 124, 220, 0.25);
             }
 
             .login-logo-text {
@@ -199,13 +216,13 @@
             }
 
             .company-btn:hover {
-                border-color: rgba(79, 127, 255, 0.4);
-                background: rgba(79, 127, 255, 0.05);
+                border-color: rgba(0, 124, 220, 0.35);
+                background: rgba(0, 124, 220, 0.06);
             }
 
             .company-btn.selected {
                 border-color: var(--accent);
-                background: rgba(79, 127, 255, 0.1);
+                background: rgba(0, 124, 220, 0.1);
                 box-shadow: 0 0 0 1px var(--accent) inset;
             }
 
@@ -793,6 +810,38 @@
                 position: sticky;
                 top: 0;
                 white-space: nowrap;
+            }
+
+            thead th.sortable {
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+                padding-right: 28px;
+            }
+
+            thead th.sortable:hover {
+                color: var(--text);
+                background: var(--surface2);
+            }
+
+            thead th.sortable::after {
+                content: '⇅';
+                position: absolute;
+                right: 10px;
+                opacity: 0.3;
+                font-size: 12px;
+            }
+
+            thead th.sortable.sort-asc::after {
+                content: '↑';
+                opacity: 1;
+                color: var(--accent);
+            }
+
+            thead th.sortable.sort-desc::after {
+                content: '↓';
+                opacity: 1;
+                color: var(--accent);
             }
 
             tbody tr {
@@ -1455,6 +1504,37 @@
                 color: var(--muted);
                 flex-shrink: 0;
             }
+
+            /* Column filters */
+            .column-filter-row th {
+                padding: 4px 8px !important;
+                background: var(--surface) !important;
+                border-bottom: 1px solid var(--border) !important;
+            }
+
+            .col-filter-input {
+                width: 100%;
+                padding: 5px 8px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--surface2);
+                color: var(--text);
+                font-family: 'DM Sans', sans-serif;
+                font-size: 11px;
+                outline: none;
+                transition: border-color 0.2s;
+                box-sizing: border-box;
+            }
+
+            .col-filter-input:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 2px rgba(0, 124, 220, 0.1);
+            }
+
+            .col-filter-input::placeholder {
+                color: var(--muted);
+                opacity: 0.6;
+            }
         </style>
     </head>
 
@@ -1463,7 +1543,21 @@
             <div class="login-bg"></div>
             <div class="login-card">
                 <div class="login-logo">
-                    <div class="login-logo-icon">H</div>
+                    <div class="brand-logo" aria-label="Have">
+                        <svg viewBox="0 0 280 90" role="img" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Caixa H (azul) -->
+                            <rect x="5" y="15" width="70" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
+                            <text x="40" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">H</text>
+                            
+                            <!-- Caixa A (preta) -->
+                            <rect x="85" y="15" width="70" height="60" fill="none" stroke="#323031" stroke-width="6" />
+                            <text x="120" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="#323031" text-anchor="middle">A</text>
+                            
+                            <!-- Caixa VE (azul) -->
+                            <rect x="165" y="15" width="110" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
+                            <text x="220" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">VE</text>
+                        </svg>
+                    </div>
                     <div class="login-logo-text">
                         <div class="brand">Have</div>
                         <div class="sub">Gestor Inteligente</div>
@@ -1474,14 +1568,14 @@
                 <div class="company-label">Empresa</div>
                 <div class="company-grid" id="company-grid">
                     <div class="company-btn selected" data-company="lanzi" onclick="selectCompany(this)">
-                        <div class="company-dot" style="background:#4f7fff"></div>
+                        <div class="company-dot" style="background:var(--accent)"></div>
                         <div>
                             <div class="company-btn-name">Lanzi</div>
                             <div class="company-btn-tag">S&OP · PostgreSQL</div>
                         </div>
                     </div>
                     <div class="company-btn disabled" data-company="" onclick="">
-                        <div class="company-dot" style="background:#6b6b80"></div>
+                        <div class="company-dot" style="background:var(--muted)"></div>
                         <div>
                             <div class="company-btn-name">Nova Empresa</div>
                             <div class="company-btn-tag"><span class="coming-badge">Em breve</span></div>
@@ -1500,7 +1594,21 @@
             <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="sidebar" id="sidebar">
                 <div class="sidebar-header">
-                    <div class="sidebar-logo-icon">H</div>
+                    <div class="brand-logo" aria-label="Have">
+                        <svg viewBox="0 0 280 90" role="img" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Caixa H (azul) -->
+                            <rect x="5" y="15" width="70" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
+                            <text x="40" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">H</text>
+                            
+                            <!-- Caixa A (preta) -->
+                            <rect x="85" y="15" width="70" height="60" fill="none" stroke="#323031" stroke-width="6" />
+                            <text x="120" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="#323031" text-anchor="middle">A</text>
+                            
+                            <!-- Caixa VE (azul) -->
+                            <rect x="165" y="15" width="110" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
+                            <text x="220" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">VE</text>
+                        </svg>
+                    </div>
                     <div class="sidebar-logo-text">
                         <div class="brand">Have</div>
                         <div class="company" id="sidebar-company">Lanzi</div>
@@ -1616,16 +1724,16 @@
                     </div>
                     <div class="table-card">
                         <div class="table-scroll">
-                            <table>
+                            <table id="abc-table">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>ABC Cruzada</th>
-                                        <th>Volume Total</th>
-                                        <th>Margem Total</th>
-                                        <th>ABC Volume</th>
-                                        <th>ABC Margem</th>
-                                        <th>Nível Serviço</th>
+                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="abc_cruzada" data-type="string">ABC Cruzada</th>
+                                        <th class="sortable" data-column="volume_total" data-type="number">Volume Total</th>
+                                        <th class="sortable" data-column="margem_total" data-type="number">Margem Total</th>
+                                        <th class="sortable" data-column="abc_volume" data-type="string">ABC Volume</th>
+                                        <th class="sortable" data-column="abc_margem" data-type="string">ABC Margem</th>
+                                        <th class="sortable" data-column="nivel_servico" data-type="number">Nível Serviço</th>
                                     </tr>
                                 </thead>
                                 <tbody id="abc-tbody">
@@ -1656,19 +1764,19 @@
                     </div>
                     <div class="table-card">
                         <div class="table-scroll">
-                            <table>
+                            <table id="pp-table">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>ABC</th>
-                                        <th>Alerta</th>
-                                        <th>Est. Atual</th>
-                                        <th>Ped. Aberto</th>
-                                        <th>Ponto Pedido</th>
-                                        <th>Est. Seg.</th>
-                                        <th>Qtd Sugerida</th>
-                                        <th>Data Pedido</th>
-                                        <th>Confiança</th>
+                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="abc_cruzada" data-type="string">ABC</th>
+                                        <th class="sortable" data-column="alerta" data-type="string">Alerta</th>
+                                        <th class="sortable" data-column="estoque_atual" data-type="number">Est. Atual</th>
+                                        <th class="sortable" data-column="pedidos_aberto" data-type="number">Ped. Aberto</th>
+                                        <th class="sortable" data-column="ponto_pedido" data-type="number">Ponto Pedido</th>
+                                        <th class="sortable" data-column="estoque_seguranca" data-type="number">Est. Seg.</th>
+                                        <th class="sortable" data-column="qty_sugerida" data-type="number">Qtd Sugerida</th>
+                                        <th class="sortable" data-column="data_sugerida_pedido" data-type="string">Data Pedido</th>
+                                        <th class="sortable" data-column="confianca" data-type="string">Confiança</th>
                                     </tr>
                                 </thead>
                                 <tbody id="pp-tbody">
@@ -1697,20 +1805,20 @@
                     </div>
                     <div class="table-card">
                         <div class="table-scroll">
-                            <table>
+                            <table id="es-table">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>ABC</th>
-                                        <th>Média Mensal</th>
-                                        <th>Desvio Padrão</th>
-                                        <th>Lead Time</th>
-                                        <th>Fator Z</th>
-                                        <th>ES Estatístico</th>
-                                        <th>ES Teto</th>
-                                        <th>ES Final</th>
-                                        <th>Teto?</th>
-                                        <th>Confiança</th>
+                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="abc_cruzada" data-type="string">ABC</th>
+                                        <th class="sortable" data-column="media_mensal" data-type="number">Média Mensal</th>
+                                        <th class="sortable" data-column="desvio_padrao" data-type="number">Desvio Padrão</th>
+                                        <th class="sortable" data-column="lead_time" data-type="number">Lead Time</th>
+                                        <th class="sortable" data-column="fator_z" data-type="number">Fator Z</th>
+                                        <th class="sortable" data-column="es_estatistico" data-type="number">ES Estatístico</th>
+                                        <th class="sortable" data-column="es_teto" data-type="number">ES Teto</th>
+                                        <th class="sortable" data-column="estoque_seguranca" data-type="number">ES Final</th>
+                                        <th class="sortable" data-column="teto_aplicado" data-type="string">Teto?</th>
+                                        <th class="sortable" data-column="confianca" data-type="string">Confiança</th>
                                     </tr>
                                 </thead>
                                 <tbody id="es-tbody">
@@ -1740,18 +1848,18 @@
                     </div>
                     <div class="table-card">
                         <div class="table-scroll">
-                            <table>
+                            <table id="ppr-table">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>ABC</th>
-                                        <th>Qtd 7d</th>
-                                        <th>Qtd 14d</th>
-                                        <th>Qtd 21d</th>
-                                        <th>Qtd 1m</th>
-                                        <th>Qtd 3m</th>
-                                        <th>Tend. Curto</th>
-                                        <th>Tend. Médio</th>
+                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="abc" data-type="string">ABC</th>
+                                        <th class="sortable" data-column="qtd_7d" data-type="number">Qtd 7d</th>
+                                        <th class="sortable" data-column="qtd_14d" data-type="number">Qtd 14d</th>
+                                        <th class="sortable" data-column="qtd_21d" data-type="number">Qtd 21d</th>
+                                        <th class="sortable" data-column="qtd_1m" data-type="number">Qtd 1m</th>
+                                        <th class="sortable" data-column="qtd_3m" data-type="number">Qtd 3m</th>
+                                        <th class="sortable" data-column="tendencia_curto" data-type="string">Tend. Curto</th>
+                                        <th class="sortable" data-column="tendencia_medio" data-type="string">Tend. Médio</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ppr-tbody">
@@ -1779,15 +1887,15 @@
                     </div>
                     <div class="table-card">
                         <div class="table-scroll">
-                            <table>
+                            <table id="fc-table">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>Data</th>
-                                        <th>Método</th>
-                                        <th>Prev. Qtd</th>
-                                        <th>Prev. Mín</th>
-                                        <th>Prev. Máx</th>
+                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="data" data-type="string">Data</th>
+                                        <th class="sortable" data-column="metodo" data-type="string">Método</th>
+                                        <th class="sortable" data-column="prev_qtd" data-type="number">Prev. Qtd</th>
+                                        <th class="sortable" data-column="prev_min" data-type="number">Prev. Mín</th>
+                                        <th class="sortable" data-column="prev_max" data-type="number">Prev. Máx</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fc-tbody">
@@ -1816,18 +1924,18 @@
                     </div>
                     <div class="table-card">
                         <div class="table-scroll">
-                            <table>
+                            <table id="sw-table">
                                 <thead>
                                     <tr>
-                                        <th>SKU</th>
-                                        <th>ABC</th>
-                                        <th>Alerta</th>
-                                        <th>Est. Atual</th>
-                                        <th>Ped. Aberto</th>
-                                        <th>Qtd Sugerida</th>
-                                        <th>Data Pedido</th>
-                                        <th>Data Entrega</th>
-                                        <th>Semana</th>
+                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="abc" data-type="string">ABC</th>
+                                        <th class="sortable" data-column="alerta" data-type="string">Alerta</th>
+                                        <th class="sortable" data-column="estoque_atual" data-type="number">Est. Atual</th>
+                                        <th class="sortable" data-column="pedido_aberto" data-type="number">Ped. Aberto</th>
+                                        <th class="sortable" data-column="qtd_sugerida" data-type="number">Qtd Sugerida</th>
+                                        <th class="sortable" data-column="data_pedido" data-type="string">Data Pedido</th>
+                                        <th class="sortable" data-column="data_entrega" data-type="string">Data Entrega</th>
+                                        <th class="sortable" data-column="semana" data-type="string">Semana</th>
                                     </tr>
                                 </thead>
                                 <tbody id="sw-tbody">
@@ -2452,6 +2560,8 @@
                     loadSemana()]);
                     setDbStatus('Online', true);
                     showToast('Dados carregados com sucesso', 'success');
+                    // Inicializa ordenação de tabelas após carregar todos os dados
+                    setTimeout(() => initTableSorting(), 200);
                 }
 
                 catch (e) {
@@ -2628,6 +2738,13 @@
 
                 const filter = document.getElementById(`${key}-filter`)?.value || document.getElementById(`${key}-conf`)?.value || document.getElementById(`${key}-tend`)?.value || document.getElementById(`${key}-alert`)?.value || document.getElementById(`${key}-metodo`)?.value || '';
 
+                // Column filter values
+                const colFilters = {};
+                document.querySelectorAll(`.col-filter-input[data-table-key="${key}"]`).forEach(input => {
+                    const val = input.value.trim().toLowerCase();
+                    if (val) colFilters[input.dataset.column] = val;
+                });
+
                 let data = rawData.filter(r => {
                     const skuMatch = (r.sku || '').toLowerCase().includes(search);
                     let filterMatch = true;
@@ -2641,17 +2758,44 @@
                         else if (key === 'sw') filterMatch = r.alerta === filter;
                     }
 
-                    return skuMatch && filterMatch;
+                    // Apply per-column filters
+                    let colMatch = true;
+                    for (const [col, val] of Object.entries(colFilters)) {
+                        const cellValue = String(r[col] ?? '').toLowerCase();
+                        if (!cellValue.includes(val)) { colMatch = false; break; }
+                    }
+
+                    return skuMatch && filterMatch && colMatch;
                 });
+
+                // Apply persistent sort
+                const sort = sortState[key];
+                if (sort) {
+                    data = [...data].sort((a, b) => {
+                        let valA = a[sort.column];
+                        let valB = b[sort.column];
+                        if (valA == null) return 1;
+                        if (valB == null) return -1;
+                        if (sort.type === 'number') {
+                            valA = parseFloat(valA) || 0;
+                            valB = parseFloat(valB) || 0;
+                            return sort.direction === 'asc' ? valA - valB : valB - valA;
+                        } else {
+                            valA = String(valA).toLowerCase();
+                            valB = String(valB).toLowerCase();
+                            return sort.direction === 'asc'
+                                ? (valA < valB ? -1 : valA > valB ? 1 : 0)
+                                : (valA > valB ? -1 : valA < valB ? 1 : 0);
+                        }
+                    });
+                }
 
                 const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
                 const p = Math.min(page, totalPages);
 
                 paginationState[key] = {
                     current: p, total: totalPages, count: data.length
-                }
-
-                    ;
+                };
                 const slice = data.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE);
 
                 const tbody = document.getElementById(`${key}-tbody`);
@@ -2659,9 +2803,7 @@
 
                 if (slice.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="20"><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhum resultado</div><div class="empty-sub">Tente ajustar os filtros</div></div></td></tr>`;
-                }
-
-                else {
+                } else {
                     tbody.innerHTML = slice.map(r => rowHTML(key, r)).join('');
                 }
 
@@ -2720,6 +2862,95 @@
             function filterTable(key) {
                 if (!state[key]) return;
                 renderTable(key, state[key], 1);
+            }
+
+            // ══════════════════════════════════════════════
+            // TABLE SORTING & COLUMN FILTERS
+            // ══════════════════════════════════════════════
+            const sortState = {};
+            let sortingInitialized = false;
+
+            function initTableSorting() {
+                if (sortingInitialized) return;
+                sortingInitialized = true;
+
+                // Event delegation for sortable headers (single listener, no duplicates)
+                document.addEventListener('click', function(e) {
+                    const th = e.target.closest('th.sortable');
+                    if (!th) return;
+                    const table = th.closest('table');
+                    if (!table || !table.id) return;
+                    const tableKey = table.id.replace('-table', '');
+                    const column = th.dataset.column;
+                    const type = th.dataset.type;
+                    if (column && state[tableKey]) {
+                        sortTable(tableKey, column, type, th);
+                    }
+                });
+
+                // Initialize per-column filter inputs
+                initColumnFilters();
+            }
+
+            function sortTable(key, column, type, thElement) {
+                if (!state[key]) return;
+
+                const currentSort = sortState[key];
+                let direction = 'asc';
+                if (currentSort && currentSort.column === column) {
+                    direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                }
+
+                sortState[key] = { column, direction, type };
+
+                // Update header classes
+                const table = thElement.closest('table');
+                table.querySelectorAll('th.sortable').forEach(th => {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                });
+                thElement.classList.add('sort-' + direction);
+
+                // Re-render (sort is applied inside renderTable)
+                renderTable(key, state[key], 1);
+            }
+
+            function initColumnFilters() {
+                const tables = {
+                    'abc-table': 'abc', 'pp-table': 'pp', 'es-table': 'es',
+                    'ppr-table': 'ppr', 'fc-table': 'fc', 'sw-table': 'sw'
+                };
+
+                Object.entries(tables).forEach(([tableId, key]) => {
+                    const table = document.getElementById(tableId);
+                    if (!table) return;
+                    const thead = table.querySelector('thead');
+                    if (!thead || thead.querySelector('.column-filter-row')) return;
+
+                    const headerRow = thead.querySelector('tr');
+                    const ths = headerRow.querySelectorAll('th');
+
+                    const filterRow = document.createElement('tr');
+                    filterRow.className = 'column-filter-row';
+
+                    ths.forEach(th => {
+                        const filterTh = document.createElement('th');
+                        const column = th.dataset.column;
+                        if (column) {
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.className = 'col-filter-input';
+                            input.dataset.column = column;
+                            input.dataset.tableKey = key;
+                            input.placeholder = 'Filtrar...';
+                            input.addEventListener('input', () => filterTable(key));
+                            input.addEventListener('click', e => e.stopPropagation());
+                            filterTh.appendChild(input);
+                        }
+                        filterRow.appendChild(filterTh);
+                    });
+
+                    thead.appendChild(filterRow);
+                });
             }
 
             // ══════════════════════════════════════════════

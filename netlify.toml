@@ -1,0 +1,7 @@
+[build]
+  publish = "Gestor Have"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
