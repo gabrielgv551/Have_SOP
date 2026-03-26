@@ -1,2 +1,22 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel/
+
+# Arquivos Excel de dados (não versionados)
 *.xlsx
+
+# Python
+__pycache__/
+*.pyc
 Lanzi/pip/
+
+# OS
+.DS_Store
+Thumbs.db
