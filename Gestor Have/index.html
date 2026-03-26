@@ -1927,10 +1927,10 @@
                         </div>
                         <div class="pagination" id="es-pagination"></div>
                     </div>
-                </div><!-- PPR -->
+                </div><!-- TENDÊNCIAS SKU -->
                 <div class="panel" id="panel-ppr">
                     <div class="section-header">
-                        <div class="section-title">PPR · Performance de Vendas</div>
+                        <div class="section-title">Tendências SKU</div>
                         <div class="section-actions"><input class="search-input" id="ppr-search"
                                 placeholder="🔍  Buscar SKU..." oninput="filterTable('ppr')"><select
                                 class="filter-select" id="ppr-tend" onchange="filterTable('ppr')">
@@ -1967,42 +1967,6 @@
                             </table>
                         </div>
                         <div class="pagination" id="ppr-pagination"></div>
-                    </div>
-                </div><!-- FORECAST -->
-                <div class="panel" id="panel-forecast">
-                    <div class="section-header">
-                        <div class="section-title">Forecast 12 Meses</div>
-                        <div class="section-actions"><input class="search-input" id="fc-search"
-                                placeholder="🔍  Buscar SKU..." oninput="filterTable('fc')"><select
-                                class="filter-select" id="fc-metodo" onchange="filterTable('fc')">
-                                <option value="">Todos Métodos</option>
-                                <option>WindowAverage_6m</option>
-                                <option>ADIDA</option>
-                            </select></div>
-                    </div>
-                    <div class="table-card">
-                        <div class="table-scroll">
-                            <table id="fc-table">
-                                <thead>
-                                    <tr>
-                                        <th class="sortable" data-column="sku" data-type="string">SKU</th>
-                                        <th class="sortable" data-column="data" data-type="string">Data</th>
-                                        <th class="sortable" data-column="metodo" data-type="string">Método</th>
-                                        <th class="sortable" data-column="prev_qtd" data-type="number">Prev. Qtd</th>
-                                        <th class="sortable" data-column="prev_min" data-type="number">Prev. Mín</th>
-                                        <th class="sortable" data-column="prev_max" data-type="number">Prev. Máx</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="fc-tbody">
-                                    <tr class="loading-row">
-                                        <td colspan="6">
-                                            <div class="loading-skeleton" style="width:100%"></div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="pagination" id="fc-pagination"></div>
                     </div>
                 </div><!-- SEMANA PEDIDOS -->
                 <div class="panel" id="panel-semana">
@@ -2746,7 +2710,6 @@
                     loadPontoPedido(),
                     loadEstoqueSeguranca(),
                     loadPPR(),
-                    loadForecast(),
                     loadSemana()]);
                     loadDfsMeses();
                     setDbStatus('Online', true);
@@ -2869,26 +2832,7 @@
                 }
             }
 
-            async function loadForecast() {
-                try {
-                    const data = await queryDB('forecast_12m');
-                    // Normalize column names if needed (API might return different names)
-                    const normalized = data.map(r => ({
-                        sku: r.Sku || r.sku,
-                        data: r.Data || r.data,
-                        metodo: r.Metodo || r.metodo,
-                        prev_qtd: r.Previsao_Quantidade || r.prev_qtd,
-                        prev_min: r.Previsao_Minima || r.prev_min,
-                        prev_max: r.Previsao_Maxima || r.prev_max,
-                        ...r
-                    }));
-                    state.fc = normalized;
-                    renderTable('fc', normalized);
-                } catch (e) {
-                    console.error('fc', e);
-                }
-            }
-
+            
             async function loadSemana() {
                 try {
                     const data = await queryDB('semana_pedidos');

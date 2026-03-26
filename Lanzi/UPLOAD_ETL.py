@@ -14,7 +14,7 @@ DB_CONFIG = { # Recomenda-se usar variáveis de ambiente aqui também
     "port"    : os.getenv("LANZI_PORT", 5432),
     "database": os.getenv("LANZI_DB", "Lanzi"),
     "user"    : os.getenv("LANZI_USER", "postgres"),
-    "password": os.getenv("LANZI_PASSWORD"), # A senha deve vir do ambiente
+    "password": os.getenv("LANZI_PASSWORD", "131105Gv"), # A senha deve vir do ambiente
 }
 
 engine = create_engine(
