@@ -72,7 +72,8 @@ function openCreateUsuario() {
     document.getElementById('admin-form-perfil').value = 'gestor';
     document.getElementById('admin-form-empresa').value = currentCompany;
     document.getElementById('admin-form-senha-row').style.display = 'block';
-    document.getElementById('admin-modal').style.display = 'block';
+    document.getElementById('admin-form-senha-confirm-row').style.display = 'block';
+    document.getElementById('admin-modal').style.display = 'flex';
 }
 
 /**
@@ -93,8 +94,9 @@ function openEditUsuario(userId) {
     document.getElementById('admin-form-perfil').value = user.perfil;
     document.getElementById('admin-form-ativo').checked = user.ativo;
     document.getElementById('admin-form-senha-row').style.display = 'block';
+    document.getElementById('admin-form-senha-confirm-row').style.display = 'block';
     document.getElementById('admin-form-ativo-row').style.display = 'block';
-    document.getElementById('admin-modal').style.display = 'block';
+    document.getElementById('admin-modal').style.display = 'flex';
 }
 
 /**
@@ -103,6 +105,8 @@ function openEditUsuario(userId) {
 function closeAdminModal() {
     document.getElementById('admin-modal').style.display = 'none';
     document.getElementById('admin-form-usuario').disabled = false;
+    document.getElementById('admin-form-senha-row').style.display = 'none';
+    document.getElementById('admin-form-senha-confirm-row').style.display = 'none';
     document.getElementById('admin-form-ativo-row').style.display = 'none';
 }
 
@@ -245,8 +249,7 @@ async function deleteAdminUsuario(userId) {
 
 // Styles for admin panel
 const adminStyles = `
-#admin-section { display: none; }
-#admin-nav { display: none; }
+/* visibility controlled by parent #group-admin */
 
 .badge-role {
     padding: 4px 8px;

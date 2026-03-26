@@ -1029,12 +1029,12 @@
 
             /* Trend badges */
             .trend-ACELERANDO {
-                color: #059669;
+                color: #00d68f;
                 font-weight: 600;
             }
 
             .trend-DESACELERANDO {
-                color: #dc2626;
+                color: #ff3b57;
                 font-weight: 600;
             }
 
@@ -2493,6 +2493,38 @@
                         </div>
                     </div>
                 </div>
+                <!-- ADMIN PANEL -->
+                <div class="panel" id="panel-admin-usuarios">
+                    <div class="section-header">
+                        <div class="section-title">Gerenciar Usuários</div>
+                        <div class="section-actions">
+                            <button class="btn-primary" onclick="openCreateUsuario()">+ Novo Usuário</button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Usuário</th>
+                                        <th>Perfil</th>
+                                        <th>Status</th>
+                                        <th>Data Criação</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-usuarios-tbody">
+                                    <tr class="loading-row">
+                                        <td colspan="6">
+                                            <div class="loading-skeleton" style="width:100%"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div><!-- /main-content -->
         </div><!-- /dashboard-page --><!-- Toast -->
         <div id="toast"></div>
@@ -2602,7 +2634,20 @@
 
                         // Show admin section if user is admin
                         if (currentRole === 'admin') {
-                            document.getElementById('group-admin').style.display = 'block';
+                            const adminGroup = document.getElementById('group-admin');
+                            if (adminGroup) {
+                                adminGroup.style.display = 'block';
+                                adminGroup.classList.remove('collapsed');
+                                const adminItems = adminGroup.querySelector('.nav-group-items');
+                                if (adminItems) {
+                                    adminItems.style.maxHeight = '500px';
+                                    adminItems.style.overflow = 'visible';
+                                    // Ensure nav item exists (fallback if HTML is missing it)
+                                    if (!adminItems.querySelector('.nav-item')) {
+                                        adminItems.innerHTML = '<div class="nav-item" id="admin-nav" onclick="showPanel(\'admin-usuarios\')"><span class="nav-icon">⚙</span>Gerenciar Usuários</div>';
+                                    }
+                                }
+                            }
                         }
 
                         // Update user role display
@@ -3195,16 +3240,16 @@
 
             function trendKey(t) {
                 if (!t) return 'SEM';
-                if (t.includes('ACELERANDO')) return 'ACELERANDO';
                 if (t.includes('DESACELERANDO')) return 'DESACELERANDO';
+                if (t.includes('ACELERANDO')) return 'ACELERANDO';
                 if (t.includes('ESTÁVEL') || t.includes('EST')) return 'ESTÁVEL';
                 return 'SEM';
             }
 
             function trendIcon(t) {
                 if (!t) return '–';
-                if (t.includes('ACELERA')) return '↑';
                 if (t.includes('DESACEL')) return '↓';
+                if (t.includes('ACELERA')) return '↑';
                 return '→';
             }
 
@@ -3237,39 +3282,6 @@
             adminScript.src = 'admin-panel.js';
             document.head.appendChild(adminScript);
         </script>
-
-        <!-- ADMIN PANEL - Inserted by admin integration -->
-        <div class="panel" id="panel-admin-usuarios">
-            <div class="section-header">
-                <div class="section-title">Gerenciar Usuários</div>
-                <div class="section-actions">
-                    <button class="btn-primary" onclick="openCreateUsuario()">+ Novo Usuário</button>
-                </div>
-            </div>
-            <div class="table-card">
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Usuário</th>
-                                <th>Perfil</th>
-                                <th>Status</th>
-                                <th>Data Criação</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-usuarios-tbody">
-                            <tr class="loading-row">
-                                <td colspan="6">
-                                    <div class="loading-skeleton" style="width:100%"></div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <!-- Admin User Modal -->
         <div id="admin-modal">
