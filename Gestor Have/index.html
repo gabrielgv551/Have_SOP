@@ -1325,7 +1325,7 @@
                 cursor: not-allowed;
             }
 
-            /* ════════════════════════════════ DFS · Demonstrativos Financeiros (layout MEGASHOP / Excel) */
+            /* ════════════════════════════════ DFS · Demonstrativos Financeiros */
             :root {
                 --dfs-header: #1c2d4a;
                 --dfs-header2: #243b5c;
@@ -2048,32 +2048,57 @@
                 <div class="panel" id="panel-dfs-base">
                     <div class="section-header">
                         <div class="section-title">DFS · Base de dados</div>
+                        <div class="section-actions">
+                            <input type="file" id="dfs-file-input" accept=".xlsx,.xls,.csv" style="display:none"
+                                onchange="handleDfsBaseUpload(this.files)">
+                            <button class="refresh-btn" onclick="document.getElementById('dfs-file-input').click();">⬆ Importar planilha</button>
+                            <button class="refresh-btn" onclick="downloadDfsBase('csv')">⬇ Baixar CSV</button>
+                            <button class="refresh-btn" onclick="downloadDfsBase('xlsx')">⬇ Baixar Excel</button>
+                        </div>
                     </div>
-                    <p class="dfs-intro">Importe aqui a planilha-base no mesmo formato do arquivo
-                        <strong>Demonstrativos Financeiros — MEGASHOP</strong> (aba <code>Base</code>): após o upload, as
-                        demais telas poderão consumir os balanços consolidados.</p>
-                    <div class="table-card" style="padding:20px">
-                        <input type="file" id="dfs-file-input" accept=".xlsx,.xls,.csv" style="display:none"
-                            onchange="handleDfsBaseFiles(this.files)">
+                    <p class="dfs-intro">Balanço consolidado — importe a planilha-base ou visualize os dados carregados.
+                        Colunas: <code>Conta</code> · <code>Nome</code> · <code>Saldo anterior</code> · <code>Débito</code> · <code>Crédito</code> · <code>Saldo Atual</code></p>
+
+                    <!-- Dropzone (shown when no data) -->
+                    <div class="table-card" id="dfs-base-dropzone-card" style="padding:20px">
                         <div class="dfs-dropzone" id="dfs-dropzone" onclick="document.getElementById('dfs-file-input').click()"
                             ondragover="event.preventDefault(); this.classList.add('dfs-dragover');"
                             ondragleave="this.classList.remove('dfs-dragover');"
-                            ondrop="event.preventDefault(); this.classList.remove('dfs-dragover'); handleDfsBaseFiles(event.dataTransfer.files);">
+                            ondrop="event.preventDefault(); this.classList.remove('dfs-dragover'); handleDfsBaseUpload(event.dataTransfer.files);">
                             <div class="dfs-dropzone-icon">⬆</div>
                             <div class="dfs-dropzone-title">Arraste o arquivo ou clique para selecionar</div>
                             <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong>, <strong>.xls</strong> ou
-                                <strong>.csv</strong> (mesma estrutura da planilha de referência).</div>
+                                <strong>.csv</strong> com as colunas: Conta, Nome, Saldo anterior, Débito, Crédito, Saldo Atual</div>
                             <button type="button" class="refresh-btn" onclick="event.stopPropagation(); document.getElementById('dfs-file-input').click();">Escolher arquivo</button>
                         </div>
-                        <div class="dfs-upload-hint"><strong>Colunas esperadas na aba Base</strong> (modelo MEGASHOP):
-                            <code>Ano</code> · <code>Mês</code> · <code>Tipo</code> · <code>Grupo</code> ·
-                            <code>Empresa</code> · <code>Contar</code> · <code>Reduzido</code> · <code>Conta</code> ·
-                            <code>Nome</code> · <code>Saldo anterior</code> · <code>Débito</code> · <code>Crédito</code> ·
-                            <code>Movimento</code> · <code>Saldo atual</code>. O envio ao servidor para processar os
-                            balanços será conectado depois; por enquanto o histórico fica salvo neste navegador.</div>
-                        <div class="dfs-upload-list" id="dfs-upload-list-wrap">
-                            <div class="dfs-upload-list-title">Últimos arquivos enviados (neste dispositivo)</div>
-                            <div id="dfs-upload-list"></div>
+                    </div>
+
+                    <!-- Data table (shown when data is loaded) -->
+                    <div class="table-card" id="dfs-base-table-card" style="display:none">
+                        <div style="padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span style="font-size:13px; font-weight:600;" id="dfs-base-file-name">—</span>
+                                <span style="font-size:11px; color:var(--muted);" id="dfs-base-row-count">0 linhas</span>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <input type="text" class="search-input" id="dfs-base-search" placeholder="Buscar conta ou nome..." oninput="filterDfsBaseTable()">
+                                <button class="refresh-btn" onclick="clearDfsBase()" style="color:var(--red); border-color:rgba(220,38,38,0.3);">✕ Limpar</button>
+                            </div>
+                        </div>
+                        <div class="table-scroll" style="max-height:600px; overflow-y:auto;">
+                            <table id="dfs-base-table">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" onclick="sortDfsBase('conta')">Conta</th>
+                                        <th class="sortable" onclick="sortDfsBase('nome')">Nome</th>
+                                        <th class="sortable" onclick="sortDfsBase('saldo_anterior')">Saldo Anterior</th>
+                                        <th class="sortable" onclick="sortDfsBase('debito')">Débito</th>
+                                        <th class="sortable" onclick="sortDfsBase('credito')">Crédito</th>
+                                        <th class="sortable" onclick="sortDfsBase('saldo_atual')">Saldo Atual</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dfs-base-tbody"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -2087,7 +2112,7 @@
                     <div class="dfs-sheet-card">
                         <div class="dfs-sheet-banner">Balanço patrimonial — consolidado</div>
                         <div class="dfs-sheet-meta"><span><strong>Exercício</strong> 2025</span><span><strong>Referência</strong>
-                                jan/2025</span><span><strong>Empresa</strong> Consolidado · Mega Shop</span></div>
+                                jan/2025</span><span><strong>Empresa</strong> Consolidado</span></div>
                         <div class="dfs-table-wrap">
                             <table class="dfs-table">
                                 <thead>
@@ -3147,40 +3172,243 @@
                 return String(v ?? '–').replace(/</g, '&lt;');
             }
 
-            const DFS_UPLOAD_KEY = 'have_dfs_uploads';
+            // ══════════════════════════════════════════════
+            // DFS BASE DE DADOS
+            // ══════════════════════════════════════════════
+            let dfsBaseData = [];        // parsed rows: [{conta, nome, saldo_anterior, debito, credito, saldo_atual}]
+            let dfsBaseFiltered = [];    // after search filter
+            let dfsBaseSortCol = null;
+            let dfsBaseSortAsc = true;
+            let dfsBaseFileName = '';
 
-            function formatDfsFileSize(bytes) {
-                if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-                return (bytes / 1024).toFixed(1) + ' KB';
-            }
-
-            function handleDfsBaseFiles(fileList) {
-                if (!fileList || !fileList.length) return;
-                const files = Array.from(fileList);
-                let meta = [];
-                try { meta = JSON.parse(localStorage.getItem(DFS_UPLOAD_KEY) || '[]'); } catch (e) { meta = []; }
-                files.forEach(f => {
-                    meta.unshift({ name: f.name, size: f.size, at: new Date().toISOString() });
+            // Load SheetJS (XLSX) library on demand
+            let sheetJSLoaded = false;
+            function loadSheetJS() {
+                return new Promise((resolve, reject) => {
+                    if (sheetJSLoaded) return resolve();
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+                    s.onload = () => { sheetJSLoaded = true; resolve(); };
+                    s.onerror = () => reject(new Error('Falha ao carregar biblioteca XLSX'));
+                    document.head.appendChild(s);
                 });
-                localStorage.setItem(DFS_UPLOAD_KEY, JSON.stringify(meta.slice(0, 12)));
-                renderDfsUploadList();
-                showToast(files.length === 1 ? 'Arquivo registrado: ' + files[0].name : files.length + ' arquivos registrados', 'success');
             }
 
-            function renderDfsUploadList() {
-                const el = document.getElementById('dfs-upload-list');
-                if (!el) return;
-                let meta = [];
-                try { meta = JSON.parse(localStorage.getItem(DFS_UPLOAD_KEY) || '[]'); } catch (e) { meta = []; }
-                if (!meta.length) {
-                    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0">Nenhum envio registrado ainda.</div>';
+            // Normalize column name to match expected fields
+            function normalizeDfsCol(col) {
+                const c = (col || '').toString().toLowerCase().trim()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]/g, '_');
+                if (c.includes('saldo') && c.includes('anter')) return 'saldo_anterior';
+                if (c.includes('saldo') && c.includes('atu')) return 'saldo_atual';
+                if (c.includes('debito') || c === 'debito') return 'debito';
+                if (c.includes('credito') || c === 'credito') return 'credito';
+                if (c === 'conta') return 'conta';
+                if (c === 'nome') return 'nome';
+                return c;
+            }
+
+            async function handleDfsBaseUpload(fileList) {
+                if (!fileList || !fileList.length) return;
+                const file = fileList[0];
+                dfsBaseFileName = file.name;
+
+                try {
+                    await loadSheetJS();
+                    showToast('Processando ' + file.name + '...', 'info');
+
+                    const data = await file.arrayBuffer();
+                    const wb = XLSX.read(data, { type: 'array' });
+                    const sheetName = wb.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+
+                    if (!rows.length) {
+                        showToast('Arquivo vazio ou sem dados', 'error');
+                        return;
+                    }
+
+                    // Map columns
+                    const origCols = Object.keys(rows[0]);
+                    const colMap = {};
+                    origCols.forEach(oc => { colMap[normalizeDfsCol(oc)] = oc; });
+
+                    const required = ['conta', 'nome', 'saldo_anterior', 'debito', 'credito', 'saldo_atual'];
+                    const missing = required.filter(r => !colMap[r]);
+                    if (missing.length) {
+                        showToast('Colunas não encontradas: ' + missing.join(', '), 'error');
+                        return;
+                    }
+
+                    dfsBaseData = rows.map(r => ({
+                        conta: String(r[colMap['conta']] || ''),
+                        nome: String(r[colMap['nome']] || ''),
+                        saldo_anterior: parseFloat(String(r[colMap['saldo_anterior']]).replace(/\./g, '').replace(',', '.')) || 0,
+                        debito: parseFloat(String(r[colMap['debito']]).replace(/\./g, '').replace(',', '.')) || 0,
+                        credito: parseFloat(String(r[colMap['credito']]).replace(/\./g, '').replace(',', '.')) || 0,
+                        saldo_atual: parseFloat(String(r[colMap['saldo_atual']]).replace(/\./g, '').replace(',', '.')) || 0,
+                    }));
+
+                    // Save to localStorage for persistence
+                    try {
+                        localStorage.setItem('have_dfs_base', JSON.stringify({ name: dfsBaseFileName, data: dfsBaseData, at: new Date().toISOString() }));
+                    } catch (e) { /* storage full, ignore */ }
+
+                    dfsBaseFiltered = [...dfsBaseData];
+                    renderDfsBaseTable();
+                    showDfsBaseTable(true);
+                    showToast(dfsBaseData.length + ' linhas importadas de ' + file.name, 'success');
+                } catch (e) {
+                    console.error('DFS Base upload error:', e);
+                    showToast('Erro ao processar arquivo: ' + e.message, 'error');
+                }
+                // Reset file input
+                document.getElementById('dfs-file-input').value = '';
+            }
+
+            function showDfsBaseTable(show) {
+                document.getElementById('dfs-base-dropzone-card').style.display = show ? 'none' : 'block';
+                document.getElementById('dfs-base-table-card').style.display = show ? 'block' : 'none';
+            }
+
+            function renderDfsBaseTable() {
+                const tbody = document.getElementById('dfs-base-tbody');
+                if (!tbody) return;
+
+                document.getElementById('dfs-base-file-name').textContent = dfsBaseFileName || '—';
+                document.getElementById('dfs-base-row-count').textContent = dfsBaseFiltered.length + ' de ' + dfsBaseData.length + ' linhas';
+
+                if (!dfsBaseFiltered.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">Nenhum registro encontrado</td></tr>';
                     return;
                 }
-                el.innerHTML = meta.map(m => {
-                    const dt = new Date(m.at);
-                    return '<div class="dfs-upload-item"><span class="dfs-upload-item-name">' + esc(m.name) + '</span><span class="dfs-upload-item-meta">' + formatDfsFileSize(m.size) + '<br>' + dt.toLocaleString('pt-BR') + '</span></div>';
-                }).join('');
+
+                tbody.innerHTML = dfsBaseFiltered.map(r => `<tr>
+                    <td><span class="sku-code">${esc(r.conta)}</span></td>
+                    <td>${esc(r.nome)}</td>
+                    <td class="dfs-num">${fmtBR(r.saldo_anterior)}</td>
+                    <td class="dfs-num">${fmtBR(r.debito)}</td>
+                    <td class="dfs-num">${fmtBR(r.credito)}</td>
+                    <td class="dfs-num" style="font-weight:600;">${fmtBR(r.saldo_atual)}</td>
+                </tr>`).join('');
+
+                // Update sort indicators
+                document.querySelectorAll('#dfs-base-table thead th').forEach(th => {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                });
+                if (dfsBaseSortCol) {
+                    const idx = ['conta', 'nome', 'saldo_anterior', 'debito', 'credito', 'saldo_atual'].indexOf(dfsBaseSortCol);
+                    if (idx >= 0) {
+                        const th = document.querySelectorAll('#dfs-base-table thead th')[idx];
+                        if (th) th.classList.add(dfsBaseSortAsc ? 'sort-asc' : 'sort-desc');
+                    }
+                }
             }
+
+            function filterDfsBaseTable() {
+                const q = (document.getElementById('dfs-base-search').value || '').toLowerCase().trim();
+                dfsBaseFiltered = q
+                    ? dfsBaseData.filter(r => r.conta.toLowerCase().includes(q) || r.nome.toLowerCase().includes(q))
+                    : [...dfsBaseData];
+                if (dfsBaseSortCol) applySortDfsBase();
+                else renderDfsBaseTable();
+            }
+
+            function sortDfsBase(col) {
+                if (dfsBaseSortCol === col) {
+                    dfsBaseSortAsc = !dfsBaseSortAsc;
+                } else {
+                    dfsBaseSortCol = col;
+                    dfsBaseSortAsc = true;
+                }
+                applySortDfsBase();
+            }
+
+            function applySortDfsBase() {
+                const col = dfsBaseSortCol;
+                const asc = dfsBaseSortAsc;
+                dfsBaseFiltered.sort((a, b) => {
+                    let va = a[col], vb = b[col];
+                    if (typeof va === 'string') {
+                        return asc ? va.localeCompare(vb, 'pt-BR') : vb.localeCompare(va, 'pt-BR');
+                    }
+                    return asc ? va - vb : vb - va;
+                });
+                renderDfsBaseTable();
+            }
+
+            function clearDfsBase() {
+                dfsBaseData = [];
+                dfsBaseFiltered = [];
+                dfsBaseFileName = '';
+                dfsBaseSortCol = null;
+                localStorage.removeItem('have_dfs_base');
+                document.getElementById('dfs-base-search').value = '';
+                showDfsBaseTable(false);
+                showToast('Dados limpos', 'info');
+            }
+
+            async function downloadDfsBase(format) {
+                if (!dfsBaseData.length) {
+                    showToast('Nenhum dado para exportar. Importe uma planilha primeiro.', 'error');
+                    return;
+                }
+
+                try {
+                    await loadSheetJS();
+                    const exportData = dfsBaseData.map(r => ({
+                        'Conta': r.conta,
+                        'Nome': r.nome,
+                        'Saldo Anterior': r.saldo_anterior,
+                        'Débito': r.debito,
+                        'Crédito': r.credito,
+                        'Saldo Atual': r.saldo_atual,
+                    }));
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    // Set column widths
+                    ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+
+                    if (format === 'csv') {
+                        const csv = XLSX.utils.sheet_to_csv(ws, { FS: ';' });
+                        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                        downloadBlob(blob, 'balanco_base.csv');
+                    } else {
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, 'Balanço');
+                        XLSX.writeFile(wb, 'balanco_base.xlsx');
+                    }
+                    showToast('Download iniciado', 'success');
+                } catch (e) {
+                    console.error('Download error:', e);
+                    showToast('Erro ao gerar arquivo: ' + e.message, 'error');
+                }
+            }
+
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Restore DFS base data from localStorage on load
+            function restoreDfsBase() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('have_dfs_base') || 'null');
+                    if (saved && saved.data && saved.data.length) {
+                        dfsBaseData = saved.data;
+                        dfsBaseFiltered = [...dfsBaseData];
+                        dfsBaseFileName = saved.name || 'Arquivo anterior';
+                        renderDfsBaseTable();
+                        showDfsBaseTable(true);
+                    }
+                } catch (e) { /* ignore */ }
+            }
+            restoreDfsBase();
 
             function fmtN(v) {
                 const n = parseFloat(v);
@@ -3276,7 +3504,6 @@
             }
 
             // Load admin panel functions
-            renderDfsUploadList();
 
             const adminScript = document.createElement('script');
             adminScript.src = 'admin-panel.js';
