@@ -404,6 +404,53 @@
                 font-weight: 500;
             }
 
+            .nav-group {
+                margin-bottom: 4px;
+            }
+
+            .nav-group-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 12px 6px;
+                cursor: pointer;
+                user-select: none;
+                border-radius: 8px;
+                transition: background 0.15s;
+            }
+
+            .nav-group-header:hover {
+                background: var(--surface2);
+            }
+
+            .nav-group-title {
+                font-size: 10px;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: var(--muted);
+                font-weight: 500;
+            }
+
+            .nav-group-arrow {
+                font-size: 10px;
+                color: var(--muted);
+                transition: transform 0.2s ease;
+            }
+
+            .nav-group.collapsed .nav-group-arrow {
+                transform: rotate(-90deg);
+            }
+
+            .nav-group-items {
+                overflow: hidden;
+                max-height: 500px;
+                transition: max-height 0.25s ease;
+            }
+
+            .nav-group.collapsed .nav-group-items {
+                max-height: 0;
+            }
+
             .nav-item {
                 display: flex;
                 align-items: center;
@@ -1617,32 +1664,52 @@
                     </div>
                 </div>
                 <div class="sidebar-nav">
-                    <div class="nav-section-label">Visão Geral</div>
-                    <div class="nav-item active" onclick="showPanel('overview')"><span
-                            class="nav-icon">◈</span>Dashboard </div>
-                    <div class="nav-section-label" style="margin-top:12px">S&OP</div>
-                    <div class="nav-item" onclick="showPanel('curva-abc')"><span class="nav-icon">◉</span>Curva ABC
+                    <div class="nav-group" id="group-geral">
+                        <div class="nav-group-header" onclick="toggleNavGroup('group-geral')">
+                            <span class="nav-group-title">Visão Geral</span>
+                            <span class="nav-group-arrow">▾</span>
+                        </div>
+                        <div class="nav-group-items">
+                            <div class="nav-item active" onclick="showPanel('overview')"><span class="nav-icon">◈</span>Dashboard</div>
+                        </div>
                     </div>
-                    <div class="nav-item" onclick="showPanel('ponto-pedido')"><span class="nav-icon">⬡</span>Ponto de
-                        Pedido <span class="nav-badge" id="badge-ruptura">–</span></div>
-                    <div class="nav-item" onclick="showPanel('estoque-seguranca')"><span
-                            class="nav-icon">◻</span>Estoque de Segurança </div>
-                    <div class="nav-item" onclick="showPanel('ppr')"><span class="nav-icon">⟁</span>PPR · Performance
+                    <div class="nav-group" id="group-sop">
+                        <div class="nav-group-header" onclick="toggleNavGroup('group-sop')">
+                            <span class="nav-group-title">S&OP</span>
+                            <span class="nav-group-arrow">▾</span>
+                        </div>
+                        <div class="nav-group-items">
+                            <div class="nav-item" onclick="showPanel('curva-abc')"><span class="nav-icon">◉</span>Curva ABC</div>
+                            <div class="nav-item" onclick="showPanel('ponto-pedido')"><span class="nav-icon">⬡</span>Ponto de Pedido <span class="nav-badge" id="badge-ruptura">–</span></div>
+                            <div class="nav-item" onclick="showPanel('estoque-seguranca')"><span class="nav-icon">◻</span>Estoque de Segurança</div>
+                            <div class="nav-item" onclick="showPanel('ppr')"><span class="nav-icon">⟁</span>PPR · Performance</div>
+                            <div class="nav-item" onclick="showPanel('forecast')"><span class="nav-icon">∿</span>Forecast 12M</div>
+                            <div class="nav-item" onclick="showPanel('semana')"><span class="nav-icon">▦</span>Lista Semanal <span class="nav-badge green" id="badge-semana">–</span></div>
+                        </div>
                     </div>
-                    <div class="nav-item" onclick="showPanel('forecast')"><span class="nav-icon">∿</span>Forecast 12M
+                    <div class="nav-group" id="group-dfs">
+                        <div class="nav-group-header" onclick="toggleNavGroup('group-dfs')">
+                            <span class="nav-group-title">DFS</span>
+                            <span class="nav-group-arrow">▾</span>
+                        </div>
+                        <div class="nav-group-items">
+                            <div class="nav-item" onclick="showPanel('dfs-base')"><span class="nav-icon">▤</span>Base de dados</div>
+                            <div class="nav-item" onclick="showPanel('dfs-balanco')"><span class="nav-icon">▣</span>Balanço patrimonial</div>
+                            <div class="nav-item" onclick="showPanel('dfs-dre')"><span class="nav-icon">▥</span>DRE</div>
+                            <div class="nav-item" onclick="showPanel('dfs-fluxo')"><span class="nav-icon">⇄</span>Fluxo de caixa indireto</div>
+                            <div class="nav-item" onclick="showPanel('dfs-kpis')"><span class="nav-icon">◆</span>KPIs</div>
+                        </div>
                     </div>
-                    <div class="nav-section-label" style="margin-top:12px">Semana</div>
-                    <div class="nav-item" onclick="showPanel('semana')"><span class="nav-icon">▦</span>Lista Semanal
-                        <span class="nav-badge green" id="badge-semana">–</span></div>
-                    <div class="nav-section-label" style="margin-top:12px">DFS</div>
-                    <div class="nav-item" onclick="showPanel('dfs-base')"><span class="nav-icon">▤</span>Base de dados</div>
-                    <div class="nav-item" onclick="showPanel('dfs-balanco')"><span class="nav-icon">▣</span>Balanço patrimonial</div>
-                    <div class="nav-item" onclick="showPanel('dfs-dre')"><span class="nav-icon">▥</span>DRE</div>
-                    <div class="nav-item" onclick="showPanel('dfs-fluxo')"><span class="nav-icon">⇄</span>Fluxo de caixa indireto</div>
-                    <div class="nav-item" onclick="showPanel('dfs-kpis')"><span class="nav-icon">◆</span>KPIs</div>
-                    <div class="nav-section-label" style="margin-top:12px" id="admin-section">Administração</div>
-                    <div class="nav-item" id="admin-nav" onclick="showPanel('admin-usuarios')" style="display:none">
-                        <span class="nav-icon">⚙</span>Gerenciar Usuários</div>
+                    <div class="nav-group" id="group-admin" style="display:none">
+                        <div class="nav-group-header" onclick="toggleNavGroup('group-admin')">
+                            <span class="nav-group-title">Administração</span>
+                            <span class="nav-group-arrow">▾</span>
+                        </div>
+                        <div class="nav-group-items">
+                            <div class="nav-item" id="admin-nav" onclick="showPanel('admin-usuarios')">
+                                <span class="nav-icon">⚙</span>Gerenciar Usuários</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="sidebar-footer">
                     <div class="user-info">
@@ -2509,8 +2576,7 @@
 
                         // Show admin section if user is admin
                         if (currentRole === 'admin') {
-                            document.getElementById('admin-section').style.display = 'block';
-                            document.getElementById('admin-nav').style.display = 'flex';
+                            document.getElementById('group-admin').style.display = 'block';
                         }
 
                         // Update user role display
@@ -2969,6 +3035,10 @@
             }
 
                 ;
+
+            function toggleNavGroup(groupId) {
+                document.getElementById(groupId).classList.toggle('collapsed');
+            }
 
             function showPanel(id) {
                 const panelEl = document.getElementById('panel-' + id);
