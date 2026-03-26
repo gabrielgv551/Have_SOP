@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
   try {
     // 1. TENTATIVA VIA BANCO DE DADOS
     const pool = getPool(company);
-    const result = await pool.query('SELECT * FROM usuarios WHERE usuario = $1 AND ativo = TRUE', [usuarioInput]);
+    const result = await pool.query('SELECT * FROM usuarios WHERE LOWER(usuario) = $1 AND ativo = TRUE', [usuarioInput]);
     const dbUser = result.rows[0];
 
     if (dbUser) {

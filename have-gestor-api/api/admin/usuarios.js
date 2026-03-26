@@ -66,7 +66,8 @@ async function handleCreateUsuario(req, res) {
   if (!payload) return;
 
   try {
-    const { nome, usuario, password, perfil, empresa } = req.body;
+    const { nome, usuario: rawUsuario, password, perfil, empresa } = req.body;
+    const usuario = (rawUsuario || '').toLowerCase().trim();
 
     // Validation
     if (!nome || !usuario || !password || !perfil) {
