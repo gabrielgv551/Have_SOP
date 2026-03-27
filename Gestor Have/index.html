@@ -1048,6 +1048,21 @@
             }
 
             /* Loading state */
+            .add-account-btn {
+                background: rgba(0, 136, 255, 0.1);
+                border: 1px solid rgba(0, 136, 255, 0.3);
+                color: var(--accent);
+                padding: 2px 8px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 11px;
+                font-weight: 600;
+            }
+
+            .add-account-btn:hover {
+                background: rgba(0, 136, 255, 0.2);
+            }
+
             .loading-skeleton {
                 background: linear-gradient(90deg, var(--surface2) 25%, rgba(255, 255, 255, 0.04) 50%, var(--surface2) 75%);
                 background-size: 400% 100%;
@@ -1709,7 +1724,6 @@
                             <div class="nav-item" onclick="showPanel('ponto-pedido')"><span class="nav-icon">⬡</span>Ponto de Pedido <span class="nav-badge" id="badge-ruptura">–</span></div>
                             <div class="nav-item" onclick="showPanel('estoque-seguranca')"><span class="nav-icon">◻</span>Estoque de Segurança</div>
                             <div class="nav-item" onclick="showPanel('ppr')"><span class="nav-icon">⟁</span>PPR · Performance</div>
-                            <div class="nav-item" onclick="showPanel('forecast')"><span class="nav-icon">∿</span>Forecast 12M</div>
                             <div class="nav-item" onclick="showPanel('semana')"><span class="nav-icon">▦</span>Lista Semanal <span class="nav-badge green" id="badge-semana">–</span></div>
                         </div>
                     </div>
@@ -1724,6 +1738,7 @@
                             <div class="nav-item" onclick="showPanel('dfs-dre')"><span class="nav-icon">▥</span>DRE</div>
                             <div class="nav-item" onclick="showPanel('dfs-fluxo')"><span class="nav-icon">⇄</span>Fluxo de caixa indireto</div>
                             <div class="nav-item" onclick="showPanel('dfs-kpis')"><span class="nav-icon">◆</span>KPIs</div>
+                            <div class="nav-item" onclick="showPanel('dfs-plano-contas')"><span class="nav-icon">☷</span>Plano de Contas</div>
                         </div>
                     </div>
                     <div class="nav-group" id="group-admin" style="display:none">
@@ -2095,93 +2110,121 @@
                 <div class="panel" id="panel-dfs-balanco">
                     <div class="section-header">
                         <div class="section-title">DFS · Balanço patrimonial</div>
+                        <div class="section-actions">
+                            <select id="balanco-ano-select" onchange="updateBalancoYear()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; margin-right:12px;">
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <button class="btn-primary" onclick="saveBalanceSheetChanges()" style="font-size:13px;">💾 Salvar alterações</button>
+                        </div>
                     </div>
                     <p class="dfs-intro">Layout espelhado da visão consolidada do modelo Excel
                         <span class="dfs-sample-tag">Exemplo visual</span>
                     </p>
                     <div class="dfs-sheet-card">
                         <div class="dfs-sheet-banner">Balanço patrimonial — consolidado</div>
-                        <div class="dfs-sheet-meta"><span><strong>Exercício</strong> 2025</span><span><strong>Referência</strong>
-                                jan/2025</span><span><strong>Empresa</strong> Consolidado</span></div>
+                        <div class="dfs-sheet-meta"><span><strong>Exercício</strong> <span id="balanco-exercicio">2025</span></span><span><strong>Referência</strong>
+                                jan/<span id="balanco-ref-ano">2025</span></span><span><strong>Empresa</strong> Consolidado</span></div>
                         <div class="dfs-table-wrap">
                             <table class="dfs-table">
                                 <thead>
                                     <tr>
                                         <th colspan="2">Descrição</th>
-                                        <th>31/01/2025</th>
-                                        <th>28/02/2025</th>
-                                        <th>31/03/2025</th>
+                                        <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th>
+                                        <th>Mai</th><th>Jun</th><th>Jul</th><th>Ago</th>
+                                        <th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
                                     </tr>
                                 </thead>
+                                <tbody id="balanco-tbody">
+                                    <!-- ATIVO -->
+                                    <tr class="dfs-row-total">
+                                        <td class="dfs-col-code"></td>
+                                        <td class="dfs-col-desc">TOTAL DO ATIVO</td>
+                                        <td class="dfs-num" id="total-ativo-mes1">0</td><td class="dfs-num" id="total-ativo-mes2">0</td><td class="dfs-num" id="total-ativo-mes3">0</td><td class="dfs-num" id="total-ativo-mes4">0</td><td class="dfs-num" id="total-ativo-mes5">0</td><td class="dfs-num" id="total-ativo-mes6">0</td><td class="dfs-num" id="total-ativo-mes7">0</td><td class="dfs-num" id="total-ativo-mes8">0</td><td class="dfs-num" id="total-ativo-mes9">0</td><td class="dfs-num" id="total-ativo-mes10">0</td><td class="dfs-num" id="total-ativo-mes11">0</td><td class="dfs-num" id="total-ativo-mes12">0</td>
+                                    </tr>
+
+                                    <!-- ATIVO CIRCULANTE -->
+                                    <tr class="dfs-row-section">
+                                        <td class="dfs-col-code"></td>
+                                        <td class="dfs-col-desc">Ativo Circulante</td>
+                                        <td colspan="12"><button class="add-account-btn" onclick="addAccountRow('ativo-circulante-body')">+ Adicionar conta</button></td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="ativo-circulante-body"></tbody>
                                 <tbody>
+                                    <tr class="dfs-row-subtotal">
+                                        <td class="dfs-col-code"></td>
+                                        <td class="dfs-col-desc">Total Ativo Circulante</td>
+                                        <td class="dfs-num" id="total-ac-mes1">0</td><td class="dfs-num" id="total-ac-mes2">0</td><td class="dfs-num" id="total-ac-mes3">0</td><td class="dfs-num" id="total-ac-mes4">0</td><td class="dfs-num" id="total-ac-mes5">0</td><td class="dfs-num" id="total-ac-mes6">0</td><td class="dfs-num" id="total-ac-mes7">0</td><td class="dfs-num" id="total-ac-mes8">0</td><td class="dfs-num" id="total-ac-mes9">0</td><td class="dfs-num" id="total-ac-mes10">0</td><td class="dfs-num" id="total-ac-mes11">0</td><td class="dfs-num" id="total-ac-mes12">0</td>
+                                    </tr>
+
+                                    <!-- ATIVO NÃO CIRCULANTE -->
                                     <tr class="dfs-row-section">
                                         <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="4">ATIVO</td>
+                                        <td class="dfs-col-desc">Ativo Não Circulante</td>
+                                        <td colspan="12"><button class="add-account-btn" onclick="addAccountRow('ativo-nao-circulante-body')">+ Adicionar conta</button></td>
                                     </tr>
-                                    <tr class="dfs-row-section">
+                                </tbody>
+                                <tbody id="ativo-nao-circulante-body"></tbody>
+                                <tbody>
+                                    <tr class="dfs-row-subtotal">
                                         <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="4">Ativo circulante</td>
+                                        <td class="dfs-col-desc">Total Ativo Não Circulante</td>
+                                        <td class="dfs-num" id="total-anc-mes1">0</td><td class="dfs-num" id="total-anc-mes2">0</td><td class="dfs-num" id="total-anc-mes3">0</td><td class="dfs-num" id="total-anc-mes4">0</td><td class="dfs-num" id="total-anc-mes5">0</td><td class="dfs-num" id="total-anc-mes6">0</td><td class="dfs-num" id="total-anc-mes7">0</td><td class="dfs-num" id="total-anc-mes8">0</td><td class="dfs-num" id="total-anc-mes9">0</td><td class="dfs-num" id="total-anc-mes10">0</td><td class="dfs-num" id="total-anc-mes11">0</td><td class="dfs-num" id="total-anc-mes12">0</td>
                                     </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Caixa e equivalentes de caixa</td>
-                                        <td class="dfs-num">140.000</td>
-                                        <td class="dfs-num">152.300</td>
-                                        <td class="dfs-num">148.920</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Contas a receber</td>
-                                        <td class="dfs-num">502.400</td>
-                                        <td class="dfs-num">489.120</td>
-                                        <td class="dfs-num">521.880</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Estoques</td>
-                                        <td class="dfs-num">287.650</td>
-                                        <td class="dfs-num">301.040</td>
-                                        <td class="dfs-num">295.200</td>
-                                    </tr>
-                                    <tr class="dfs-row-section">
-                                        <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="4">Ativo não circulante</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Investimentos</td>
-                                        <td class="dfs-num">120.000</td>
-                                        <td class="dfs-num">120.000</td>
-                                        <td class="dfs-num">125.400</td>
-                                    </tr>
+
+                                    <!-- PASSIVO -->
                                     <tr class="dfs-row-total">
                                         <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc">Total do ativo</td>
-                                        <td class="dfs-num">1.050.050</td>
-                                        <td class="dfs-num">1.062.460</td>
-                                        <td class="dfs-num">1.091.400</td>
+                                        <td class="dfs-col-desc">TOTAL DO PASSIVO + PL</td>
+                                        <td class="dfs-num" id="total-passivo-pl-mes1">0</td><td class="dfs-num" id="total-passivo-pl-mes2">0</td><td class="dfs-num" id="total-passivo-pl-mes3">0</td><td class="dfs-num" id="total-passivo-pl-mes4">0</td><td class="dfs-num" id="total-passivo-pl-mes5">0</td><td class="dfs-num" id="total-passivo-pl-mes6">0</td><td class="dfs-num" id="total-passivo-pl-mes7">0</td><td class="dfs-num" id="total-passivo-pl-mes8">0</td><td class="dfs-num" id="total-passivo-pl-mes9">0</td><td class="dfs-num" id="total-passivo-pl-mes10">0</td><td class="dfs-num" id="total-passivo-pl-mes11">0</td><td class="dfs-num" id="total-passivo-pl-mes12">0</td>
                                     </tr>
+
+                                    <!-- PASSIVO CIRCULANTE -->
                                     <tr class="dfs-row-section">
                                         <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="4">Passivo</td>
+                                        <td class="dfs-col-desc">Passivo Circulante</td>
+                                        <td colspan="12"><button class="add-account-btn" onclick="addAccountRow('passivo-circulante-body')">+ Adicionar conta</button></td>
                                     </tr>
+                                </tbody>
+                                <tbody id="passivo-circulante-body"></tbody>
+                                <tbody>
+                                    <tr class="dfs-row-subtotal">
+                                        <td class="dfs-col-code"></td>
+                                        <td class="dfs-col-desc">Total Passivo Circulante</td>
+                                        <td class="dfs-num" id="total-pc-mes1">0</td><td class="dfs-num" id="total-pc-mes2">0</td><td class="dfs-num" id="total-pc-mes3">0</td><td class="dfs-num" id="total-pc-mes4">0</td><td class="dfs-num" id="total-pc-mes5">0</td><td class="dfs-num" id="total-pc-mes6">0</td><td class="dfs-num" id="total-pc-mes7">0</td><td class="dfs-num" id="total-pc-mes8">0</td><td class="dfs-num" id="total-pc-mes9">0</td><td class="dfs-num" id="total-pc-mes10">0</td><td class="dfs-num" id="total-pc-mes11">0</td><td class="dfs-num" id="total-pc-mes12">0</td>
+                                    </tr>
+
+                                    <!-- PASSIVO NÃO CIRCULANTE -->
                                     <tr class="dfs-row-section">
                                         <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="4">Passivo circulante</td>
+                                        <td class="dfs-col-desc">Passivo Não Circulante</td>
+                                        <td colspan="12"><button class="add-account-btn" onclick="addAccountRow('passivo-nao-circulante-body')">+ Adicionar conta</button></td>
                                     </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Fornecedores</td>
-                                        <td class="dfs-num">210.300</td>
-                                        <td class="dfs-num">198.400</td>
-                                        <td class="dfs-num">205.100</td>
-                                    </tr>
-                                    <tr class="dfs-row-total">
+                                </tbody>
+                                <tbody id="passivo-nao-circulante-body"></tbody>
+                                <tbody>
+                                    <tr class="dfs-row-subtotal">
                                         <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc">Total do passivo + patrimônio líquido</td>
-                                        <td class="dfs-num">1.050.050</td>
-                                        <td class="dfs-num">1.062.460</td>
-                                        <td class="dfs-num">1.091.400</td>
+                                        <td class="dfs-col-desc">Total Passivo Não Circulante</td>
+                                        <td class="dfs-num" id="total-pnc-mes1">0</td><td class="dfs-num" id="total-pnc-mes2">0</td><td class="dfs-num" id="total-pnc-mes3">0</td><td class="dfs-num" id="total-pnc-mes4">0</td><td class="dfs-num" id="total-pnc-mes5">0</td><td class="dfs-num" id="total-pnc-mes6">0</td><td class="dfs-num" id="total-pnc-mes7">0</td><td class="dfs-num" id="total-pnc-mes8">0</td><td class="dfs-num" id="total-pnc-mes9">0</td><td class="dfs-num" id="total-pnc-mes10">0</td><td class="dfs-num" id="total-pnc-mes11">0</td><td class="dfs-num" id="total-pnc-mes12">0</td>
+                                    </tr>
+
+                                    <!-- PATRIMÔNIO LÍQUIDO -->
+                                    <tr class="dfs-row-section">
+                                        <td class="dfs-col-code"></td>
+                                        <td class="dfs-col-desc">Patrimônio Líquido</td>
+                                        <td colspan="12"><button class="add-account-btn" onclick="addAccountRow('pl-body')">+ Adicionar conta</button></td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="pl-body"></tbody>
+                                <tbody>
+                                    <tr class="dfs-row-subtotal">
+                                        <td class="dfs-col-code"></td>
+                                        <td class="dfs-col-desc">Total Patrimônio Líquido</td>
+                                        <td class="dfs-num" id="total-pl-mes1">0</td><td class="dfs-num" id="total-pl-mes2">0</td><td class="dfs-num" id="total-pl-mes3">0</td><td class="dfs-num" id="total-pl-mes4">0</td><td class="dfs-num" id="total-pl-mes5">0</td><td class="dfs-num" id="total-pl-mes6">0</td><td class="dfs-num" id="total-pl-mes7">0</td><td class="dfs-num" id="total-pl-mes8">0</td><td class="dfs-num" id="total-pl-mes9">0</td><td class="dfs-num" id="total-pl-mes10">0</td><td class="dfs-num" id="total-pl-mes11">0</td><td class="dfs-num" id="total-pl-mes12">0</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2401,6 +2444,34 @@
                         </div>
                     </div>
                 </div>
+                <div class="panel" id="panel-dfs-plano-contas">
+                    <div class="section-header">
+                        <div class="section-title">DFS · Plano de Contas</div>
+                    </div>
+                    <p class="dfs-intro">Associe as contas do seu balancete às contas padrão do sistema para que os relatórios sejam gerados corretamente.</p>
+
+                    <div class="table-card">
+                        <div class="table-scroll">
+                            <table id="plano-contas-table">
+                                <thead>
+                                    <tr>
+                                        <th>Código da Conta</th>
+                                        <th>Nome da Conta (do seu balancete)</th>
+                                        <th>Mapear para (Conta Padrão Have)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plano-contas-tbody">
+                                    <!-- As linhas serão carregadas via JS -->
+                                    <tr class="loading-row"><td colspan="3"><div class="loading-skeleton" style="width:100%"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="margin-top: 16px; text-align: right;">
+                        <button class="btn-primary" onclick="saveAccountMappings()">💾 Salvar Mapeamento</button>
+                    </div>
+                </div>
+
                 <div class="panel" id="panel-dfs-kpis">
                     <div class="section-header">
                         <div class="section-title">DFS · KPIs</div>
@@ -2543,15 +2614,199 @@
             </div><!-- /main-content -->
         </div><!-- /dashboard-page --><!-- Toast -->
         <div id="toast"></div>
-        <script> // ══════════════════════════════════════════════
+        <script>
+            function addAccountRow(tbodyId) {
+                const tbody = document.getElementById(tbodyId);
+                const newRow = document.createElement('tr');
+                newRow.classList.add('dfs-row-item');
+
+                const rowId = `row-${new Date().getTime()}`;
+                newRow.id = rowId;
+
+                const monthlyValues = Array.from({ length: 12 }, (_, i) => 
+                    `<td class="dfs-num account-value" data-month="${i + 1}">0</td>`
+                ).join('');
+
+                newRow.innerHTML = `
+                    <td class="dfs-col-code"><input type="text" placeholder="Cód." style="width: 60px;"/></td>
+                    <td class="dfs-col-desc"><input type="text" placeholder="Nome da conta" style="width: 100%;"/></td>
+                    ${monthlyValues}
+                    <td><button onclick="removeAccountRow('${rowId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:14px;">✕</button></td>
+                `;
+
+                tbody.appendChild(newRow);
+            }
+
+            function removeAccountRow(rowId) {
+                document.getElementById(rowId).remove();
+                updateTotals();
+            }
+
+            function updateTotals() {
+                const formatNumber = (num) => new Intl.NumberFormat('pt-BR').format(num.toFixed(0));
+                const parseNumber = (str) => parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+
+                for (let i = 1; i <= 12; i++) {
+                    const totalAC = Array.from(document.querySelectorAll(`#ativo-circulante-body .account-value[data-month="${i}"]`)).reduce((sum, el) => sum + parseNumber(el.textContent), 0);
+                    const totalANC = Array.from(document.querySelectorAll(`#ativo-nao-circulante-body .account-value[data-month="${i}"]`)).reduce((sum, el) => sum + parseNumber(el.textContent), 0);
+                    const totalPC = Array.from(document.querySelectorAll(`#passivo-circulante-body .account-value[data-month="${i}"]`)).reduce((sum, el) => sum + parseNumber(el.textContent), 0);
+                    const totalPNC = Array.from(document.querySelectorAll(`#passivo-nao-circulante-body .account-value[data-month="${i}"]`)).reduce((sum, el) => sum + parseNumber(el.textContent), 0);
+                    const totalPL = Array.from(document.querySelectorAll(`#pl-body .account-value[data-month="${i}"]`)).reduce((sum, el) => sum + parseNumber(el.textContent), 0);
+
+                    document.getElementById(`total-ac-mes${i}`).textContent = formatNumber(totalAC);
+                    document.getElementById(`total-anc-mes${i}`).textContent = formatNumber(totalANC);
+                    document.getElementById(`total-pc-mes${i}`).textContent = formatNumber(totalPC);
+                    document.getElementById(`total-pnc-mes${i}`).textContent = formatNumber(totalPNC);
+                    document.getElementById(`total-pl-mes${i}`).textContent = formatNumber(totalPL);
+
+                    const totalAtivo = totalAC + totalANC;
+                    const totalPassivoPL = totalPC + totalPNC + totalPL;
+
+                    document.getElementById(`total-ativo-mes${i}`).textContent = formatNumber(totalAtivo);
+                    document.getElementById(`total-passivo-pl-mes${i}`).textContent = formatNumber(totalPassivoPL);
+                }
+            }
+
+            function updateBalancoYear() {
+                const selectedYear = document.getElementById('balanco-ano-select').value;
+                document.getElementById('balanco-exercicio').textContent = selectedYear;
+                document.getElementById('balanco-ref-ano').textContent = selectedYear;
+                
+                loadBalancoData(selectedYear);
+            }
+
+            async function loadBalancoData(year) {
+                showToast(`Carregando dados de ${year}...`, 'info');
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                document.querySelectorAll('.account-value').forEach(cell => {
+                    const randomValue = Math.floor(Math.random() * 500000);
+                    cell.textContent = new Intl.NumberFormat('pt-BR').format(randomValue);
+                });
+                
+                updateTotals();
+                showToast(`Dados de ${year} carregados com sucesso!`);
+            }
+
+            // ══════════════════════════════════════════════
             // CONFIG
             // ══════════════════════════════════════════════
             // Credenciais estão seguras no backend Vercel + JWT tokens
             // Frontend não armazena nenhuma credencial de banco de dados
 
             // ══════════════════════════════════════════════
-            // STATE
+            // TOAST NOTIFICATION
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = `show ${type}`;
+                setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+            }
+
             // ══════════════════════════════════════════════
+            // PLANO DE CONTAS
+            // ══════════════════════════════════════════════
+            const contasPadraoHave = {
+                'Ativo Circulante': ['Caixa e Equivalentes de Caixa', 'Contas a Receber', 'Estoques', 'Impostos a Recuperar', 'Outros Ativos Circulantes'],
+                'Ativo Não Circulante': ['Investimentos', 'Imobilizado', 'Intangível'],
+                'Passivo Circulante': ['Fornecedores', 'Empréstimos e Financiamentos (CP)', 'Obrigações Fiscais', 'Obrigações Trabalhistas', 'Outras Obrigações'],
+                'Passivo Não Circulante': ['Empréstimos e Financiamentos (LP)'],
+                'Patrimônio Líquido': ['Capital Social', 'Reservas de Lucro', 'Lucros/Prejuízos Acumulados']
+            };
+
+            async function loadPlanoDeContas() {
+                const tbody = document.getElementById('plano-contas-tbody');
+                tbody.innerHTML = '<tr class="loading-row"><td colspan="3"><div class="loading-skeleton" style="width:100%"></div></td></tr>';
+
+                // Simulação: Carregar contas do balancete do usuário (deveria vir da API)
+                const userAccounts = await new Promise(resolve => setTimeout(() => resolve([
+                    { code: '1.01.01.001', name: 'Banco do Brasil' },
+                    { code: '1.01.02.005', name: 'Clientes Nacionais' },
+                    { code: '1.01.04.001', name: 'Estoque de Matéria Prima' },
+                    { code: '2.01.01.001', name: 'Fornecedores Nacionais' },
+                    { code: '2.03.01.001', name: 'Capital Social Integralizado' },
+                ]), 500));
+
+                // Simulação: Carregar mapeamentos salvos (deveria vir da API)
+                const savedMappings = await new Promise(resolve => setTimeout(() => resolve({
+                    '1.01.01.001': 'Caixa e Equivalentes de Caixa',
+                    '2.03.01.001': 'Capital Social'
+                }), 200));
+
+                tbody.innerHTML = ''; // Limpa o loading
+
+                userAccounts.forEach(account => {
+                    const row = document.createElement('tr');
+                    row.dataset.accountCode = account.code;
+
+                    const optionsHtml = Object.entries(contasPadraoHave).map(([group, accounts]) => 
+                        `<optgroup label="${group}">${accounts.map(acc => `<option value="${acc}" ${savedMappings[account.code] === acc ? 'selected' : ''}>${acc}</option>`).join('')}</optgroup>`
+                    ).join('');
+
+                    row.innerHTML = `
+                        <td><span class="sku-code">${account.code}</span></td>
+                        <td>${account.name}</td>
+                        <td>
+                            <select class="filter-select" style="width:100%;">
+                                <option value="">Não mapeado</option>
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            function saveAccountMappings() {
+                const tbody = document.getElementById('plano-contas-tbody');
+                const rows = tbody.querySelectorAll('tr');
+                const mappings = {};
+
+                rows.forEach(row => {
+                    const accountCode = row.dataset.accountCode;
+                    const select = row.querySelector('select');
+                    if (accountCode && select && select.value) {
+                        mappings[accountCode] = select.value;
+                    }
+                });
+
+                console.log('Salvando mapeamentos:', JSON.stringify(mappings, null, 2));
+                showToast('Mapeamento salvo com sucesso! (Simulação)');
+                // Aqui você faria a chamada para a API para salvar os mapeamentos.
+            }
+
+            function saveBalanceSheetChanges() {
+                const accounts = [];
+                const accountSections = [
+                    { id: 'ativo-circulante-body', group: 'Ativo Circulante' },
+                    { id: 'ativo-nao-circulante-body', group: 'Ativo Não Circulante' },
+                    { id: 'passivo-circulante-body', group: 'Passivo Circulante' },
+                    { id: 'passivo-nao-circulante-body', group: 'Passivo Não Circulante' },
+                    { id: 'pl-body', group: 'Patrimônio Líquido' }
+                ];
+
+                accountSections.forEach(section => {
+                    const tbody = document.getElementById(section.id);
+                    const rows = tbody.querySelectorAll('tr.dfs-row-item');
+                    rows.forEach(row => {
+                        const codeInput = row.querySelector('td:nth-child(1) input');
+                        const nameInput = row.querySelector('td:nth-child(2) input');
+                        accounts.push({
+                            group: section.group,
+                            code: codeInput ? codeInput.value : '',
+                            name: nameInput ? nameInput.value : '',
+                        });
+                    });
+                });
+
+                console.log('Salvando alterações:', JSON.stringify(accounts, null, 2));
+                showToast('Alterações salvas com sucesso! (Simulação)');
+                // Aqui você faria a chamada para a API para salvar os dados.
+            }
+
+
+            // ═══════════════════════════════════════════════════════════════════
             let currentCompany = 'lanzi';
             let currentPanel = 'overview';
             let dbOnline = false;
@@ -3097,7 +3352,7 @@
                 'ppr': 'PPR · Performance de Vendas', 'forecast': 'Forecast 12 Meses',
                 'semana': 'Lista Semanal de Pedidos',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
-                'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs',
+                'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas',
                 'admin-usuarios': 'Gerenciar Usuários'
             }
 
@@ -3116,6 +3371,9 @@
                 document.querySelector(`.nav-item[onclick="showPanel('${id}')"]`)?.classList.add('active');
                 document.getElementById('topbar-title').textContent = panelTitles[id] || id;
                 currentPanel = id;
+                if (id === 'dfs-plano-contas') {
+                    loadPlanoDeContas();
+                }
                 if (window.innerWidth < 900) closeSidebar();
             }
 
