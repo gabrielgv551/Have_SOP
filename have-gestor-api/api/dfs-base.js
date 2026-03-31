@@ -79,13 +79,22 @@ module.exports = async (req, res) => {
         await client.query('BEGIN');
         await client.query('DELETE FROM dfs_balanco WHERE empresa=$1 AND ano=$2 AND mes=$3', [company, a, m]);
 
-        for (const r of rows) {
+        const CHUNK = 200;
+        for (let i = 0; i < rows.length; i += CHUNK) {
+          const chunk = rows.slice(i, i + CHUNK);
+          const vals = [];
+          const params = [];
+          chunk.forEach((r, idx) => {
+            const base = idx * 9;
+            vals.push(`($${base+1},$${base+2},$${base+3},$${base+4},$${base+5},$${base+6},$${base+7},$${base+8},$${base+9})`);
+            params.push(company, a, m, String(r.conta||''), String(r.nome||''), r.saldo_anterior||0, r.debito||0, r.credito||0, r.saldo_atual||0);
+          });
           await client.query(
-            `INSERT INTO dfs_balanco (empresa, ano, mes, conta, nome, saldo_anterior, debito, credito, saldo_atual)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-            [company, a, m, String(r.conta||''), String(r.nome||''), r.saldo_anterior||0, r.debito||0, r.credito||0, r.saldo_atual||0]
+            `INSERT INTO dfs_balanco (empresa, ano, mes, conta, nome, saldo_anterior, debito, credito, saldo_atual) VALUES ${vals.join(',')}`,
+            params
           );
         }
+
         await client.query('COMMIT');
         return res.json({ ok: true, count: rows.length });
       } catch (e) {
