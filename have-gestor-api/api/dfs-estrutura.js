@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
         'SELECT tipo, dados FROM dfs_estrutura WHERE empresa = $1',
         [company]
       );
-      const out = { structure: {}, mappings: {} };
+      const out = { structure: {}, mappings: {}, dre_structure: {}, dre_mappings: {}, fcx_data: {}, fcx_mappings: {}, kpi_formulas: null };
       result.rows.forEach(r => { out[r.tipo] = r.dados; });
       return res.json(out);
     }
@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       const { type, data } = req.body;
       if (!type || !data) return res.status(400).json({ error: 'Campos obrigatorios: type, data' });
-      if (!['structure', 'mappings', 'dre_structure', 'dre_mappings'].includes(type)) return res.status(400).json({ error: 'type invalido' });
+      if (!['structure', 'mappings', 'dre_structure', 'dre_mappings', 'fcx_data', 'fcx_mappings', 'kpi_formulas'].includes(type)) return res.status(400).json({ error: 'type invalido' });
 
       await pool.query(
         `INSERT INTO dfs_estrutura (empresa, tipo, dados, atualizado_em)

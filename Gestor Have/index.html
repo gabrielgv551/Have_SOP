@@ -507,6 +507,36 @@
                 border-top: 1px solid var(--border);
             }
 
+            /* ── Dark Sidebar Theme ── */
+            .sidebar {
+                background: #0f1b2d;
+                border-right: 1px solid rgba(255,255,255,0.07);
+            }
+            .sidebar-header {
+                border-bottom-color: rgba(255,255,255,0.07);
+            }
+            .sidebar-logo-text .brand { color: #ffffff; }
+            .sidebar-logo-text .company { color: var(--accent); }
+            .nav-group-title { color: rgba(255,255,255,0.38); }
+            .nav-group-arrow { color: rgba(255,255,255,0.38); }
+            .nav-group-header:hover { background: rgba(255,255,255,0.06); }
+            .nav-item { color: rgba(255,255,255,0.62); }
+            .nav-item:hover { background: rgba(255,255,255,0.07); color: #ffffff; }
+            .nav-item.active {
+                background: rgba(0,124,220,0.22);
+                color: #ffffff;
+                border-color: rgba(0,124,220,0.45);
+            }
+            .nav-item.active .nav-icon { color: var(--accent); }
+            .sidebar-footer { border-top-color: rgba(255,255,255,0.07); }
+            .user-info:hover { background: rgba(255,255,255,0.07); }
+            .user-name { color: #ffffff; }
+            .user-role { color: rgba(255,255,255,0.45); }
+            /* SVG logo: A-box white on dark sidebar */
+            .sidebar .brand-logo svg rect:nth-child(3) { stroke: #ffffff; }
+            .sidebar .brand-logo svg text:nth-child(4) { fill: #ffffff; }
+            /* ── End Dark Sidebar ── */
+
             .user-info {
                 display: flex;
                 align-items: center;
@@ -1488,6 +1518,7 @@
                 white-space: nowrap;
             }
 
+
             table.dfs-table tr.dfs-row-total td {
                 background: rgba(79, 127, 255, 0.18);
                 font-weight: 700;
@@ -1536,6 +1567,26 @@
             #panel-dfs-fluxo:not(.fluxo-edit) #btn-fcx-edit-actions { display:none !important; }
             #panel-dfs-fluxo.fluxo-edit #btn-fcx-edit { display:none !important; }
             #panel-dfs-fluxo.fluxo-edit #btn-fcx-edit-actions { display:flex !important; gap:8px; }
+            .fcx-map-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:13px; color:#94a3b8; padding:2px 4px; line-height:1; border-radius:4px; opacity:.7; transition:opacity .15s,color .15s; }
+            .fcx-map-btn:hover { opacity:1; color:var(--accent); }
+            .fcx-map-btn.mapped { color:#059669; opacity:1; }
+            tr.fcx-bal-mapped td.dfs-col-desc { background: rgba(5,150,105,0.05) !important; }
+
+            /* KPI Table */
+            #panel-dfs-kpis .dfs-sheet-card { padding: 0; overflow: hidden; }
+            #panel-dfs-kpis table.kpi-table { width: 100%; border-collapse: collapse; }
+            #panel-dfs-kpis table.kpi-table thead th { background: #1c2d4a; color: #fff; font-weight: 600; font-size: 12px; padding: 8px 6px; text-align: right; white-space: nowrap; border-bottom: 2px solid #2a3d5e; }
+            #panel-dfs-kpis table.kpi-table thead th.dfs-col-desc { text-align: left; padding-left: 14px; min-width: 280px; }
+            #panel-dfs-kpis table.kpi-table tr.dfs-row-section td { background: #1c2d4a; color: #fff; font-weight: 700; font-size: 12px; padding: 9px 14px; border-bottom: 1px solid #2a3d5e; letter-spacing: 0.3px; }
+            #panel-dfs-kpis table.kpi-table tr.dfs-row-item { border-bottom: none; }
+            #panel-dfs-kpis table.kpi-table tr.dfs-row-item td { background: #fff; font-size: 12px; padding: 7px 8px; border-bottom: none; border-top: 6px solid #f0f4fa; }
+            #panel-dfs-kpis table.kpi-table tr.dfs-row-item td.dfs-col-desc { padding-left: 14px; color: #1c2d4a; font-weight: 500; }
+            #panel-dfs-kpis table.kpi-table tr.dfs-row-item td.kpi-desc { max-width: 300px; white-space: normal; line-height: 1.4; }
+            #panel-dfs-kpis table.kpi-table tr.kpi-var-row td { background: #f7f9fc; font-size: 11px; padding: 4px 8px; border-bottom: 4px solid #e8edf5; }
+            #panel-dfs-kpis table.kpi-table tr.kpi-var-row td.dfs-col-desc { color: #e07b00; font-style: italic; font-weight: 500; padding-left: 14px; }
+            #panel-dfs-kpis table.kpi-table .dfs-num { text-align: right; font-variant-numeric: tabular-nums; }
+            #panel-dfs-kpis table.kpi-table tr.dfs-row-item td.dfs-num { font-weight: 600; color: #1c2d4a; }
+            #panel-dfs-kpis table.kpi-table tr.kpi-var-row td.dfs-num { color: #64748b; font-size: 11px; }
 
             table.dfs-table tr.dfs-row-section td.dfs-num {
                 color: var(--accent);
@@ -1977,16 +2028,6 @@
                             <div class="nav-item" onclick="showPanel('dfs-fluxo')"><span class="nav-icon">⇄</span>Fluxo de caixa indireto</div>
                             <div class="nav-item" onclick="showPanel('dfs-kpis')"><span class="nav-icon">◆</span>KPIs</div>
                             <div class="nav-item" onclick="showPanel('dfs-plano-contas')"><span class="nav-icon">☷</span>Plano de Contas</div>
-                        </div>
-                    </div>
-                    <div class="nav-group" id="group-admin" style="display:none">
-                        <div class="nav-group-header" onclick="toggleNavGroup('group-admin')">
-                            <span class="nav-group-title">Administração</span>
-                            <span class="nav-group-arrow">▾</span>
-                        </div>
-                        <div class="nav-group-items">
-                            <div class="nav-item" id="admin-nav" onclick="showPanel('admin-usuarios')">
-                                <span class="nav-icon">⚙</span>Gerenciar Usuários</div>
                         </div>
                     </div>
                 </div>
@@ -2813,6 +2854,7 @@
                                     <tr class="dfs-row-item"><td class="dfs-col-desc">Saldo Inicial</td><td class="dfs-num fcx-cell" id="fcx-saldo-ini-mes1" data-fcx-id="fcx-saldo-ini" data-month="1">0</td><td class="dfs-num" id="fcx-saldo-ini-mes2">–</td><td class="dfs-num" id="fcx-saldo-ini-mes3">–</td><td class="dfs-num" id="fcx-saldo-ini-mes4">–</td><td class="dfs-num" id="fcx-saldo-ini-mes5">–</td><td class="dfs-num" id="fcx-saldo-ini-mes6">–</td><td class="dfs-num" id="fcx-saldo-ini-mes7">–</td><td class="dfs-num" id="fcx-saldo-ini-mes8">–</td><td class="dfs-num" id="fcx-saldo-ini-mes9">–</td><td class="dfs-num" id="fcx-saldo-ini-mes10">–</td><td class="dfs-num" id="fcx-saldo-ini-mes11">–</td><td class="dfs-num" id="fcx-saldo-ini-mes12">–</td></tr>
                                     <tr class="dfs-row-item"><td class="dfs-col-desc">Caixa Gerado ou (Aplicado) no Exercício</td><td class="dfs-num" id="fcx-caixa-ger-mes1">–</td><td class="dfs-num" id="fcx-caixa-ger-mes2">–</td><td class="dfs-num" id="fcx-caixa-ger-mes3">–</td><td class="dfs-num" id="fcx-caixa-ger-mes4">–</td><td class="dfs-num" id="fcx-caixa-ger-mes5">–</td><td class="dfs-num" id="fcx-caixa-ger-mes6">–</td><td class="dfs-num" id="fcx-caixa-ger-mes7">–</td><td class="dfs-num" id="fcx-caixa-ger-mes8">–</td><td class="dfs-num" id="fcx-caixa-ger-mes9">–</td><td class="dfs-num" id="fcx-caixa-ger-mes10">–</td><td class="dfs-num" id="fcx-caixa-ger-mes11">–</td><td class="dfs-num" id="fcx-caixa-ger-mes12">–</td></tr>
                                     <tr class="fcx-saldo-row"><td class="dfs-col-desc">Saldo Final</td><td class="dfs-num" id="fcx-saldo-fin-mes1">–</td><td class="dfs-num" id="fcx-saldo-fin-mes2">–</td><td class="dfs-num" id="fcx-saldo-fin-mes3">–</td><td class="dfs-num" id="fcx-saldo-fin-mes4">–</td><td class="dfs-num" id="fcx-saldo-fin-mes5">–</td><td class="dfs-num" id="fcx-saldo-fin-mes6">–</td><td class="dfs-num" id="fcx-saldo-fin-mes7">–</td><td class="dfs-num" id="fcx-saldo-fin-mes8">–</td><td class="dfs-num" id="fcx-saldo-fin-mes9">–</td><td class="dfs-num" id="fcx-saldo-fin-mes10">–</td><td class="dfs-num" id="fcx-saldo-fin-mes11">–</td><td class="dfs-num" id="fcx-saldo-fin-mes12">–</td></tr>
+                                    <tr class="dfs-row-item" style="background:#eaf4ff;"><td class="dfs-col-desc" style="color:#007CDC;font-style:italic;">✔ Saldo Atual Balanço (Caixa)</td><td class="dfs-num" id="fcx-check-mes1" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes2" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes3" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes4" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes5" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes6" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes7" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes8" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes9" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes10" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes11" style="color:#007CDC;font-style:italic;">–</td><td class="dfs-num" id="fcx-check-mes12" style="color:#007CDC;font-style:italic;">–</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2867,105 +2909,66 @@
                 <div class="panel" id="panel-dfs-kpis">
                     <div class="section-header">
                         <div class="section-title">DFS · KPIs</div>
+                        <div class="section-actions">
+                            <button class="btn-primary" onclick="openKpiFormulaModal()" style="font-size:13px;margin-right:8px;">⚙️ Fórmulas</button>
+                            <select id="kpi-ano-select" onchange="updateKpiYear()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;"><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select>
+                        </div>
                     </div>
-                    <p class="dfs-intro">Indicadores no formato da aba <strong>KPI(Consol)</strong>: blocos por tema e séries
-                        mensais. <span class="dfs-sample-tag">Exemplo visual</span></p>
                     <div class="dfs-sheet-card">
-                        <div class="dfs-sheet-banner">Indicadores — consolidado</div>
-                        <div class="dfs-sheet-meta"><span><strong>Base</strong> Demonstrativos consolidados</span><span><strong>Atualização</strong>
-                                automática (futuro)</span></div>
+                        <div class="dfs-sheet-banner">Indicadores — <span id="kpi-exercicio">2026</span></div>
                         <div class="dfs-table-wrap">
-                            <table class="dfs-table">
+                            <table class="dfs-table kpi-table">
                                 <thead>
                                     <tr>
-                                        <th colspan="2">Indicador</th>
-                                        <th>Jan/2025</th>
-                                        <th>Fev/2025</th>
-                                        <th>Mar/2025</th>
-                                        <th>Abr/2025</th>
-                                        <th>Mai/2025</th>
-                                        <th>Jun/2025</th>
+                                        <th class="dfs-col-desc">Indicador</th>
+                                        <th class="dfs-num">Jan</th><th class="dfs-num">Fev</th><th class="dfs-num">Mar</th><th class="dfs-num">Abr</th><th class="dfs-num">Mai</th><th class="dfs-num">Jun</th><th class="dfs-num">Jul</th><th class="dfs-num">Ago</th><th class="dfs-num">Set</th><th class="dfs-num">Out</th><th class="dfs-num">Nov</th><th class="dfs-num">Dez</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="dfs-row-section">
-                                        <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="7">I — Índices de liquidez</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Liquidez corrente = AC / PC</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">1,817</td>
-                                        <td class="dfs-num">1,781</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">% variação mensal</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">0,0%</td>
-                                        <td class="dfs-num">−1,99%</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Liquidez geral = (AC + RLP) / (PC + PNC)</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">1,742</td>
-                                        <td class="dfs-num">1,713</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Solvência geral = AT / (PC + PNC)</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">—</td>
-                                        <td class="dfs-num">1,773</td>
-                                        <td class="dfs-num">1,742</td>
-                                    </tr>
-                                    <tr class="dfs-row-section">
-                                        <td class="dfs-col-code"></td>
-                                        <td class="dfs-col-desc" colspan="7">II — Margens e retornos</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Margem bruta / ROL</td>
-                                        <td class="dfs-num">38,6%</td>
-                                        <td class="dfs-num">38,7%</td>
-                                        <td class="dfs-num">38,9%</td>
-                                        <td class="dfs-num">39,0%</td>
-                                        <td class="dfs-num">39,1%</td>
-                                        <td class="dfs-num">39,2%</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">Margem líquida</td>
-                                        <td class="dfs-num">13,7%</td>
-                                        <td class="dfs-num">14,1%</td>
-                                        <td class="dfs-num">14,4%</td>
-                                        <td class="dfs-num">14,2%</td>
-                                        <td class="dfs-num">14,5%</td>
-                                        <td class="dfs-num">14,6%</td>
-                                    </tr>
-                                    <tr class="dfs-row-item">
-                                        <td class="dfs-col-code">—</td>
-                                        <td class="dfs-col-desc">ROE (retorno sobre PL)</td>
-                                        <td class="dfs-num">18,2%</td>
-                                        <td class="dfs-num">18,9%</td>
-                                        <td class="dfs-num">19,1%</td>
-                                        <td class="dfs-num">18,8%</td>
-                                        <td class="dfs-num">19,4%</td>
-                                        <td class="dfs-num">19,6%</td>
-                                    </tr>
+                                    <!-- I - LIQUIDEZ -->
+                                    <tr class="dfs-row-section"><td class="dfs-col-desc" colspan="13">I — Índices de Liquidez</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Liquidez Corrente = Ativo Circulante / Passivo Circulante</td><td class="dfs-num" id="kpi-lc-mes1">–</td><td class="dfs-num" id="kpi-lc-mes2">–</td><td class="dfs-num" id="kpi-lc-mes3">–</td><td class="dfs-num" id="kpi-lc-mes4">–</td><td class="dfs-num" id="kpi-lc-mes5">–</td><td class="dfs-num" id="kpi-lc-mes6">–</td><td class="dfs-num" id="kpi-lc-mes7">–</td><td class="dfs-num" id="kpi-lc-mes8">–</td><td class="dfs-num" id="kpi-lc-mes9">–</td><td class="dfs-num" id="kpi-lc-mes10">–</td><td class="dfs-num" id="kpi-lc-mes11">–</td><td class="dfs-num" id="kpi-lc-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-lc-var-mes1">–</td><td class="dfs-num" id="kpi-lc-var-mes2">–</td><td class="dfs-num" id="kpi-lc-var-mes3">–</td><td class="dfs-num" id="kpi-lc-var-mes4">–</td><td class="dfs-num" id="kpi-lc-var-mes5">–</td><td class="dfs-num" id="kpi-lc-var-mes6">–</td><td class="dfs-num" id="kpi-lc-var-mes7">–</td><td class="dfs-num" id="kpi-lc-var-mes8">–</td><td class="dfs-num" id="kpi-lc-var-mes9">–</td><td class="dfs-num" id="kpi-lc-var-mes10">–</td><td class="dfs-num" id="kpi-lc-var-mes11">–</td><td class="dfs-num" id="kpi-lc-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Liquidez Geral = (AC + RLP) / (PC + PNC)</td><td class="dfs-num" id="kpi-lg-mes1">–</td><td class="dfs-num" id="kpi-lg-mes2">–</td><td class="dfs-num" id="kpi-lg-mes3">–</td><td class="dfs-num" id="kpi-lg-mes4">–</td><td class="dfs-num" id="kpi-lg-mes5">–</td><td class="dfs-num" id="kpi-lg-mes6">–</td><td class="dfs-num" id="kpi-lg-mes7">–</td><td class="dfs-num" id="kpi-lg-mes8">–</td><td class="dfs-num" id="kpi-lg-mes9">–</td><td class="dfs-num" id="kpi-lg-mes10">–</td><td class="dfs-num" id="kpi-lg-mes11">–</td><td class="dfs-num" id="kpi-lg-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-lg-var-mes1">–</td><td class="dfs-num" id="kpi-lg-var-mes2">–</td><td class="dfs-num" id="kpi-lg-var-mes3">–</td><td class="dfs-num" id="kpi-lg-var-mes4">–</td><td class="dfs-num" id="kpi-lg-var-mes5">–</td><td class="dfs-num" id="kpi-lg-var-mes6">–</td><td class="dfs-num" id="kpi-lg-var-mes7">–</td><td class="dfs-num" id="kpi-lg-var-mes8">–</td><td class="dfs-num" id="kpi-lg-var-mes9">–</td><td class="dfs-num" id="kpi-lg-var-mes10">–</td><td class="dfs-num" id="kpi-lg-var-mes11">–</td><td class="dfs-num" id="kpi-lg-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Solvência Geral = (AT) / (PC + PNC)</td><td class="dfs-num" id="kpi-sg-mes1">–</td><td class="dfs-num" id="kpi-sg-mes2">–</td><td class="dfs-num" id="kpi-sg-mes3">–</td><td class="dfs-num" id="kpi-sg-mes4">–</td><td class="dfs-num" id="kpi-sg-mes5">–</td><td class="dfs-num" id="kpi-sg-mes6">–</td><td class="dfs-num" id="kpi-sg-mes7">–</td><td class="dfs-num" id="kpi-sg-mes8">–</td><td class="dfs-num" id="kpi-sg-mes9">–</td><td class="dfs-num" id="kpi-sg-mes10">–</td><td class="dfs-num" id="kpi-sg-mes11">–</td><td class="dfs-num" id="kpi-sg-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-sg-var-mes1">–</td><td class="dfs-num" id="kpi-sg-var-mes2">–</td><td class="dfs-num" id="kpi-sg-var-mes3">–</td><td class="dfs-num" id="kpi-sg-var-mes4">–</td><td class="dfs-num" id="kpi-sg-var-mes5">–</td><td class="dfs-num" id="kpi-sg-var-mes6">–</td><td class="dfs-num" id="kpi-sg-var-mes7">–</td><td class="dfs-num" id="kpi-sg-var-mes8">–</td><td class="dfs-num" id="kpi-sg-var-mes9">–</td><td class="dfs-num" id="kpi-sg-var-mes10">–</td><td class="dfs-num" id="kpi-sg-var-mes11">–</td><td class="dfs-num" id="kpi-sg-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Rácio de Teste Ácido = (AC − Estoques) / PC</td><td class="dfs-num" id="kpi-ta-mes1">–</td><td class="dfs-num" id="kpi-ta-mes2">–</td><td class="dfs-num" id="kpi-ta-mes3">–</td><td class="dfs-num" id="kpi-ta-mes4">–</td><td class="dfs-num" id="kpi-ta-mes5">–</td><td class="dfs-num" id="kpi-ta-mes6">–</td><td class="dfs-num" id="kpi-ta-mes7">–</td><td class="dfs-num" id="kpi-ta-mes8">–</td><td class="dfs-num" id="kpi-ta-mes9">–</td><td class="dfs-num" id="kpi-ta-mes10">–</td><td class="dfs-num" id="kpi-ta-mes11">–</td><td class="dfs-num" id="kpi-ta-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-ta-var-mes1">–</td><td class="dfs-num" id="kpi-ta-var-mes2">–</td><td class="dfs-num" id="kpi-ta-var-mes3">–</td><td class="dfs-num" id="kpi-ta-var-mes4">–</td><td class="dfs-num" id="kpi-ta-var-mes5">–</td><td class="dfs-num" id="kpi-ta-var-mes6">–</td><td class="dfs-num" id="kpi-ta-var-mes7">–</td><td class="dfs-num" id="kpi-ta-var-mes8">–</td><td class="dfs-num" id="kpi-ta-var-mes9">–</td><td class="dfs-num" id="kpi-ta-var-mes10">–</td><td class="dfs-num" id="kpi-ta-var-mes11">–</td><td class="dfs-num" id="kpi-ta-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Taxa de Caixa = Caixa + Banco / Passivo Circulante</td><td class="dfs-num" id="kpi-tc-mes1">–</td><td class="dfs-num" id="kpi-tc-mes2">–</td><td class="dfs-num" id="kpi-tc-mes3">–</td><td class="dfs-num" id="kpi-tc-mes4">–</td><td class="dfs-num" id="kpi-tc-mes5">–</td><td class="dfs-num" id="kpi-tc-mes6">–</td><td class="dfs-num" id="kpi-tc-mes7">–</td><td class="dfs-num" id="kpi-tc-mes8">–</td><td class="dfs-num" id="kpi-tc-mes9">–</td><td class="dfs-num" id="kpi-tc-mes10">–</td><td class="dfs-num" id="kpi-tc-mes11">–</td><td class="dfs-num" id="kpi-tc-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-tc-var-mes1">–</td><td class="dfs-num" id="kpi-tc-var-mes2">–</td><td class="dfs-num" id="kpi-tc-var-mes3">–</td><td class="dfs-num" id="kpi-tc-var-mes4">–</td><td class="dfs-num" id="kpi-tc-var-mes5">–</td><td class="dfs-num" id="kpi-tc-var-mes6">–</td><td class="dfs-num" id="kpi-tc-var-mes7">–</td><td class="dfs-num" id="kpi-tc-var-mes8">–</td><td class="dfs-num" id="kpi-tc-var-mes9">–</td><td class="dfs-num" id="kpi-tc-var-mes10">–</td><td class="dfs-num" id="kpi-tc-var-mes11">–</td><td class="dfs-num" id="kpi-tc-var-mes12">–</td></tr>
+                                    <!-- II - ROTATIVIDADE -->
+                                    <tr class="dfs-row-section"><td class="dfs-col-desc" colspan="13">II — Índices Financeiros de Rotatividade</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Rotatividade de estoque = CMV / estoque médio</td><td class="dfs-num" id="kpi-re-mes1">–</td><td class="dfs-num" id="kpi-re-mes2">–</td><td class="dfs-num" id="kpi-re-mes3">–</td><td class="dfs-num" id="kpi-re-mes4">–</td><td class="dfs-num" id="kpi-re-mes5">–</td><td class="dfs-num" id="kpi-re-mes6">–</td><td class="dfs-num" id="kpi-re-mes7">–</td><td class="dfs-num" id="kpi-re-mes8">–</td><td class="dfs-num" id="kpi-re-mes9">–</td><td class="dfs-num" id="kpi-re-mes10">–</td><td class="dfs-num" id="kpi-re-mes11">–</td><td class="dfs-num" id="kpi-re-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-re-var-mes1">–</td><td class="dfs-num" id="kpi-re-var-mes2">–</td><td class="dfs-num" id="kpi-re-var-mes3">–</td><td class="dfs-num" id="kpi-re-var-mes4">–</td><td class="dfs-num" id="kpi-re-var-mes5">–</td><td class="dfs-num" id="kpi-re-var-mes6">–</td><td class="dfs-num" id="kpi-re-var-mes7">–</td><td class="dfs-num" id="kpi-re-var-mes8">–</td><td class="dfs-num" id="kpi-re-var-mes9">–</td><td class="dfs-num" id="kpi-re-var-mes10">–</td><td class="dfs-num" id="kpi-re-var-mes11">–</td><td class="dfs-num" id="kpi-re-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Estoque de dias = estoque médio / CPV x 365</td><td class="dfs-num" id="kpi-ed-mes1">–</td><td class="dfs-num" id="kpi-ed-mes2">–</td><td class="dfs-num" id="kpi-ed-mes3">–</td><td class="dfs-num" id="kpi-ed-mes4">–</td><td class="dfs-num" id="kpi-ed-mes5">–</td><td class="dfs-num" id="kpi-ed-mes6">–</td><td class="dfs-num" id="kpi-ed-mes7">–</td><td class="dfs-num" id="kpi-ed-mes8">–</td><td class="dfs-num" id="kpi-ed-mes9">–</td><td class="dfs-num" id="kpi-ed-mes10">–</td><td class="dfs-num" id="kpi-ed-mes11">–</td><td class="dfs-num" id="kpi-ed-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-ed-var-mes1">–</td><td class="dfs-num" id="kpi-ed-var-mes2">–</td><td class="dfs-num" id="kpi-ed-var-mes3">–</td><td class="dfs-num" id="kpi-ed-var-mes4">–</td><td class="dfs-num" id="kpi-ed-var-mes5">–</td><td class="dfs-num" id="kpi-ed-var-mes6">–</td><td class="dfs-num" id="kpi-ed-var-mes7">–</td><td class="dfs-num" id="kpi-ed-var-mes8">–</td><td class="dfs-num" id="kpi-ed-var-mes9">–</td><td class="dfs-num" id="kpi-ed-var-mes10">–</td><td class="dfs-num" id="kpi-ed-var-mes11">–</td><td class="dfs-num" id="kpi-ed-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Rotatividade de recebíveis = vendas líquidas / contas a receber médias</td><td class="dfs-num" id="kpi-rr-mes1">–</td><td class="dfs-num" id="kpi-rr-mes2">–</td><td class="dfs-num" id="kpi-rr-mes3">–</td><td class="dfs-num" id="kpi-rr-mes4">–</td><td class="dfs-num" id="kpi-rr-mes5">–</td><td class="dfs-num" id="kpi-rr-mes6">–</td><td class="dfs-num" id="kpi-rr-mes7">–</td><td class="dfs-num" id="kpi-rr-mes8">–</td><td class="dfs-num" id="kpi-rr-mes9">–</td><td class="dfs-num" id="kpi-rr-mes10">–</td><td class="dfs-num" id="kpi-rr-mes11">–</td><td class="dfs-num" id="kpi-rr-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-rr-var-mes1">–</td><td class="dfs-num" id="kpi-rr-var-mes2">–</td><td class="dfs-num" id="kpi-rr-var-mes3">–</td><td class="dfs-num" id="kpi-rr-var-mes4">–</td><td class="dfs-num" id="kpi-rr-var-mes5">–</td><td class="dfs-num" id="kpi-rr-var-mes6">–</td><td class="dfs-num" id="kpi-rr-var-mes7">–</td><td class="dfs-num" id="kpi-rr-var-mes8">–</td><td class="dfs-num" id="kpi-rr-var-mes9">–</td><td class="dfs-num" id="kpi-rr-var-mes10">–</td><td class="dfs-num" id="kpi-rr-var-mes11">–</td><td class="dfs-num" id="kpi-rr-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Contas a Receber (Dias) = Média Recebíveis Brutos ÷ (Vendas Brutas ÷ 365)</td><td class="dfs-num" id="kpi-crd-mes1">–</td><td class="dfs-num" id="kpi-crd-mes2">–</td><td class="dfs-num" id="kpi-crd-mes3">–</td><td class="dfs-num" id="kpi-crd-mes4">–</td><td class="dfs-num" id="kpi-crd-mes5">–</td><td class="dfs-num" id="kpi-crd-mes6">–</td><td class="dfs-num" id="kpi-crd-mes7">–</td><td class="dfs-num" id="kpi-crd-mes8">–</td><td class="dfs-num" id="kpi-crd-mes9">–</td><td class="dfs-num" id="kpi-crd-mes10">–</td><td class="dfs-num" id="kpi-crd-mes11">–</td><td class="dfs-num" id="kpi-crd-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-crd-var-mes1">–</td><td class="dfs-num" id="kpi-crd-var-mes2">–</td><td class="dfs-num" id="kpi-crd-var-mes3">–</td><td class="dfs-num" id="kpi-crd-var-mes4">–</td><td class="dfs-num" id="kpi-crd-var-mes5">–</td><td class="dfs-num" id="kpi-crd-var-mes6">–</td><td class="dfs-num" id="kpi-crd-var-mes7">–</td><td class="dfs-num" id="kpi-crd-var-mes8">–</td><td class="dfs-num" id="kpi-crd-var-mes9">–</td><td class="dfs-num" id="kpi-crd-var-mes10">–</td><td class="dfs-num" id="kpi-crd-var-mes11">–</td><td class="dfs-num" id="kpi-crd-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Contas a Pagar (Dias) = CAP / CPV x 365</td><td class="dfs-num" id="kpi-cpd-mes1">–</td><td class="dfs-num" id="kpi-cpd-mes2">–</td><td class="dfs-num" id="kpi-cpd-mes3">–</td><td class="dfs-num" id="kpi-cpd-mes4">–</td><td class="dfs-num" id="kpi-cpd-mes5">–</td><td class="dfs-num" id="kpi-cpd-mes6">–</td><td class="dfs-num" id="kpi-cpd-mes7">–</td><td class="dfs-num" id="kpi-cpd-mes8">–</td><td class="dfs-num" id="kpi-cpd-mes9">–</td><td class="dfs-num" id="kpi-cpd-mes10">–</td><td class="dfs-num" id="kpi-cpd-mes11">–</td><td class="dfs-num" id="kpi-cpd-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-cpd-var-mes1">–</td><td class="dfs-num" id="kpi-cpd-var-mes2">–</td><td class="dfs-num" id="kpi-cpd-var-mes3">–</td><td class="dfs-num" id="kpi-cpd-var-mes4">–</td><td class="dfs-num" id="kpi-cpd-var-mes5">–</td><td class="dfs-num" id="kpi-cpd-var-mes6">–</td><td class="dfs-num" id="kpi-cpd-var-mes7">–</td><td class="dfs-num" id="kpi-cpd-var-mes8">–</td><td class="dfs-num" id="kpi-cpd-var-mes9">–</td><td class="dfs-num" id="kpi-cpd-var-mes10">–</td><td class="dfs-num" id="kpi-cpd-var-mes11">–</td><td class="dfs-num" id="kpi-cpd-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Ciclo de conversão de caixa = Dias Recebimento + Dias Estoque − Dias Pagamento</td><td class="dfs-num" id="kpi-ccc-mes1">–</td><td class="dfs-num" id="kpi-ccc-mes2">–</td><td class="dfs-num" id="kpi-ccc-mes3">–</td><td class="dfs-num" id="kpi-ccc-mes4">–</td><td class="dfs-num" id="kpi-ccc-mes5">–</td><td class="dfs-num" id="kpi-ccc-mes6">–</td><td class="dfs-num" id="kpi-ccc-mes7">–</td><td class="dfs-num" id="kpi-ccc-mes8">–</td><td class="dfs-num" id="kpi-ccc-mes9">–</td><td class="dfs-num" id="kpi-ccc-mes10">–</td><td class="dfs-num" id="kpi-ccc-mes11">–</td><td class="dfs-num" id="kpi-ccc-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-ccc-var-mes1">–</td><td class="dfs-num" id="kpi-ccc-var-mes2">–</td><td class="dfs-num" id="kpi-ccc-var-mes3">–</td><td class="dfs-num" id="kpi-ccc-var-mes4">–</td><td class="dfs-num" id="kpi-ccc-var-mes5">–</td><td class="dfs-num" id="kpi-ccc-var-mes6">–</td><td class="dfs-num" id="kpi-ccc-var-mes7">–</td><td class="dfs-num" id="kpi-ccc-var-mes8">–</td><td class="dfs-num" id="kpi-ccc-var-mes9">–</td><td class="dfs-num" id="kpi-ccc-var-mes10">–</td><td class="dfs-num" id="kpi-ccc-var-mes11">–</td><td class="dfs-num" id="kpi-ccc-var-mes12">–</td></tr>
+                                    <!-- III - RENTABILIDADE -->
+                                    <tr class="dfs-row-section"><td class="dfs-col-desc" colspan="13">III — Índices Financeiros de Rentabilidade</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Margem de Lucro Líquido = Lucro Líquido / Faturamento × 100</td><td class="dfs-num" id="kpi-ml-mes1">–</td><td class="dfs-num" id="kpi-ml-mes2">–</td><td class="dfs-num" id="kpi-ml-mes3">–</td><td class="dfs-num" id="kpi-ml-mes4">–</td><td class="dfs-num" id="kpi-ml-mes5">–</td><td class="dfs-num" id="kpi-ml-mes6">–</td><td class="dfs-num" id="kpi-ml-mes7">–</td><td class="dfs-num" id="kpi-ml-mes8">–</td><td class="dfs-num" id="kpi-ml-mes9">–</td><td class="dfs-num" id="kpi-ml-mes10">–</td><td class="dfs-num" id="kpi-ml-mes11">–</td><td class="dfs-num" id="kpi-ml-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-ml-var-mes1">–</td><td class="dfs-num" id="kpi-ml-var-mes2">–</td><td class="dfs-num" id="kpi-ml-var-mes3">–</td><td class="dfs-num" id="kpi-ml-var-mes4">–</td><td class="dfs-num" id="kpi-ml-var-mes5">–</td><td class="dfs-num" id="kpi-ml-var-mes6">–</td><td class="dfs-num" id="kpi-ml-var-mes7">–</td><td class="dfs-num" id="kpi-ml-var-mes8">–</td><td class="dfs-num" id="kpi-ml-var-mes9">–</td><td class="dfs-num" id="kpi-ml-var-mes10">–</td><td class="dfs-num" id="kpi-ml-var-mes11">–</td><td class="dfs-num" id="kpi-ml-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Retorno sobre o Ativo = Lucro Líquido / Ativo Total</td><td class="dfs-num" id="kpi-roa-mes1">–</td><td class="dfs-num" id="kpi-roa-mes2">–</td><td class="dfs-num" id="kpi-roa-mes3">–</td><td class="dfs-num" id="kpi-roa-mes4">–</td><td class="dfs-num" id="kpi-roa-mes5">–</td><td class="dfs-num" id="kpi-roa-mes6">–</td><td class="dfs-num" id="kpi-roa-mes7">–</td><td class="dfs-num" id="kpi-roa-mes8">–</td><td class="dfs-num" id="kpi-roa-mes9">–</td><td class="dfs-num" id="kpi-roa-mes10">–</td><td class="dfs-num" id="kpi-roa-mes11">–</td><td class="dfs-num" id="kpi-roa-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-roa-var-mes1">–</td><td class="dfs-num" id="kpi-roa-var-mes2">–</td><td class="dfs-num" id="kpi-roa-var-mes3">–</td><td class="dfs-num" id="kpi-roa-var-mes4">–</td><td class="dfs-num" id="kpi-roa-var-mes5">–</td><td class="dfs-num" id="kpi-roa-var-mes6">–</td><td class="dfs-num" id="kpi-roa-var-mes7">–</td><td class="dfs-num" id="kpi-roa-var-mes8">–</td><td class="dfs-num" id="kpi-roa-var-mes9">–</td><td class="dfs-num" id="kpi-roa-var-mes10">–</td><td class="dfs-num" id="kpi-roa-var-mes11">–</td><td class="dfs-num" id="kpi-roa-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Retorno sobre o Patrimônio Líquido = Lucro Líquido / Patrimônio Total</td><td class="dfs-num" id="kpi-roe-mes1">–</td><td class="dfs-num" id="kpi-roe-mes2">–</td><td class="dfs-num" id="kpi-roe-mes3">–</td><td class="dfs-num" id="kpi-roe-mes4">–</td><td class="dfs-num" id="kpi-roe-mes5">–</td><td class="dfs-num" id="kpi-roe-mes6">–</td><td class="dfs-num" id="kpi-roe-mes7">–</td><td class="dfs-num" id="kpi-roe-mes8">–</td><td class="dfs-num" id="kpi-roe-mes9">–</td><td class="dfs-num" id="kpi-roe-mes10">–</td><td class="dfs-num" id="kpi-roe-mes11">–</td><td class="dfs-num" id="kpi-roe-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-roe-var-mes1">–</td><td class="dfs-num" id="kpi-roe-var-mes2">–</td><td class="dfs-num" id="kpi-roe-var-mes3">–</td><td class="dfs-num" id="kpi-roe-var-mes4">–</td><td class="dfs-num" id="kpi-roe-var-mes5">–</td><td class="dfs-num" id="kpi-roe-var-mes6">–</td><td class="dfs-num" id="kpi-roe-var-mes7">–</td><td class="dfs-num" id="kpi-roe-var-mes8">–</td><td class="dfs-num" id="kpi-roe-var-mes9">–</td><td class="dfs-num" id="kpi-roe-var-mes10">–</td><td class="dfs-num" id="kpi-roe-var-mes11">–</td><td class="dfs-num" id="kpi-roe-var-mes12">–</td></tr>
+                                    <!-- IV - RISCO -->
+                                    <tr class="dfs-row-section"><td class="dfs-col-desc" colspan="13">IV — Índices de Risco Financeiro</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Índice de Dívida sobre Patrimônio Líquido = Dívida / Patrimônio Líquido</td><td class="dfs-num" id="kpi-dpl-mes1">–</td><td class="dfs-num" id="kpi-dpl-mes2">–</td><td class="dfs-num" id="kpi-dpl-mes3">–</td><td class="dfs-num" id="kpi-dpl-mes4">–</td><td class="dfs-num" id="kpi-dpl-mes5">–</td><td class="dfs-num" id="kpi-dpl-mes6">–</td><td class="dfs-num" id="kpi-dpl-mes7">–</td><td class="dfs-num" id="kpi-dpl-mes8">–</td><td class="dfs-num" id="kpi-dpl-mes9">–</td><td class="dfs-num" id="kpi-dpl-mes10">–</td><td class="dfs-num" id="kpi-dpl-mes11">–</td><td class="dfs-num" id="kpi-dpl-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-dpl-var-mes1">–</td><td class="dfs-num" id="kpi-dpl-var-mes2">–</td><td class="dfs-num" id="kpi-dpl-var-mes3">–</td><td class="dfs-num" id="kpi-dpl-var-mes4">–</td><td class="dfs-num" id="kpi-dpl-var-mes5">–</td><td class="dfs-num" id="kpi-dpl-var-mes6">–</td><td class="dfs-num" id="kpi-dpl-var-mes7">–</td><td class="dfs-num" id="kpi-dpl-var-mes8">–</td><td class="dfs-num" id="kpi-dpl-var-mes9">–</td><td class="dfs-num" id="kpi-dpl-var-mes10">–</td><td class="dfs-num" id="kpi-dpl-var-mes11">–</td><td class="dfs-num" id="kpi-dpl-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Índice de Cobertura de Juros = EBITDA / Despesa de Juros</td><td class="dfs-num" id="kpi-cj-mes1">–</td><td class="dfs-num" id="kpi-cj-mes2">–</td><td class="dfs-num" id="kpi-cj-mes3">–</td><td class="dfs-num" id="kpi-cj-mes4">–</td><td class="dfs-num" id="kpi-cj-mes5">–</td><td class="dfs-num" id="kpi-cj-mes6">–</td><td class="dfs-num" id="kpi-cj-mes7">–</td><td class="dfs-num" id="kpi-cj-mes8">–</td><td class="dfs-num" id="kpi-cj-mes9">–</td><td class="dfs-num" id="kpi-cj-mes10">–</td><td class="dfs-num" id="kpi-cj-mes11">–</td><td class="dfs-num" id="kpi-cj-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-cj-var-mes1">–</td><td class="dfs-num" id="kpi-cj-var-mes2">–</td><td class="dfs-num" id="kpi-cj-var-mes3">–</td><td class="dfs-num" id="kpi-cj-var-mes4">–</td><td class="dfs-num" id="kpi-cj-var-mes5">–</td><td class="dfs-num" id="kpi-cj-var-mes6">–</td><td class="dfs-num" id="kpi-cj-var-mes7">–</td><td class="dfs-num" id="kpi-cj-var-mes8">–</td><td class="dfs-num" id="kpi-cj-var-mes9">–</td><td class="dfs-num" id="kpi-cj-var-mes10">–</td><td class="dfs-num" id="kpi-cj-var-mes11">–</td><td class="dfs-num" id="kpi-cj-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Índice de Dívida / Ativo = Dívida / Ativo</td><td class="dfs-num" id="kpi-da-mes1">–</td><td class="dfs-num" id="kpi-da-mes2">–</td><td class="dfs-num" id="kpi-da-mes3">–</td><td class="dfs-num" id="kpi-da-mes4">–</td><td class="dfs-num" id="kpi-da-mes5">–</td><td class="dfs-num" id="kpi-da-mes6">–</td><td class="dfs-num" id="kpi-da-mes7">–</td><td class="dfs-num" id="kpi-da-mes8">–</td><td class="dfs-num" id="kpi-da-mes9">–</td><td class="dfs-num" id="kpi-da-mes10">–</td><td class="dfs-num" id="kpi-da-mes11">–</td><td class="dfs-num" id="kpi-da-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-da-var-mes1">–</td><td class="dfs-num" id="kpi-da-var-mes2">–</td><td class="dfs-num" id="kpi-da-var-mes3">–</td><td class="dfs-num" id="kpi-da-var-mes4">–</td><td class="dfs-num" id="kpi-da-var-mes5">–</td><td class="dfs-num" id="kpi-da-var-mes6">–</td><td class="dfs-num" id="kpi-da-var-mes7">–</td><td class="dfs-num" id="kpi-da-var-mes8">–</td><td class="dfs-num" id="kpi-da-var-mes9">–</td><td class="dfs-num" id="kpi-da-var-mes10">–</td><td class="dfs-num" id="kpi-da-var-mes11">–</td><td class="dfs-num" id="kpi-da-var-mes12">–</td></tr>
+                                    <tr class="dfs-row-item"><td class="dfs-col-desc kpi-desc">Índice de Dívida / EBITDA = Dívida / EBITDA</td><td class="dfs-num" id="kpi-de-mes1">–</td><td class="dfs-num" id="kpi-de-mes2">–</td><td class="dfs-num" id="kpi-de-mes3">–</td><td class="dfs-num" id="kpi-de-mes4">–</td><td class="dfs-num" id="kpi-de-mes5">–</td><td class="dfs-num" id="kpi-de-mes6">–</td><td class="dfs-num" id="kpi-de-mes7">–</td><td class="dfs-num" id="kpi-de-mes8">–</td><td class="dfs-num" id="kpi-de-mes9">–</td><td class="dfs-num" id="kpi-de-mes10">–</td><td class="dfs-num" id="kpi-de-mes11">–</td><td class="dfs-num" id="kpi-de-mes12">–</td></tr>
+                                    <tr class="kpi-var-row"><td class="dfs-col-desc">% De variação mensal</td><td class="dfs-num" id="kpi-de-var-mes1">–</td><td class="dfs-num" id="kpi-de-var-mes2">–</td><td class="dfs-num" id="kpi-de-var-mes3">–</td><td class="dfs-num" id="kpi-de-var-mes4">–</td><td class="dfs-num" id="kpi-de-var-mes5">–</td><td class="dfs-num" id="kpi-de-var-mes6">–</td><td class="dfs-num" id="kpi-de-var-mes7">–</td><td class="dfs-num" id="kpi-de-var-mes8">–</td><td class="dfs-num" id="kpi-de-var-mes9">–</td><td class="dfs-num" id="kpi-de-var-mes10">–</td><td class="dfs-num" id="kpi-de-var-mes11">–</td><td class="dfs-num" id="kpi-de-var-mes12">–</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -3096,10 +3099,20 @@
                         checkCell.style.background = isZero ? 'rgba(0,214,143,0.08)' : 'rgba(255,59,87,0.08)';
                     }
                 }
+                applyFcxBalMappings();
+                updateKpiTable();
+            }
+
+            function syncYearSelects(year) {
+                ['balanco-ano-select','dre-ano-select','fcx-ano-select','kpi-ano-select'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && Array.from(el.options).some(o => o.value === year)) el.value = year;
+                });
             }
 
             function updateBalancoYear() {
                 const selectedYear = document.getElementById('balanco-ano-select').value;
+                syncYearSelects(selectedYear);
                 document.getElementById('balanco-exercicio').textContent = selectedYear;
                 document.getElementById('balanco-ref-ano').textContent = selectedYear;
                 
@@ -3188,6 +3201,21 @@
                             }
                         });
                     });
+
+                    // Track which months have data (for FCX zero-fill)
+                    window._fcxBalLoadedMonths = new Set(yearMeses.map(m => m.mes));
+
+                    // Fetch December of previous year for FCX delta baseline (Jan = curr - prevDec)
+                    try {
+                        const prevDecRes = await fetch(API_BASE + '/dfs-base?ano=' + (yr - 1) + '&mes=12', {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (prevDecRes.ok) {
+                            const prevDecD = await prevDecRes.json();
+                            window._fcxPrevDecRows = prevDecD.rows || [];
+                            window._fcxPrevDecYear = yr - 1;
+                        }
+                    } catch { /* non-critical */ }
 
                     updateTotals();
                     showToast('Balanço ' + yr + ' — ' + totalMapped + ' contas carregadas', 'success');
@@ -3995,6 +4023,7 @@
 
             function updateDreYear() {
                 const yr = document.getElementById('dre-ano-select').value;
+                syncYearSelects(yr);
                 document.getElementById('dre-exercicio').textContent = yr;
                 loadDreDataOnly(yr);
             }
@@ -4088,6 +4117,613 @@
             }
 
             // ══════════════════════════════════════════════
+            // KPI — Indicadores Financeiros
+            // ══════════════════════════════════════════════
+            function updateKpiTable() {
+                const formulas = _kpiFormulas || KPI_DEFAULT_FORMULAS;
+                Object.keys(formulas).forEach(id => {
+                    const def = formulas[id];
+                    if (!def || !def.expr) return;
+                    let prev = null;
+                    for (let m = 1; m <= 12; m++) {
+                        const varVals = {};
+                        for (const [vn, vk] of Object.entries(def.vars || {})) {
+                            varVals[vn] = vk ? resolveKpiVar(vk, m) : null;
+                        }
+                        const v   = evalKpiFormula(def.expr, varVals);
+                        const fmt = def.fmt || 'ratio';
+                        const el  = document.getElementById('kpi-' + id + '-mes' + m);
+                        const vel = document.getElementById('kpi-' + id + '-var-mes' + m);
+                        if (el) {
+                            el.dataset.kpiRaw = (v !== null) ? String(v) : '';
+                            if (v === null) {
+                                el.textContent = '–';
+                            } else if (fmt === 'pct') {
+                                el.textContent = (v * 100).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%';
+                            } else if (fmt === 'days') {
+                                el.textContent = v.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' d';
+                            } else {
+                                el.textContent = v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+                            }
+                        }
+                        if (vel) {
+                            if (v === null || prev === null || prev === 0) {
+                                vel.textContent = '–'; vel.style.color = '';
+                            } else {
+                                const pct = (v - prev) / Math.abs(prev);
+                                vel.textContent = (pct >= 0 ? '+' : '') + (pct * 100).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%';
+                                vel.style.color = pct > 0.001 ? '#059669' : pct < -0.001 ? '#e07b00' : '#64748b';
+                            }
+                        }
+                        prev = v;
+                    }
+                });
+            }
+
+            function updateKpiYear() {
+                const yr = document.getElementById('kpi-ano-select').value;
+                syncYearSelects(yr);
+                const ex = document.getElementById('kpi-exercicio');
+                if (ex) ex.textContent = yr;
+                updateKpiTable();
+            }
+
+            // ══════════════════════════════════════════════
+            // KPI — Motor de Fórmulas Configuráveis
+            // ══════════════════════════════════════════════
+            const KPI_DEFAULT_FORMULAS = {
+                lc:  { label: 'Liquidez Corrente',              expr: 'A/B',         vars: {A:'bal:total-ac',      B:'bal:total-pc'},                                                   fmt:'ratio' },
+                lg:  { label: 'Liquidez Geral',                 expr: '(A+B)/(C+D)', vars: {A:'bal:total-ac',      B:'bal:total-anc',   C:'bal:total-pc',     D:'bal:total-pnc'},        fmt:'ratio' },
+                sg:  { label: 'Solvência Geral',                expr: 'A/(B+C)',     vars: {A:'bal:total-ativo',   B:'bal:total-pc',    C:'bal:total-pnc'},                             fmt:'ratio' },
+                ta:  { label: 'Teste Ácido',                    expr: '(A-B)/C',     vars: {A:'bal:total-ac',      B:'',                C:'bal:total-pc'},                              fmt:'ratio' },
+                tc:  { label: 'Taxa de Caixa',                  expr: 'A/B',         vars: {A:'',                  B:'bal:total-pc'},                                                   fmt:'ratio' },
+                re:  { label: 'Rotatividade de Estoque',        expr: 'A/B',         vars: {A:'dre:total-dre-cmv', B:''},                                                               fmt:'ratio' },
+                ed:  { label: 'Estoque de Dias',                expr: '(B/A)*30',    vars: {A:'dre:total-dre-cmv', B:''},                                                               fmt:'days'  },
+                rr:  { label: 'Rotatividade de Recebíveis',     expr: 'A/B',         vars: {A:'dre:total-dre-rol', B:''},                                                               fmt:'ratio' },
+                crd: { label: 'Contas a Receber (Dias)',        expr: '(A/B)*30',    vars: {A:'',                  B:'dre:total-dre-rol'},                                              fmt:'days'  },
+                cpd: { label: 'Contas a Pagar (Dias)',          expr: '(A/B)*30',    vars: {A:'',                  B:'dre:total-dre-cmv'},                                              fmt:'days'  },
+                ccc: { label: 'Ciclo de Conversão de Caixa',   expr: 'A+B-C',       vars: {A:'kpi:crd',           B:'kpi:ed',          C:'kpi:cpd'},                               fmt:'days'  },
+                ml:  { label: 'Margem de Lucro Líquido',       expr: 'A/B',         vars: {A:'dre:total-dre-rl',  B:'dre:total-dre-rol'},                                             fmt:'pct'   },
+                roa: { label: 'Retorno sobre o Ativo (ROA)',   expr: 'A/B',         vars: {A:'dre:total-dre-rl',  B:'bal:total-ativo'},                                               fmt:'pct'   },
+                roe: { label: 'Retorno sobre o PL (ROE)',      expr: 'A/B',         vars: {A:'dre:total-dre-rl',  B:'bal:total-pl'},                                                  fmt:'pct'   },
+                dpl: { label: 'Dívida / PL',                   expr: '(A+B)/C',     vars: {A:'bal:total-pc',      B:'bal:total-pnc',   C:'bal:total-pl'},                              fmt:'ratio' },
+                cj:  { label: 'Cobertura de Juros',            expr: 'A/B',         vars: {A:'dre:total-dre-ebitda', B:'dre:total-dre-fin'},                                          fmt:'ratio' },
+                da:  { label: 'Dívida / Ativo',                expr: '(A+B)/C',     vars: {A:'bal:total-pc',      B:'bal:total-pnc',   C:'bal:total-ativo'},                           fmt:'ratio' },
+                de:  { label: 'Dívida / EBITDA',               expr: '(A+B)/C',     vars: {A:'bal:total-pc',      B:'bal:total-pnc',   C:'dre:total-dre-ebitda'},                      fmt:'ratio' },
+            };
+
+            const KPI_STATIC_SOURCES = [
+                { group: 'Balanço — Totais de Seção', opts: [
+                    { key: 'bal:total-ac',    label: 'Ativo Circulante' },
+                    { key: 'bal:total-anc',   label: 'Ativo Não Circulante' },
+                    { key: 'bal:total-pc',    label: 'Passivo Circulante' },
+                    { key: 'bal:total-pnc',   label: 'Passivo Não Circulante' },
+                    { key: 'bal:total-pl',    label: 'Patrimônio Líquido' },
+                    { key: 'bal:total-ativo', label: 'Ativo Total' },
+                ]},
+                { group: 'KPIs — Valores Calculados', opts: [
+                    { key: 'kpi:lc',  label: 'Liquidez Corrente' },
+                    { key: 'kpi:lg',  label: 'Liquidez Geral' },
+                    { key: 'kpi:sg',  label: 'Solvência Geral' },
+                    { key: 'kpi:ta',  label: 'Teste Ácido' },
+                    { key: 'kpi:tc',  label: 'Taxa de Caixa' },
+                    { key: 'kpi:re',  label: 'Rotatividade de Estoque' },
+                    { key: 'kpi:ed',  label: 'Estoque de Dias' },
+                    { key: 'kpi:rr',  label: 'Rotatividade de Recebíveis' },
+                    { key: 'kpi:crd', label: 'Contas a Receber (Dias)' },
+                    { key: 'kpi:cpd', label: 'Contas a Pagar (Dias)' },
+                    { key: 'kpi:ml',  label: 'Margem de Lucro Líquido' },
+                    { key: 'kpi:roa', label: 'Retorno sobre o Ativo (ROA)' },
+                    { key: 'kpi:roe', label: 'Retorno sobre o PL (ROE)' },
+                    { key: 'kpi:dpl', label: 'Dívida / PL' },
+                    { key: 'kpi:cj',  label: 'Cobertura de Juros' },
+                    { key: 'kpi:da',  label: 'Dívida / Ativo' },
+                    { key: 'kpi:de',  label: 'Dívida / EBITDA' },
+                ]},
+                { group: 'DRE — Totais Calculados', opts: [
+                    { key: 'dre:total-dre-rob',      label: 'Receita Bruta (ROB)' },
+                    { key: 'dre:total-dre-rol',      label: 'Receita Líquida (ROL)' },
+                    { key: 'dre:total-dre-cmv',      label: 'CMV / CPV' },
+                    { key: 'dre:total-dre-custos',   label: 'Total Custos (CMV+Outros)' },
+                    { key: 'dre:total-dre-lb',       label: 'Lucro Bruto' },
+                    { key: 'dre:total-dre-desp-var', label: 'Despesas Variáveis' },
+                    { key: 'dre:total-dre-mc',       label: 'Margem de Contribuição' },
+                    { key: 'dre:total-dre-ebitda',   label: 'EBITDA' },
+                    { key: 'dre:total-dre-ebit',     label: 'EBIT (Res. Operacional)' },
+                    { key: 'dre:total-dre-fin',      label: 'Resultado Financeiro' },
+                    { key: 'dre:total-dre-antes-ir', label: 'Resultado antes IR/CSLL' },
+                    { key: 'dre:total-dre-rl',       label: 'Resultado Líquido' },
+                ]},
+            ];
+
+            function _kpiSourceGroups() {
+                const dyn = [];
+                const BAL_SECS = [
+                    { id: 'ativo-circulante-body',       label: 'Ativo Circulante' },
+                    { id: 'ativo-nao-circulante-body',   label: 'Ativo Não Circulante' },
+                    { id: 'passivo-circulante-body',     label: 'Passivo Circulante' },
+                    { id: 'passivo-nao-circulante-body', label: 'Passivo Não Circulante' },
+                    { id: 'pl-body',                     label: 'Patrimônio Líquido' },
+                ];
+                BAL_SECS.forEach(sec => {
+                    const tbody = document.getElementById(sec.id);
+                    if (!tbody) return;
+                    const rows = Array.from(tbody.querySelectorAll('tr.manual-row'));
+                    if (!rows.length) return;
+                    const opts = rows.map(row => {
+                        const code = row.dataset.structureCode;
+                        const inp  = row.querySelector('[data-role="name"]');
+                        const name = (inp ? inp.value.trim() : '') || code;
+                        return code ? { key: 'bal-row:' + sec.id + '|' + code, label: name } : null;
+                    }).filter(Boolean);
+                    if (opts.length) dyn.push({ group: 'Balanço · ' + sec.label, opts });
+                });
+                const DRE_SECS = [
+                    { id: 'dre-rob-body',           label: 'Receita Bruta' },
+                    { id: 'dre-deducoes-body',      label: 'Deduções' },
+                    { id: 'dre-creditos-body',      label: 'Créditos Impostos' },
+                    { id: 'dre-custos-body',        label: 'Custos' },
+                    { id: 'dre-cmv-body',           label: 'CMV / CPV' },
+                    { id: 'dre-outros-custos-body', label: 'Outros Custos' },
+                    { id: 'dre-comissoes-body',     label: 'Comissões' },
+                    { id: 'dre-fretes-body',        label: 'Fretes' },
+                    { id: 'dre-marketing-body',     label: 'Marketing' },
+                    { id: 'dre-desp-fixas-body',    label: 'Despesas Fixas' },
+                    { id: 'dre-fin-body',           label: 'Resultado Financeiro' },
+                    { id: 'dre-ircsll-body',        label: 'IR / CSLL' },
+                ];
+                DRE_SECS.forEach(sec => {
+                    const tbody = document.getElementById(sec.id);
+                    if (!tbody) return;
+                    const rows = Array.from(tbody.querySelectorAll('tr[data-structure-code]'));
+                    if (!rows.length) return;
+                    const opts = rows.map(row => {
+                        const code = row.dataset.structureCode;
+                        const inp  = row.querySelector('[data-role="name"]');
+                        const name = (inp ? inp.value.trim() : '') || code;
+                        return code ? { key: 'dre-row:' + sec.id + '|' + code, label: name } : null;
+                    }).filter(Boolean);
+                    if (opts.length) dyn.push({ group: 'DRE · ' + sec.label, opts });
+                });
+                return [...KPI_STATIC_SOURCES, ...dyn];
+            }
+
+            function resolveKpiVar(varKey, m) {
+                if (!varKey) return null;
+                const _pn = s => parseFloat(String(s || '0').replace(/\./g, '').replace(',', '.')) || 0;
+                if (varKey.startsWith('bal:')) {
+                    const el = document.getElementById(varKey.slice(4) + '-mes' + m);
+                    if (!el) return null;
+                    const t = el.textContent.trim();
+                    if (!t || t === '–' || t === '-') return null;
+                    return _pn(t);
+                }
+                if (varKey.startsWith('dre:')) {
+                    const el = document.getElementById(varKey.slice(4) + '-mes' + m);
+                    if (!el || el.dataset.raw === '' || el.dataset.raw === undefined) return null;
+                    const v = parseFloat(el.dataset.raw);
+                    return isNaN(v) ? null : v / 100;
+                }
+                if (varKey.startsWith('bal-row:')) {
+                    const rest = varKey.slice(8), pipe = rest.indexOf('|');
+                    const secId = rest.slice(0, pipe), code = rest.slice(pipe + 1);
+                    const tbody = document.getElementById(secId);
+                    if (!tbody) return null;
+                    let sum = 0, found = false;
+                    tbody.querySelectorAll('tr.manual-row').forEach(row => {
+                        if (row.dataset.structureCode !== code) return;
+                        const cell = row.querySelector('.account-value[data-month="' + m + '"]');
+                        if (!cell) return;
+                        const t = cell.textContent.trim();
+                        if (t && t !== '–' && t !== '-') { sum += _pn(t); found = true; }
+                    });
+                    return found ? sum : null;
+                }
+                if (varKey.startsWith('kpi:')) {
+                    const kpiId = varKey.slice(4);
+                    const el = document.getElementById('kpi-' + kpiId + '-mes' + m);
+                    if (!el || el.dataset.kpiRaw === '' || el.dataset.kpiRaw === undefined) return null;
+                    const v = parseFloat(el.dataset.kpiRaw);
+                    return isNaN(v) ? null : v;
+                }
+                if (varKey.startsWith('dre-row:')) {
+                    const rest = varKey.slice(8), pipe = rest.indexOf('|');
+                    const secId = rest.slice(0, pipe), code = rest.slice(pipe + 1);
+                    const tbody = document.getElementById(secId);
+                    if (!tbody) return null;
+                    let sum = 0, found = false;
+                    tbody.querySelectorAll('tr[data-structure-code]').forEach(row => {
+                        if (row.dataset.structureCode !== code) return;
+                        const cell = row.querySelector('.account-value[data-month="' + m + '"]');
+                        if (!cell || cell.dataset.raw === '' || cell.dataset.raw === undefined) return;
+                        const v = parseFloat(cell.dataset.raw);
+                        if (!isNaN(v)) { sum += v / 100; found = true; }
+                    });
+                    return found ? sum : null;
+                }
+                return null;
+            }
+
+            function evalKpiFormula(expr, varVals) {
+                if (!expr) return null;
+                let code = expr;
+                for (const [k, v] of Object.entries(varVals)) {
+                    if (v === null || v === undefined) return null;
+                    code = code.replace(new RegExp('\\b' + k + '\\b', 'g'), String(v));
+                }
+                try {
+                    const r = Function('"use strict";return(' + code + ')')();
+                    return (typeof r === 'number' && isFinite(r)) ? r : null;
+                } catch { return null; }
+            }
+
+            function openKpiFormulaModal() {
+                const modal = document.getElementById('kpi-formula-modal');
+                if (!modal) return;
+                _buildKpiFormulaList();
+                modal.style.display = 'flex';
+            }
+
+            function closeKpiFormulaModal() {
+                const modal = document.getElementById('kpi-formula-modal');
+                if (modal) modal.style.display = 'none';
+            }
+
+            function _buildKpiFormulaList() {
+                const container = document.getElementById('kpi-formula-list');
+                if (!container) return;
+                const formulas = _kpiFormulas || KPI_DEFAULT_FORMULAS;
+                const groups   = _kpiSourceGroups();
+                const SECS = [
+                    { label: 'I — Índices de Liquidez',        ids: ['lc','lg','sg','ta','tc'] },
+                    { label: 'II — Índices de Rotatividade',   ids: ['re','ed','rr','crd','cpd','ccc'] },
+                    { label: 'III — Índices de Rentabilidade', ids: ['ml','roa','roe'] },
+                    { label: 'IV — Índices de Risco',          ids: ['dpl','cj','da','de'] },
+                ];
+                let html = '';
+                SECS.forEach(sec => {
+                    html += '<div class="kfi-section-title">' + sec.label + '</div>';
+                    sec.ids.forEach(id => {
+                        const def = formulas[id] || { label: id, expr: '', vars: {}, fmt: 'ratio' };
+                        const varEntries = Object.entries(def.vars || {});
+                        const varsHtml = varEntries.map(([vn, vk]) => _kfiVarRow(id, vn, vk, groups)).join('');
+                        html += '<div class="kfi-card" data-kfi-id="' + id + '">'
+                            + '<div class="kfi-row">'
+                            +   '<span class="kfi-label">' + def.label + '</span>'
+                            +   '<select class="kfi-fmt" data-kfi-id="' + id + '" title="Formato do resultado">'
+                            +     '<option value="ratio"' + (def.fmt === 'ratio' ? ' selected' : '') + '>Índice</option>'
+                            +     '<option value="pct"'   + (def.fmt === 'pct'   ? ' selected' : '') + '>%</option>'
+                            +     '<option value="days"'  + (def.fmt === 'days'  ? ' selected' : '') + '>Dias</option>'
+                            +   '</select>'
+                            + '</div>'
+                            + '<div class="kfi-expr-row">'
+                            +   '<label class="kfi-sublabel">Fórmula</label>'
+                            +   '<input class="kfi-expr" type="text" value="' + (def.expr || '').replace(/"/g, '&quot;') + '" placeholder="ex: A/B  ou  (A-B)/C"/>'
+                            +   '<span class="kfi-hint">letras A B C D…</span>'
+                            + '</div>'
+                            + '<div class="kfi-vars" id="kfi-vars-' + id + '">' + varsHtml + '</div>'
+                            + '<button class="kfi-add-var" onclick="_kfiAddVar(\'' + id + '\')">+ variável</button>'
+                            + '</div>';
+                    });
+                });
+                container.innerHTML = html;
+            }
+
+            function _kfiVarRow(kfiId, varName, selectedKey, groups) {
+                const optsHtml = groups.map(g => {
+                    const opts = g.opts.map(o =>
+                        '<option value="' + o.key + '"' + (o.key === selectedKey ? ' selected' : '') + '>' + o.label + '</option>'
+                    ).join('');
+                    return '<optgroup label="' + g.group + '">' + opts + '</optgroup>';
+                }).join('');
+                return '<div class="kfi-var-row" data-var="' + varName + '">'
+                    + '<span class="kfi-var-name">' + varName + '</span>'
+                    + '<select class="kfi-var-sel" data-kfi-id="' + kfiId + '" data-var="' + varName + '">'
+                    + '<option value=""' + (!selectedKey ? ' selected' : '') + '>— não definido —</option>'
+                    + optsHtml
+                    + '</select>'
+                    + '<button class="kfi-var-del" onclick="_kfiDelVar(\'' + kfiId + '\',\'' + varName + '\')" title="Remover">×</button>'
+                    + '</div>';
+            }
+
+            function _kfiAddVar(kfiId) {
+                const container = document.getElementById('kfi-vars-' + kfiId);
+                if (!container) return;
+                const existing = Array.from(container.querySelectorAll('.kfi-var-row')).map(r => r.dataset.var);
+                const next = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(l => !existing.includes(l));
+                if (!next) return;
+                const div = document.createElement('div');
+                div.innerHTML = _kfiVarRow(kfiId, next, '', _kpiSourceGroups());
+                container.appendChild(div.firstElementChild);
+            }
+
+            function _kfiDelVar(kfiId, varName) {
+                const row = document.querySelector('#kfi-vars-' + kfiId + ' .kfi-var-row[data-var="' + varName + '"]');
+                if (row) row.remove();
+            }
+
+            function _kfiReadFormulas() {
+                const result = {};
+                document.querySelectorAll('.kfi-card').forEach(card => {
+                    const id = card.dataset.kfiId;
+                    if (!id) return;
+                    const orig = (_kpiFormulas || KPI_DEFAULT_FORMULAS)[id] || {};
+                    const expr = (card.querySelector('.kfi-expr')?.value || '').trim();
+                    const fmt  = card.querySelector('.kfi-fmt')?.value || 'ratio';
+                    const vars = {};
+                    card.querySelectorAll('.kfi-var-row').forEach(row => {
+                        const vn  = row.dataset.var;
+                        const sel = row.querySelector('.kfi-var-sel');
+                        if (vn) vars[vn] = sel ? sel.value : '';
+                    });
+                    result[id] = { label: orig.label || id, expr, vars, fmt };
+                });
+                return result;
+            }
+
+            async function saveKpiFormulasFromModal() {
+                _kpiFormulas = _kfiReadFormulas();
+                const token = localStorage.getItem('have_token');
+                try {
+                    await fetch(API_BASE + '/dfs-estrutura', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ type: 'kpi_formulas', data: _kpiFormulas })
+                    });
+                    showToast('Fórmulas KPI salvas.', 'success');
+                } catch (e) { showToast('Erro ao salvar fórmulas KPI.', 'error'); }
+                closeKpiFormulaModal();
+                updateKpiTable();
+            }
+
+            // ══════════════════════════════════════════════
+            // FCX — Mapeamento de Contas do Balanço
+            // ══════════════════════════════════════════════
+            const FCX_BAL_SECTIONS = [
+                { id: 'ativo-circulante-body',      label: 'Ativo Circulante' },
+                { id: 'ativo-nao-circulante-body',  label: 'Ativo Não Circulante' },
+                { id: 'passivo-circulante-body',    label: 'Passivo Circulante' },
+                { id: 'passivo-nao-circulante-body',label: 'Passivo Não Circulante' },
+                { id: 'pl-body',                    label: 'Patrimônio Líquido' },
+            ];
+
+            let _kpiFormulas = null;
+            let _fcxMapCurrentId = null;
+            let _fcxDataCache = null;      // { year: { rowId: { month: value } } }
+            let _fcxMappingsCache = null;  // { fcxId: { sign, accounts } }
+
+            async function loadFcxConfig() {
+                try {
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(API_BASE + '/dfs-estrutura', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (res.status === 401) { handleUnauthorized(); return; }
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    _fcxDataCache     = data.fcx_data     || {};
+                    _fcxMappingsCache = data.fcx_mappings || {};
+                    _kpiFormulas      = data.kpi_formulas || null;
+                } catch (e) { console.warn('loadFcxConfig error:', e); }
+            }
+
+            function _fcxLoadMappings() {
+                return _fcxMappingsCache || {};
+            }
+            async function _fcxSaveMappings(m) {
+                _fcxMappingsCache = m;
+                const token = localStorage.getItem('have_token');
+                try {
+                    await fetch(API_BASE + '/dfs-estrutura', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ type: 'fcx_mappings', data: m })
+                    });
+                } catch (e) { console.warn('_fcxSaveMappings error:', e); }
+            }
+
+            function initFcxMappingUI() {
+                const maps = _fcxLoadMappings();
+                document.querySelectorAll('#panel-dfs-fluxo .fcx-cell').forEach(cell => {
+                    const row = cell.closest('tr');
+                    if (!row || row.dataset.fcxInitDone) return;
+                    row.dataset.fcxInitDone = '1';
+                    const fcxId = cell.dataset.fcxId;
+                    if (!fcxId) return;
+                    const descTd = row.querySelector('td.dfs-col-desc');
+                    if (!descTd) return;
+                    descTd.style.position = 'relative';
+                    const label = descTd.textContent.trim();
+                    const btn = document.createElement('button');
+                    const _isMapped = (maps[fcxId]?.accounts?.length > 0) || (maps[fcxId]?.dre_accounts?.length > 0);
+                    btn.className = 'fcx-map-btn' + (_isMapped ? ' mapped' : '');
+                    btn.title = 'Vincular conta do Balanço / DRE';
+                    btn.innerHTML = '⚙';
+                    btn.onclick = e => { e.stopPropagation(); openFcxMapModal(fcxId, label); };
+                    descTd.appendChild(btn);
+                    if (_isMapped) row.classList.add('fcx-bal-mapped');
+                });
+            }
+
+            async function openFcxMapModal(fcxId, rowLabel) {
+                _fcxMapCurrentId = fcxId;
+                const modal = document.getElementById('fcx-map-modal');
+                modal.style.display = 'flex';
+                document.getElementById('fcx-map-modal-title').textContent = 'Vincular: ' + (rowLabel || fcxId).replace('⚙', '').trim();
+                const maps = _fcxLoadMappings();
+                const current = maps[fcxId] || { sign: 1, accounts: [], dre_accounts: [] };
+                document.getElementById('fcx-map-sign').value = String(current.sign ?? 1);
+                const container = document.getElementById('fcx-map-accounts-list');
+                container.innerHTML = '';
+                let hasAny = false;
+
+                // ── Balanço section ──
+                FCX_BAL_SECTIONS.forEach(sec => {
+                    const tbody = document.getElementById(sec.id);
+                    if (!tbody) return;
+                    const rows = Array.from(tbody.querySelectorAll('.manual-row'));
+                    if (!rows.length) return;
+                    hasAny = true;
+                    const hdr = document.createElement('div');
+                    hdr.style.cssText = 'font-size:10px;font-weight:700;color:#1c2d4a;background:#eef2f8;padding:4px 8px;margin:4px 0 2px;border-radius:4px;text-transform:uppercase;letter-spacing:.4px;';
+                    hdr.textContent = '⬜ Balanço – ' + sec.label;
+                    container.appendChild(hdr);
+                    rows.forEach(row => {
+                        const code = row.dataset.structureCode;
+                        const name = row.querySelector('[data-role="name"]')?.value || code;
+                        const key = sec.id + '|' + code;
+                        const checked = (current.accounts || []).includes(key);
+                        const item = document.createElement('label');
+                        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;font-size:12px;color:#323031;border-radius:5px;';
+                        item.onmouseenter = () => item.style.background = '#f0f4fa';
+                        item.onmouseleave = () => item.style.background = '';
+                        item.innerHTML = `<input type="checkbox" data-key="${key}" data-source="bal" ${checked ? 'checked' : ''} style="accent-color:var(--accent);"> <span>${name}</span> <span style="color:#94a3b8;font-size:10px;margin-left:auto;">${code}</span>`;
+                        container.appendChild(item);
+                    });
+                });
+
+                // ── DRE section ──
+                if (!_dreStructureCache) await loadDreConfig();
+                const dreStruct = getDreStructure();
+                Object.entries(dreBodyIdToLabel).forEach(([secId, secLabel]) => {
+                    const rows = dreStruct[secId] || [];
+                    if (!rows.length) return;
+                    hasAny = true;
+                    const hdr = document.createElement('div');
+                    hdr.style.cssText = 'font-size:10px;font-weight:700;color:#6d28d9;background:#f3f0ff;padding:4px 8px;margin:4px 0 2px;border-radius:4px;text-transform:uppercase;letter-spacing:.4px;';
+                    hdr.textContent = '⬡ DRE – ' + secLabel;
+                    container.appendChild(hdr);
+                    rows.forEach(acc => {
+                        const key = secId + '|' + acc.code;
+                        const checked = (current.dre_accounts || []).includes(key);
+                        const item = document.createElement('label');
+                        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;font-size:12px;color:#323031;border-radius:5px;';
+                        item.onmouseenter = () => item.style.background = '#f3f0ff';
+                        item.onmouseleave = () => item.style.background = '';
+                        item.innerHTML = `<input type="checkbox" data-key="${key}" data-source="dre" ${checked ? 'checked' : ''} style="accent-color:#7c3aed;"> <span>${acc.name}</span> <span style="color:#94a3b8;font-size:10px;margin-left:auto;">${acc.code}</span>`;
+                        container.appendChild(item);
+                    });
+                });
+
+                if (!hasAny) {
+                    container.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:16px;text-align:center;">Nenhuma conta no Balanço ou DRE ainda.</div>';
+                }
+            }
+
+            function closeFcxMapModal() {
+                document.getElementById('fcx-map-modal').style.display = 'none';
+                _fcxMapCurrentId = null;
+            }
+
+            async function confirmFcxMapModal() {
+                if (!_fcxMapCurrentId) return;
+                const sign = parseFloat(document.getElementById('fcx-map-sign').value) || 1;
+                const allChecked = Array.from(document.querySelectorAll('#fcx-map-accounts-list input[type=checkbox]:checked'));
+                const accounts     = allChecked.filter(cb => cb.dataset.source !== 'dre').map(cb => cb.dataset.key);
+                const dre_accounts = allChecked.filter(cb => cb.dataset.source === 'dre').map(cb => cb.dataset.key);
+                const maps = _fcxLoadMappings();
+                maps[_fcxMapCurrentId] = { sign, accounts, dre_accounts };
+                await _fcxSaveMappings(maps);
+                // Update button style
+                const isMapped = accounts.length > 0 || dre_accounts.length > 0;
+                const cell = document.querySelector(`.fcx-cell[data-fcx-id="${_fcxMapCurrentId}"]`);
+                if (cell) {
+                    const row = cell.closest('tr');
+                    const btn = row?.querySelector('.fcx-map-btn');
+                    if (btn) btn.className = 'fcx-map-btn' + (isMapped ? ' mapped' : '');
+                    if (row) row.classList.toggle('fcx-bal-mapped', isMapped);
+                }
+                closeFcxMapModal();
+                applyFcxBalMappings();
+            }
+
+            function _fcxGetPrevDecVal(tbId, code) {
+                if (!window._fcxPrevDecRows?.length) return 0;
+                const mappings = getMappings();
+                const raw = mappings[tbId + ':' + code];
+                if (!raw) return 0;
+                const contas = Array.isArray(raw) ? raw : [raw];
+                let total = 0;
+                contas.forEach(conta => {
+                    const match = window._fcxPrevDecRows.find(r => r.conta === conta);
+                    if (match) total += parseFloat(match.saldo_atual || 0);
+                });
+                return total / 100;
+            }
+
+            function _fcxGetBalVal(tbId, code, month) {
+                const tbody = document.getElementById(tbId);
+                if (!tbody) return 0;
+                const row = tbody.querySelector(`.manual-row[data-structure-code="${CSS.escape(code)}"]`);
+                if (!row) return 0;
+                const cell = row.querySelector(`.account-value[data-month="${month}"]`);
+                if (!cell) return 0;
+                const t = (cell.textContent || '').trim();
+                if (!t || t === '–') return 0;
+                return parseFloat(t.replace(/\./g, '').replace(',', '.')) || 0;
+            }
+
+            function _fcxGetDreVal(tbId, code, month) {
+                const tbody = document.getElementById(tbId);
+                if (!tbody) return 0;
+                const rows = tbody.querySelectorAll('tr.dre-manual-row');
+                for (const row of rows) {
+                    if (row.dataset.structureCode === code) {
+                        const cell = row.querySelector(`.account-value[data-month="${month}"]`);
+                        if (cell && cell.dataset.raw !== undefined && cell.dataset.raw !== '') {
+                            return (parseFloat(cell.dataset.raw) || 0) / 100;
+                        }
+                    }
+                }
+                return 0;
+            }
+
+            function applyFcxBalMappings() {
+                const maps = _fcxLoadMappings();
+                const fmtN = n => new Intl.NumberFormat('pt-BR').format(Math.round(n));
+                Object.entries(maps).forEach(([fcxId, cfg]) => {
+                    const hasBalAccounts = cfg.accounts?.length > 0;
+                    const hasDreAccounts = cfg.dre_accounts?.length > 0;
+                    if (!hasBalAccounts && !hasDreAccounts) return;
+                    const sign = parseFloat(cfg.sign) || 1;
+                    for (let m = 1; m <= 12; m++) {
+                        const cell = document.getElementById(`${fcxId}-mes${m}`);
+                        // If Balanço has no data for this month, show 0
+                        if (window._fcxBalLoadedMonths && !window._fcxBalLoadedMonths.has(m)) {
+                            if (cell) cell.textContent = '0';
+                            continue;
+                        }
+                        let delta = 0;
+                        if (hasBalAccounts) {
+                            cfg.accounts.forEach(key => {
+                                const sepIdx = key.indexOf('|');
+                                const tbId = key.slice(0, sepIdx);
+                                const code = key.slice(sepIdx + 1);
+                                const curr = _fcxGetBalVal(tbId, code, m);
+                                if (fcxId === 'fcx-saldo-ini') {
+                                    const prev = m > 1 ? _fcxGetBalVal(tbId, code, m - 1) : _fcxGetPrevDecVal(tbId, code);
+                                    delta += prev;
+                                    const checkCell = document.getElementById(`fcx-check-mes${m}`);
+                                    if (checkCell) checkCell.textContent = fmtN(sign * curr);
+                                } else {
+                                    const prev = m > 1 ? _fcxGetBalVal(tbId, code, m - 1) : _fcxGetPrevDecVal(tbId, code);
+                                    delta += curr - prev;
+                                }
+                            });
+                        }
+                        if (hasDreAccounts) {
+                            cfg.dre_accounts.forEach(key => {
+                                const sepIdx = key.indexOf('|');
+                                const tbId = key.slice(0, sepIdx);
+                                const code = key.slice(sepIdx + 1);
+                                delta += _fcxGetDreVal(tbId, code, m);
+                            });
+                        }
+                        if (cell) cell.textContent = fmtN(sign * delta);
+                    }
+                });
+                updateFluxoTotals();
+            }
+
+            // ══════════════════════════════════════════════
             // FCX — Fluxo de Caixa Indireto
             // ══════════════════════════════════════════════
             const FCX_MANUAL_ROWS = [
@@ -4143,13 +4779,14 @@
                     fcxSet('fcx-total-mes' + m, total);
                     fcxSet('fcx-caixa-ger-mes' + m, total);
                 }
+                const hasSaldoIniMapping = (_fcxMappingsCache && (_fcxMappingsCache['fcx-saldo-ini']?.accounts?.length > 0));
                 let prevFin = fcxGetVal('fcx-saldo-ini', 1);
                 for (let m = 1; m <= 12; m++) {
-                    if (m > 1) {
+                    if (m > 1 && !hasSaldoIniMapping) {
                         const iniEl = document.getElementById('fcx-saldo-ini-mes' + m);
                         if (iniEl) iniEl.textContent = fcxFmt(prevFin);
                     }
-                    const saldoIni = (m === 1) ? fcxGetVal('fcx-saldo-ini', 1) : prevFin;
+                    const saldoIni = hasSaldoIniMapping ? fcxGetVal('fcx-saldo-ini', m) : ((m === 1) ? fcxGetVal('fcx-saldo-ini', 1) : prevFin);
                     const total = fcxGetVal('fcx-total', m);
                     const saldoFin = saldoIni + total;
                     fcxSet('fcx-saldo-fin-mes' + m, saldoFin);
@@ -4157,10 +4794,9 @@
                 }
             }
 
-            function loadFluxoData(year) {
-                const key = 'fcx_' + currentCompany + '_' + year;
-                const raw = localStorage.getItem(key);
-                const data = raw ? JSON.parse(raw) : {};
+            async function loadFluxoData(year) {
+                if (!_fcxDataCache || !_fcxMappingsCache) await loadFcxConfig();
+                const data = (_fcxDataCache[year]) || {};
                 FCX_MANUAL_ROWS.forEach(rowId => {
                     for (let m = 1; m <= 12; m++) {
                         const el = document.getElementById(rowId + '-mes' + m);
@@ -4177,9 +4813,8 @@
                 updateFluxoTotals();
             }
 
-            function saveFluxoData() {
+            async function saveFluxoData() {
                 const year = document.getElementById('fcx-ano-select').value;
-                const key = 'fcx_' + currentCompany + '_' + year;
                 const data = {};
                 FCX_MANUAL_ROWS.forEach(rowId => {
                     data[rowId] = {};
@@ -4190,15 +4825,26 @@
                 });
                 const saldoIni1 = document.getElementById('fcx-saldo-ini-mes1');
                 data['fcx-saldo-ini'] = { 1: saldoIni1 ? fcxParse(saldoIni1.textContent) : 0 };
-                localStorage.setItem(key, JSON.stringify(data));
+                if (!_fcxDataCache) _fcxDataCache = {};
+                _fcxDataCache[year] = data;
+                const token = localStorage.getItem('have_token');
+                try {
+                    await fetch(API_BASE + '/dfs-estrutura', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ type: 'fcx_data', data: _fcxDataCache })
+                    });
+                    showToast('FCX salvo', 'success');
+                } catch (e) { showToast('Erro ao salvar FCX: ' + e.message, 'error'); }
                 toggleFluxoEdit(false);
             }
 
-            function updateFluxoYear() {
+            async function updateFluxoYear() {
                 const yr = document.getElementById('fcx-ano-select').value;
+                syncYearSelects(yr);
                 const ex = document.getElementById('fcx-exercicio');
                 if (ex) ex.textContent = yr;
-                loadFluxoData(yr);
+                await loadFluxoData(yr);
             }
 
             let _fcxListeners = [];
@@ -4241,6 +4887,10 @@
                 if (balAno && Array.from(balAno.options).some(o => o.value === currentYear)) balAno.value = currentYear;
                 const fcxAno = document.getElementById('fcx-ano-select');
                 if (fcxAno && Array.from(fcxAno.options).some(o => o.value === currentYear)) { fcxAno.value = currentYear; }
+                const kpiAno = document.getElementById('kpi-ano-select');
+                if (kpiAno && Array.from(kpiAno.options).some(o => o.value === currentYear)) { kpiAno.value = currentYear; }
+                const kpiEx = document.getElementById('kpi-exercicio');
+                if (kpiEx) kpiEx.textContent = currentYear;
                 const fcxEx = document.getElementById('fcx-exercicio');
                 if (fcxEx) fcxEx.textContent = currentYear;
 
@@ -4737,7 +5387,13 @@
                     const yr = document.getElementById('fcx-ano-select').value;
                     const ex = document.getElementById('fcx-exercicio');
                     if (ex) ex.textContent = yr;
-                    loadFluxoData(yr);
+                    loadFluxoData(yr).then(() => { initFcxMappingUI(); applyFcxBalMappings(); });
+                }
+                if (id === 'dfs-kpis') {
+                    const yr = document.getElementById('kpi-ano-select').value;
+                    const ex = document.getElementById('kpi-exercicio');
+                    if (ex) ex.textContent = yr;
+                    updateKpiTable();
                 }
                 if (window.innerWidth < 900) closeSidebar();
             }
@@ -5275,7 +5931,88 @@
                 color: var(--muted);
                 opacity: 0.5;
             }
+
+            /* ── KPI Formula Editor ── */
+            .kfi-modal-box {
+                background: #fff;
+                border-radius: 14px;
+                width: 700px;
+                max-width: 96vw;
+                max-height: 88vh;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 16px 56px rgba(0,0,0,0.28);
+            }
+            .kfi-modal-header {
+                padding: 18px 24px 14px;
+                border-bottom: 1px solid #e2e8f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .kfi-modal-header strong { font-size: 14px; color: #1c2d4a; }
+            .kfi-close-btn { background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: #888; padding: 0; }
+            .kfi-modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+            .kfi-modal-footer { padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 8px; }
+            .kfi-cancel-btn { padding: 8px 18px; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; color: #555; }
+            .kfi-save-btn { padding: 8px 18px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+            .kfi-section-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin: 16px 0 6px; }
+            .kfi-section-title:first-child { margin-top: 0; }
+            .kfi-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; background: #fafbfc; }
+            .kfi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+            .kfi-label { font-size: 13px; font-weight: 600; color: #1c2d4a; }
+            .kfi-fmt { font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 8px; background: #fff; cursor: pointer; }
+            .kfi-expr-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+            .kfi-sublabel { font-size: 11px; font-weight: 600; color: #94a3b8; white-space: nowrap; }
+            .kfi-expr { flex: 1; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 8px; font-size: 13px; font-family: monospace; outline: none; min-width: 0; }
+            .kfi-expr:focus { border-color: var(--accent); }
+            .kfi-hint { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+            .kfi-vars { display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
+            .kfi-var-row { display: flex; align-items: center; gap: 8px; }
+            .kfi-var-name { font-size: 13px; font-weight: 700; color: var(--accent); width: 14px; flex-shrink: 0; font-family: monospace; }
+            .kfi-var-sel { flex: 1; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; background: #fff; min-width: 0; }
+            .kfi-var-del { background: none; border: none; cursor: pointer; color: #e07b00; font-size: 15px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+            .kfi-add-var { background: none; border: 1px dashed #94a3b8; border-radius: 6px; padding: 3px 10px; font-size: 11px; color: #64748b; cursor: pointer; margin-top: 2px; }
+            .kfi-add-var:hover { border-color: var(--accent); color: var(--accent); }
         </style>
+
+    <!-- FCX BAL MAPPING MODAL -->
+    <div id="fcx-map-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;padding:24px;width:500px;max-width:95vw;max-height:82vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,0.28);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <strong id="fcx-map-modal-title" style="font-size:14px;color:#1c2d4a;">Vincular contas do Balanço</strong>
+                <button onclick="closeFcxMapModal()" style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:#888;">&times;</button>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Sinal da variação (saldo atual − saldo anterior)</label>
+                <select id="fcx-map-sign" style="display:block;margin-top:5px;padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;width:100%;">
+                    <option value="1">× +1 &nbsp;— aumento do saldo = entrada de caixa</option>
+                    <option value="-1">× −1 &nbsp;— aumento do saldo = saída de caixa</option>
+                </select>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Contas do Balanço</div>
+            <div id="fcx-map-accounts-list" style="max-height:280px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:6px;"></div>
+            <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+                <button onclick="closeFcxMapModal()" style="padding:8px 18px;border:1px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;color:#555;">Cancelar</button>
+                <button onclick="confirmFcxMapModal()" style="padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Salvar vínculo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI FORMULA EDITOR MODAL -->
+    <div id="kpi-formula-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+        <div class="kfi-modal-box">
+            <div class="kfi-modal-header">
+                <strong>⚙️ Construtor de Fórmulas — KPIs</strong>
+                <button onclick="closeKpiFormulaModal()" class="kfi-close-btn">&times;</button>
+            </div>
+            <div id="kpi-formula-list" class="kfi-modal-body"></div>
+            <div class="kfi-modal-footer">
+                <button onclick="closeKpiFormulaModal()" class="kfi-cancel-btn">Cancelar</button>
+                <button onclick="saveKpiFormulasFromModal()" class="kfi-save-btn">💾 Salvar fórmulas</button>
+            </div>
+        </div>
+    </div>
 
     </body>
 
