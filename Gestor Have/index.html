@@ -1551,25 +1551,6 @@
                 color: #1c2d4a;
             }
 
-            /* FCXD — Fluxo de Caixa Diário */
-            #panel-dfs-fluxo-caixa table.fcxd-table { width:100%; border-collapse:collapse; font-size:12px; }
-            #panel-dfs-fluxo-caixa table.fcxd-table thead th { background:#1c2d4a; color:#fff; font-weight:600; font-size:11px; padding:8px 6px; text-align:right; border-bottom:2px solid #2a3d5e; white-space:nowrap; position:sticky; top:0; z-index:2; }
-            #panel-dfs-fluxo-caixa table.fcxd-table thead th.fcxd-col-cat { text-align:left; padding-left:12px; min-width:180px; position:sticky; left:0; z-index:3; background:#1c2d4a; }
-            #panel-dfs-fluxo-caixa table.fcxd-table thead th.fcxd-col-total { background:#0f1d30; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-section td { background:#1c2d4a; color:#fff; font-weight:700; font-size:12px; padding:8px 6px; border-bottom:1px solid #2a3d5e; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-section td.fcxd-col-cat { padding-left:12px; position:sticky; left:0; background:#1c2d4a; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item td { background:#ffffff; border-bottom:1px solid #e8edf5; font-size:11px; padding:5px 6px; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item td.fcxd-col-cat { padding-left:22px; color:#323031; position:sticky; left:0; background:#fff; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item:hover td { background:#f5f8ff; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item:hover td.fcxd-col-cat { background:#f5f8ff; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-total td { background:#2a3d5e; color:#fff; font-weight:700; font-size:12px; padding:6px 6px; border-bottom:2px solid #1c2d4a; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-total td.fcxd-col-cat { padding-left:12px; position:sticky; left:0; background:#2a3d5e; }
-            #panel-dfs-fluxo-caixa table.fcxd-table .fcxd-num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-            #panel-dfs-fluxo-caixa table.fcxd-table .fcxd-neg { color:#dc2626; }
-            #panel-dfs-fluxo-caixa table.fcxd-table .fcxd-pos { color:#059669; }
-            #panel-dfs-fluxo-caixa table.fcxd-table td.fcxd-col-total { background:rgba(28,45,74,0.07); font-weight:700; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-section td.fcxd-col-total { background:#0f1d30; }
-            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-total td.fcxd-col-total { background:#0f1d30; }
 
             /* FCX — Fluxo de Caixa Indireto */
             #panel-dfs-fluxo table.dfs-table thead th { background:#1c2d4a; color:#fff; font-weight:600; font-size:12px; padding:8px 6px; text-align:right; border-bottom:2px solid #2a3d5e; white-space:nowrap; }
@@ -1591,6 +1572,18 @@
             .fcx-map-btn:hover { opacity:1; color:var(--accent); }
             .fcx-map-btn.mapped { color:#059669; opacity:1; }
             tr.fcx-bal-mapped td.dfs-col-desc { background: rgba(5,150,105,0.05) !important; }
+
+            /* FCXD — Fluxo de Caixa Diário */
+            #panel-caixa-fluxo .fcxd-table { width:100%; border-collapse:collapse; font-size:12px; }
+            #panel-caixa-fluxo .fcxd-table thead th { background:#1c2d4a; color:#fff; font-weight:600; padding:7px 5px; text-align:right; white-space:nowrap; border-bottom:2px solid #2a3d5e; }
+            #panel-caixa-fluxo .fcxd-table thead th.fcxd-col-cat { text-align:left; padding-left:12px; min-width:160px; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-section td { background:#1c2d4a; color:#fff; font-weight:700; padding:7px 12px; border-bottom:1px solid #2a3d5e; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-total td { background:#2a3d5e; color:#fff; font-weight:700; padding:5px 7px; border-bottom:2px solid #1c2d4a; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-item td { background:#fff; border-bottom:1px solid #e8edf5; padding:4px 6px; }
+            #panel-caixa-fluxo .fcxd-table td.fcxd-col-cat { text-align:left; padding-left:18px; }
+            #panel-caixa-fluxo .fcxd-table td.fcxd-num { text-align:right; }
+            #panel-caixa-fluxo .fcxd-table td.fcxd-col-total { background:rgba(0,124,220,0.07); font-weight:600; }
+            #panel-caixa-fluxo .fcxd-neg { color:#dc2626; }
 
             /* KPI Table */
             #panel-dfs-kpis .dfs-sheet-card { padding: 0; overflow: hidden; }
@@ -2056,8 +2049,8 @@
                             <span class="nav-group-arrow">▾</span>
                         </div>
                         <div class="nav-group-items">
-                            <div class="nav-item" onclick="showPanel('caixa-base')"><span class="nav-icon">▤</span>Base de Dados</div>
-                            <div class="nav-item" onclick="showPanel('caixa-fluxo')"><span class="nav-icon">📊</span>Fluxo de Caixa Diário</div>
+                            <div class="nav-item" onclick="showPanel('caixa-base')"><span class="nav-icon">⬆</span>Base de Dados</div>
+                            <div class="nav-item" onclick="showPanel('caixa-fluxo')"><span class="nav-icon">▤</span>Fluxo Diário</div>
                             <div class="nav-item" onclick="showPanel('caixa-depara')"><span class="nav-icon">⇄</span>De-Para</div>
                         </div>
                     </div>
@@ -3008,34 +3001,41 @@
                 <div class="panel" id="panel-caixa-base">
                     <div class="section-header">
                         <div class="section-title">Caixa · Base de Dados</div>
-                        <div class="section-actions">
-                            <select id="cxb-ano-select" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
-                                <option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option>
-                            </select>
-                            <select id="cxb-mes-select" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
-                                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
-                                <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
-                                <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
-                            </select>
-                            <input type="file" id="cxb-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleCaixaUpload(this.files)">
-                            <button class="btn-primary" onclick="document.getElementById('cxb-file-input').click()" style="font-size:13px;">⬆ Importar Extrato</button>
-                            <button class="refresh-btn" onclick="loadCaixaMeses()" style="font-size:13px;">↻</button>
-                        </div>
                     </div>
+                    <p class="dfs-intro">Importe o extrato bancário mês a mês. Colunas esperadas: <code>Data</code> · <code>Descrição</code> · <code>Débito</code> · <code>Crédito</code></p>
                     <div class="table-card" style="padding:20px;margin-bottom:16px;">
-                        <div class="dfs-dropzone" id="cxb-dropzone"
-                            onclick="document.getElementById('cxb-file-input').click()"
+                        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label style="font-size:13px;font-weight:600;">Mês/Ano:</label>
+                                <select id="cxb-mes-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                                    <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                                    <option value="3">Março</option><option value="4">Abril</option>
+                                    <option value="5">Maio</option><option value="6">Junho</option>
+                                    <option value="7">Julho</option><option value="8">Agosto</option>
+                                    <option value="9">Setembro</option><option value="10">Outubro</option>
+                                    <option value="11">Novembro</option><option value="12">Dezembro</option>
+                                </select>
+                                <select id="cxb-ano-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                                    <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+                                </select>
+                            </div>
+                            <input type="file" id="cxb-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleCaixaUpload(this.files)">
+                            <button class="btn-primary" onclick="document.getElementById('cxb-file-input').click();" style="font-size:13px;">⬆ Enviar extrato</button>
+                        </div>
+                        <div class="dfs-dropzone" onclick="document.getElementById('cxb-file-input').click()"
                             ondragover="event.preventDefault();this.classList.add('dfs-dragover');"
                             ondragleave="this.classList.remove('dfs-dragover');"
-                            ondrop="event.preventDefault();this.classList.remove('dfs-dragover');handleCaixaUpload(event.dataTransfer.files);">
+                            ondrop="event.preventDefault();this.classList.remove('dfs-dragover');handleCaixaUpload(event.dataTransfer.files);"
+                            style="padding:24px;">
                             <div class="dfs-dropzone-icon">⬆</div>
-                            <div class="dfs-dropzone-title">Arraste o extrato bancário ou clique para selecionar</div>
-                            <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong> · Formato: Coluna A = Data, B = Histórico/Descrição, C = Débito, D = Crédito</div>
+                            <div class="dfs-dropzone-title">Arraste o arquivo aqui ou clique para selecionar</div>
+                            <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong>, <strong>.xls</strong> ou <strong>.csv</strong></div>
                         </div>
                     </div>
                     <div class="table-card">
                         <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-                            <span style="font-size:14px;font-weight:600;">Meses importados</span>
+                            <span style="font-size:14px;font-weight:600;">Meses enviados</span>
+                            <button class="refresh-btn" onclick="loadCaixaMeses()" style="font-size:12px;">↻ Atualizar</button>
                         </div>
                         <div id="cxb-meses-list" style="padding:12px 16px;">
                             <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Carregando...</div>
@@ -3043,26 +3043,29 @@
                     </div>
                 </div>
 
-                <!-- CAIXA · FLUXO DE CAIXA DIÁRIO -->
+                <!-- CAIXA · FLUXO DIÁRIO -->
                 <div class="panel" id="panel-caixa-fluxo">
                     <div class="section-header">
-                        <div class="section-title">Caixa · Fluxo de Caixa Diário</div>
+                        <div class="section-title">Caixa · Fluxo Diário</div>
                         <div class="section-actions">
-                            <select id="cx-ano-select" onchange="loadCaixaFluxo(parseInt(this.value),parseInt(document.getElementById('cx-mes-select').value))" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
-                                <option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option>
+                            <select id="cx-mes-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" onchange="loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value),parseInt(this.value))">
+                                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                                <option value="3">Março</option><option value="4">Abril</option>
+                                <option value="5">Maio</option><option value="6">Junho</option>
+                                <option value="7">Julho</option><option value="8">Agosto</option>
+                                <option value="9">Setembro</option><option value="10">Outubro</option>
+                                <option value="11">Novembro</option><option value="12">Dezembro</option>
                             </select>
-                            <select id="cx-mes-select" onchange="loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value),parseInt(this.value))" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
-                                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
-                                <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
-                                <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                            <select id="cx-ano-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" onchange="loadCaixaFluxo(parseInt(this.value),parseInt(document.getElementById('cx-mes-select').value))">
+                                <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
                             </select>
+                            <button class="refresh-btn" onclick="loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value),parseInt(document.getElementById('cx-mes-select').value))" style="font-size:12px;">↻</button>
                             <button class="btn-primary" onclick="openAddCaixaRow()" style="font-size:13px;">+ Linha</button>
-                            <button class="refresh-btn" onclick="loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value),parseInt(document.getElementById('cx-mes-select').value))" style="font-size:13px;">↻</button>
                         </div>
                     </div>
-                    <div class="table-card" style="margin-top:8px;">
-                        <div class="table-scroll" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 180px);">
-                            <div id="cx-fluxo-container"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div></div>
+                    <div class="table-card" style="overflow-x:auto;">
+                        <div id="cx-fluxo-container" style="padding:12px 16px;">
+                            <div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Selecione mês/ano e clique em Atualizar.</div>
                         </div>
                     </div>
                 </div>
@@ -3072,24 +3075,22 @@
                     <div class="section-header">
                         <div class="section-title">Caixa · De-Para</div>
                         <div class="section-actions">
+                            <button class="refresh-btn" onclick="loadCaixaDepara()" style="font-size:12px;">↻ Atualizar</button>
                             <button class="btn-primary" onclick="addCaixaDeParaRow()" style="font-size:13px;">+ Adicionar</button>
-                            <button class="btn-primary" onclick="saveCaixaDepara()" style="font-size:13px;background:#16a34a;">💾 Salvar</button>
-                            <button class="refresh-btn" onclick="loadCaixaDepara()" style="font-size:13px;">↻</button>
+                            <button class="btn-primary" onclick="saveCaixaDepara()" style="font-size:13px;">💾 Salvar</button>
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
-                        <!-- Descriptions not yet mapped -->
-                        <div class="table-card">
-                            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;">Descrições do Extrato (não classificadas)</div>
-                            <div id="cx-depara-nao-class" style="padding:12px;max-height:500px;overflow-y:auto;">
-                                <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Carregando...</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Descrições não classificadas</div>
+                            <div id="cx-depara-nao-class">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                             </div>
                         </div>
-                        <!-- Mappings table -->
-                        <div class="table-card">
-                            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;">Mapeamentos De-Para</div>
-                            <div id="cx-depara-table" style="padding:12px;max-height:500px;overflow-y:auto;">
-                                <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Carregando...</div>
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos</div>
+                            <div id="cx-depara-table">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                             </div>
                         </div>
                     </div>
@@ -5475,8 +5476,8 @@
                 'semana': 'Lista Semanal de Pedidos',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
                 'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas',
-                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo de Caixa Diário', 'caixa-depara': 'Caixa · De-Para',
-                'admin-usuarios': 'Gerenciar Usuários'
+                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para',
+'admin-usuarios': 'Gerenciar Usuários'
             }
 
                 ;
@@ -5511,18 +5512,22 @@
                     if (ex) ex.textContent = yr;
                     loadFluxoData(yr).then(() => { initFcxMappingUI(); applyFcxBalMappings(); });
                 }
-                if (id === 'caixa-base') { loadCaixaMeses(); }
+if (id === 'dfs-kpis') {
+                    const yr = document.getElementById('kpi-ano-select').value;
+                    const ex = document.getElementById('kpi-exercicio');
+                    if (ex) ex.textContent = yr;
+                    updateKpiTable();
+                }
+                if (id === 'caixa-base') {
+                    loadCaixaMeses();
+                }
                 if (id === 'caixa-fluxo') {
                     const ano = parseInt(document.getElementById('cx-ano-select').value);
                     const mes = parseInt(document.getElementById('cx-mes-select').value);
                     loadCaixaFluxo(ano, mes);
                 }
-                if (id === 'caixa-depara') { loadCaixaDepara(); }
-                if (id === 'dfs-kpis') {
-                    const yr = document.getElementById('kpi-ano-select').value;
-                    const ex = document.getElementById('kpi-exercicio');
-                    if (ex) ex.textContent = yr;
-                    updateKpiTable();
+                if (id === 'caixa-depara') {
+                    loadCaixaDepara();
                 }
                 if (window.innerWidth < 900) closeSidebar();
             }
@@ -5555,6 +5560,7 @@
             // DFS BASE DE DADOS (mês a mês → banco de dados)
             // ══════════════════════════════════════════════
             const DFS_MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+            const CX_MESES_NOMES  = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
             let dfsBaseData = [];
             let dfsBaseFiltered = [];
             let dfsBaseSortCol = null;
@@ -5974,10 +5980,6 @@
             adminScript.src = 'admin-panel.js';
             document.head.appendChild(adminScript);
 
-            // ══════════════════════════════════════════════
-            // CAIXA · BASE DE DADOS / FLUXO / DE-PARA
-            // ══════════════════════════════════════════════
-            const CX_MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
             // ── BASE DE DADOS ──────────────────────────────
             async function loadCaixaMeses() {
