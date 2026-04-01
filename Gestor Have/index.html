@@ -2056,7 +2056,9 @@
                             <span class="nav-group-arrow">▾</span>
                         </div>
                         <div class="nav-group-items">
-                            <div class="nav-item" onclick="showPanel('dfs-fluxo-caixa')"><span class="nav-icon">📊</span>Fluxo de Caixa Diário</div>
+                            <div class="nav-item" onclick="showPanel('caixa-base')"><span class="nav-icon">▤</span>Base de Dados</div>
+                            <div class="nav-item" onclick="showPanel('caixa-fluxo')"><span class="nav-icon">📊</span>Fluxo de Caixa Diário</div>
+                            <div class="nav-item" onclick="showPanel('caixa-depara')"><span class="nav-icon">⇄</span>De-Para</div>
                         </div>
                     </div>
                 </div>
@@ -3002,37 +3004,92 @@
                             </table>
                         </div>
                     </div>
-                <!-- CAIXA · FLUXO DE CAIXA DIÁRIO -->
-                <div class="panel" id="panel-dfs-fluxo-caixa">
+                <!-- CAIXA · BASE DE DADOS -->
+                <div class="panel" id="panel-caixa-base">
                     <div class="section-header">
-                        <div class="section-title">Fluxo de Caixa Diário</div>
+                        <div class="section-title">Caixa · Base de Dados</div>
                         <div class="section-actions">
-                            <select id="fcxd-ano-select" onchange="updateFluxoCaixaYear()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;">
-                                <option value="2025" selected>2025</option>
-                                <option value="2026">2026</option>
+                            <select id="cxb-ano-select" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                                <option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option>
                             </select>
-                            <select id="fcxd-mes-select" onchange="updateFluxoCaixaMonth()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;">
-                                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-                                <option value="3">Março</option><option value="4">Abril</option>
-                                <option value="5">Maio</option><option value="6">Junho</option>
-                                <option value="7">Julho</option><option value="8">Agosto</option>
-                                <option value="9">Setembro</option><option value="10">Outubro</option>
-                                <option value="11">Novembro</option><option value="12">Dezembro</option>
+                            <select id="cxb-mes-select" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
+                                <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
+                                <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
                             </select>
-                            <button id="btn-fcxd-edit" class="btn-primary" onclick="toggleFcxdEdit(true)" style="font-size:13px;">✏️ Editar</button>
-                            <div id="btn-fcxd-edit-actions" style="display:none; gap:8px;">
-                                <button class="btn-primary" onclick="saveFluxoCaixaData()" style="font-size:13px;">💾 Salvar</button>
-                                <button onclick="toggleFcxdEdit(false)" style="font-size:13px;padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;">✕ Cancelar</button>
-                            </div>
-                            <button class="refresh-btn" onclick="loadFluxoCaixaData(parseInt(document.getElementById('fcxd-ano-select').value), parseInt(document.getElementById('fcxd-mes-select').value))" style="font-size:13px;">↻ Atualizar</button>
+                            <input type="file" id="cxb-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleCaixaUpload(this.files)">
+                            <button class="btn-primary" onclick="document.getElementById('cxb-file-input').click()" style="font-size:13px;">⬆ Importar Extrato</button>
+                            <button class="refresh-btn" onclick="loadCaixaMeses()" style="font-size:13px;">↻</button>
                         </div>
                     </div>
+                    <div class="table-card" style="padding:20px;margin-bottom:16px;">
+                        <div class="dfs-dropzone" id="cxb-dropzone"
+                            onclick="document.getElementById('cxb-file-input').click()"
+                            ondragover="event.preventDefault();this.classList.add('dfs-dragover');"
+                            ondragleave="this.classList.remove('dfs-dragover');"
+                            ondrop="event.preventDefault();this.classList.remove('dfs-dragover');handleCaixaUpload(event.dataTransfer.files);">
+                            <div class="dfs-dropzone-icon">⬆</div>
+                            <div class="dfs-dropzone-title">Arraste o extrato bancário ou clique para selecionar</div>
+                            <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong> · Formato: Coluna A = Data, B = Histórico/Descrição, C = Débito, D = Crédito</div>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:14px;font-weight:600;">Meses importados</span>
+                        </div>
+                        <div id="cxb-meses-list" style="padding:12px 16px;">
+                            <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Carregando...</div>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Data table -->
-                    <div class="table-card" id="fcxd-table-card" style="margin-top:8px;">
-                        <div class="table-scroll" style="overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 180px);">
-                            <div id="fcxd-table-container">
-                                <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                <!-- CAIXA · FLUXO DE CAIXA DIÁRIO -->
+                <div class="panel" id="panel-caixa-fluxo">
+                    <div class="section-header">
+                        <div class="section-title">Caixa · Fluxo de Caixa Diário</div>
+                        <div class="section-actions">
+                            <select id="cx-ano-select" onchange="loadCaixaFluxo(parseInt(this.value),parseInt(document.getElementById('cx-mes-select').value))" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                                <option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option>
+                            </select>
+                            <select id="cx-mes-select" onchange="loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value),parseInt(this.value))" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
+                                <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
+                                <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                            </select>
+                            <button class="btn-primary" onclick="openAddCaixaRow()" style="font-size:13px;">+ Linha</button>
+                            <button class="refresh-btn" onclick="loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value),parseInt(document.getElementById('cx-mes-select').value))" style="font-size:13px;">↻</button>
+                        </div>
+                    </div>
+                    <div class="table-card" style="margin-top:8px;">
+                        <div class="table-scroll" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 180px);">
+                            <div id="cx-fluxo-container"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAIXA · DE-PARA -->
+                <div class="panel" id="panel-caixa-depara">
+                    <div class="section-header">
+                        <div class="section-title">Caixa · De-Para</div>
+                        <div class="section-actions">
+                            <button class="btn-primary" onclick="addCaixaDeParaRow()" style="font-size:13px;">+ Adicionar</button>
+                            <button class="btn-primary" onclick="saveCaixaDepara()" style="font-size:13px;background:#16a34a;">💾 Salvar</button>
+                            <button class="refresh-btn" onclick="loadCaixaDepara()" style="font-size:13px;">↻</button>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+                        <!-- Descriptions not yet mapped -->
+                        <div class="table-card">
+                            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;">Descrições do Extrato (não classificadas)</div>
+                            <div id="cx-depara-nao-class" style="padding:12px;max-height:500px;overflow-y:auto;">
+                                <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                        <!-- Mappings table -->
+                        <div class="table-card">
+                            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;">Mapeamentos De-Para</div>
+                            <div id="cx-depara-table" style="padding:12px;max-height:500px;overflow-y:auto;">
+                                <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Carregando...</div>
                             </div>
                         </div>
                     </div>
@@ -5418,7 +5475,7 @@
                 'semana': 'Lista Semanal de Pedidos',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
                 'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas',
-                'dfs-fluxo-caixa': 'Fluxo de Caixa Diário',
+                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo de Caixa Diário', 'caixa-depara': 'Caixa · De-Para',
                 'admin-usuarios': 'Gerenciar Usuários'
             }
 
@@ -5454,18 +5511,13 @@
                     if (ex) ex.textContent = yr;
                     loadFluxoData(yr).then(() => { initFcxMappingUI(); applyFcxBalMappings(); });
                 }
-                if (id === 'dfs-fluxo-caixa') {
-                    const _fcxdAno = parseInt(document.getElementById('fcxd-ano-select').value);
-                    const _fcxdMes = parseInt(document.getElementById('fcxd-mes-select').value);
-                    if (!_fcxdPanelInited) {
-                        _fcxdPanelInited = true;
-                        const d = new Date();
-                        const mesSel = document.getElementById('fcxd-mes-select');
-                        if (mesSel) mesSel.value = d.getMonth() + 1;
-                    }
-                    const _fcxdM = parseInt(document.getElementById('fcxd-mes-select').value);
-                    loadFluxoCaixaData(parseInt(document.getElementById('fcxd-ano-select').value), _fcxdM);
+                if (id === 'caixa-base') { loadCaixaMeses(); }
+                if (id === 'caixa-fluxo') {
+                    const ano = parseInt(document.getElementById('cx-ano-select').value);
+                    const mes = parseInt(document.getElementById('cx-mes-select').value);
+                    loadCaixaFluxo(ano, mes);
                 }
+                if (id === 'caixa-depara') { loadCaixaDepara(); }
                 if (id === 'dfs-kpis') {
                     const yr = document.getElementById('kpi-ano-select').value;
                     const ex = document.getElementById('kpi-exercicio');
@@ -5923,190 +5975,322 @@
             document.head.appendChild(adminScript);
 
             // ══════════════════════════════════════════════
-            // CAIXA · FLUXO DE CAIXA DIÁRIO
+            // CAIXA · BASE DE DADOS / FLUXO / DE-PARA
             // ══════════════════════════════════════════════
-            const FCXD_LABELS = {
-                saldo_inicial:'SALDO INICIAL DO CAIXA', saldo_final:'SALDO FINAL',
-                entradas:'ENTRADAS', farmer:'Farmer', closer:'Closer',
-                loja_fisica:'Loja Física', ecommerce:'Ecommerce', sucata:'Sucata',
-                inativator:'Inativator', provisao:'Provisão', fiscal:'Fiscal',
-                saidas:'SAÍDAS', perfibras:'Perfibras', alump:'Alump',
-                infiniti:'Infiniti', anosul:'Anosul', max:'Max',
-                pasimetal:'Pasimetal', sendeski:'Sendeski', sydorak:'Sydorak',
-                aperam:'Aperam', tecmaf:'Tecmaf', outros:'Outros',
-                importacao:'Importação', embalagem:'Embalagem',
-                despesas_fabrica:'Despesas de Fábrica', qualidade:'Qualidade',
-                fretes_compras:'Fretes Compras', fretes_vendas:'Fretes Vendas',
-                comissoes_ecommerce:'Comissões Ecommerce', marketing:'Marketing', pessoal:'Pessoal'
-            };
-            const FCXD_ROW_CLASS = {
-                saldo_inicial:'fcxd-row-section', saldo_final:'fcxd-row-section',
-                entradas:'fcxd-row-total', saidas:'fcxd-row-total'
-            };
-            const FCXD_ORDER = [
-                'saldo_inicial','saldo_final',
-                'entradas','farmer','closer','loja_fisica','ecommerce','sucata','inativator','provisao','fiscal',
-                'saidas','perfibras','alump','infiniti','anosul','max','pasimetal','sendeski','sydorak',
-                'aperam','tecmaf','outros','importacao','embalagem','despesas_fabrica','qualidade',
-                'fretes_compras','fretes_vendas','comissoes_ecommerce','marketing','pessoal'
-            ];
+            const CX_MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-            let _fcxdPanelInited = false;
-            let _fcxdEditMode = false;
-
-            function initFluxoCaixaPanel() {
-                const d = new Date();
-                const mesSel = document.getElementById('fcxd-mes-select');
-                if (mesSel && !_fcxdPanelInited) mesSel.value = d.getMonth() + 1;
-                _fcxdPanelInited = true;
-                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
-                const mes = parseInt(mesSel ? mesSel.value : d.getMonth() + 1);
-                loadFluxoCaixaData(ano, mes);
+            // ── BASE DE DADOS ──────────────────────────────
+            async function loadCaixaMeses() {
+                const el = document.getElementById('cxb-meses-list');
+                if (!el) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(API_BASE + '/caixa-extrato', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||'HTTP '+res.status); }
+                    const data = await res.json();
+                    if (!data.meses || !data.meses.length) {
+                        el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px;">Nenhum extrato importado ainda.</div>';
+                        return;
+                    }
+                    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">' +
+                        data.meses.map(m => {
+                            const dt = m.ultima_atualizacao ? new Date(m.ultima_atualizacao).toLocaleDateString('pt-BR') : '—';
+                            return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg);">
+                                <div style="font-weight:700;font-size:15px;color:var(--accent);margin-bottom:6px;">${CX_MESES_NOMES[m.mes]} / ${m.ano}</div>
+                                <div style="font-size:12px;color:var(--muted);">${m.total_registros} lançamentos · ${dt}</div>
+                                <div style="margin-top:8px;display:flex;gap:6px;">
+                                    <button class="refresh-btn" style="font-size:11px;color:var(--red);border-color:rgba(220,38,38,0.3);"
+                                        onclick="deleteCaixaMes(${m.ano},${m.mes})">Excluir</button>
+                                </div></div>`;
+                        }).join('') + '</div>';
+                } catch(e) {
+                    el.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Erro: ${esc(e.message)}</div>`;
+                }
             }
 
-            function updateFluxoCaixaYear() {
-                toggleFcxdEdit(false);
-                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
-                const mes = parseInt(document.getElementById('fcxd-mes-select').value);
-                loadFluxoCaixaData(ano, mes);
+            async function deleteCaixaMes(ano, mes) {
+                if (!confirm(`Excluir extrato de ${CX_MESES_NOMES[mes]}/${ano}?`)) return;
+                const token = localStorage.getItem('have_token');
+                const res = await fetch(`${API_BASE}/caixa-extrato?ano=${ano}&mes=${mes}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                if (res.ok) { showToast('Extrato excluído','success'); loadCaixaMeses(); }
+                else showToast('Erro ao excluir','error');
             }
 
-            function updateFluxoCaixaMonth() {
-                toggleFcxdEdit(false);
-                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
-                const mes = parseInt(document.getElementById('fcxd-mes-select').value);
-                loadFluxoCaixaData(ano, mes);
+            async function handleCaixaUpload(fileList) {
+                if (!fileList || !fileList.length) return;
+                const file = fileList[0];
+                const ano = parseInt(document.getElementById('cxb-ano-select').value);
+                const mes = parseInt(document.getElementById('cxb-mes-select').value);
+                try {
+                    await loadSheetJS();
+                    showToast('Processando ' + file.name + '...', 'info');
+                    const buf = await file.arrayBuffer();
+                    const wb = XLSX.read(buf, { type:'array', cellDates:true });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const aoa = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:false });
+                    const rows = [];
+                    for (let i = 0; i < aoa.length; i++) {
+                        const row = aoa[i] || [];
+                        // Col A: date, Col B: description, Col C: debit (saida), Col D: credit (entrada)
+                        const rawDate = row[0];
+                        if (!rawDate) continue;
+                        let dia = null;
+                        if (typeof rawDate === 'string') {
+                            const m = rawDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+                            if (m) {
+                                const parsedMes = parseInt(m[2]);
+                                const parsedAno = parseInt(m[3]) < 100 ? 2000 + parseInt(m[3]) : parseInt(m[3]);
+                                if (parsedAno === ano && parsedMes === mes) dia = parseInt(m[1]);
+                            }
+                        } else if (rawDate instanceof Date) {
+                            if (rawDate.getFullYear() === ano && (rawDate.getMonth()+1) === mes) dia = rawDate.getDate();
+                        }
+                        if (!dia) continue;
+                        const descricao = String(row[1] || '').trim();
+                        if (!descricao) continue;
+                        const debito = parseFloat(String(row[2]||'').replace(/[^\d,.\-]/g,'').replace(',','.')) || 0;
+                        const credito = parseFloat(String(row[3]||'').replace(/[^\d,.\-]/g,'').replace(',','.')) || 0;
+                        const valor = Math.round((credito - debito) * 100); // centavos
+                        rows.push({ dia, descricao, valor });
+                    }
+                    if (!rows.length) { showToast('Nenhuma linha encontrada para ' + CX_MESES_NOMES[mes] + '/' + ano + '. Verifique o formato.', 'error'); return; }
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(API_BASE + '/caixa-extrato', {
+                        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                        body: JSON.stringify({ ano, mes, rows })
+                    });
+                    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||'HTTP '+res.status); }
+                    const result = await res.json();
+                    showToast(`${result.count} lançamentos importados para ${CX_MESES_NOMES[mes]}/${ano}`, 'success');
+                    loadCaixaMeses();
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+                const fi = document.getElementById('cxb-file-input');
+                if (fi) fi.value = '';
             }
 
-            function toggleFcxdEdit(on) {
-                _fcxdEditMode = on;
-                const editBtn = document.getElementById('btn-fcxd-edit');
-                const actionsDiv = document.getElementById('btn-fcxd-edit-actions');
-                if (editBtn) editBtn.style.display = on ? 'none' : '';
-                if (actionsDiv) actionsDiv.style.display = on ? 'flex' : 'none';
-                const cells = document.querySelectorAll('#fcxd-table-container .fcxd-val-cell');
-                cells.forEach(c => {
-                    c.contentEditable = on ? 'true' : 'false';
-                    c.style.background = on ? 'rgba(0,124,220,0.06)' : '';
-                    c.style.outline = on ? '1px solid rgba(0,124,220,0.3)' : '';
-                    c.style.cursor = on ? 'text' : '';
-                });
-            }
-
-            async function loadFluxoCaixaData(ano, mes) {
-                const container = document.getElementById('fcxd-table-container');
+            // ── FLUXO DE CAIXA DIÁRIO ──────────────────────
+            async function loadCaixaFluxo(ano, mes) {
+                const container = document.getElementById('cx-fluxo-container');
                 if (!container) return;
                 const token = localStorage.getItem('have_token');
                 container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>';
                 try {
-                    const res = await fetch(API_BASE + '/dfs-fluxo-caixa?ano=' + ano + '&mes=' + mes, {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (!res.ok) {
-                        const errBody = await res.json().catch(() => ({}));
-                        throw new Error(errBody.error || 'HTTP ' + res.status);
-                    }
+                    const res = await fetch(`${API_BASE}/caixa-modelo?ano=${ano}&mes=${mes}`, { headers:{'Authorization':'Bearer '+token} });
+                    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||'HTTP '+res.status); }
                     const data = await res.json();
-                    renderFluxoCaixaTable(data.rows || [], ano, mes);
-                } catch (e) {
-                    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--red);font-size:13px;">Erro: ' + esc(e.message) + '</div>';
+                    renderCaixaFluxo(data.categorias || [], data.valores || {}, ano, mes);
+                } catch(e) {
+                    container.innerHTML = `<div style="padding:30px;text-align:center;color:var(--red);font-size:13px;">Erro: ${esc(e.message)}</div>`;
                     showToast('Erro: ' + e.message, 'error');
                 }
             }
 
-            function renderFluxoCaixaTable(rows, ano, mes) {
-                const container = document.getElementById('fcxd-table-container');
+            function renderCaixaFluxo(categorias, valores, ano, mes) {
+                const container = document.getElementById('cx-fluxo-container');
                 if (!container) return;
-
-                const lookup = {};
-                rows.forEach(r => {
-                    if (!lookup[r.tipo]) lookup[r.tipo] = {};
-                    lookup[r.tipo][parseInt(r.dia)] = parseInt(r.valor) || 0;
-                });
-
-                // Compute days in month
                 const daysInMonth = new Date(ano, mes, 0).getDate();
-                const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                const days = Array.from({length: daysInMonth}, (_,i) => i+1);
 
                 function fmtV(v) {
-                    if (!v) return '<span style="color:#cbd5e1;">0</span>';
+                    if (!v) return '<span style="color:#cbd5e1;">—</span>';
                     const n = v / 100;
-                    const f = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    if (n < 0) return '<span class="fcxd-neg">-' + f + '</span>';
-                    return f;
+                    const f = Math.abs(n).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
+                    return n < 0 ? `<span class="fcxd-neg">-${f}</span>` : f;
                 }
 
-                function rawVal(v) {
-                    if (!v) return '0';
-                    return (v / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                // Build lookup by nome
+                const catByNome = {};
+                categorias.forEach(c => { catByNome[c.nome] = c; });
+
+                // Compute section totals (sum of children)
+                function getCatVal(cat, dia) {
+                    if (cat.tipo === 'section') {
+                        return categorias.filter(c => c.parent === cat.nome)
+                            .reduce((s,c) => s + getCatVal(c, dia), 0);
+                    }
+                    if (cat.tipo === 'saldo_fin') {
+                        const ini = categorias.find(c => c.tipo === 'saldo_ini');
+                        const entCat = categorias.find(c => c.nome === 'ENTRADAS');
+                        const saiCat = categorias.find(c => c.nome === 'SAÍDAS');
+                        const saldoIni = ini ? getCatVal(ini, dia) : 0;
+                        const ent = entCat ? getCatVal(entCat, dia) : 0;
+                        const sai = saiCat ? getCatVal(saiCat, dia) : 0;
+                        return saldoIni + ent - sai;
+                    }
+                    const catVals = valores[cat.nome] || {};
+                    return catVals[dia] || 0;
                 }
 
-                function rowTotal(tipo) {
-                    return days.reduce((s, d) => s + ((lookup[tipo] && lookup[tipo][d]) || 0), 0);
+                function rowTotal(cat) {
+                    return days.reduce((s,d) => s + getCatVal(cat, d), 0);
                 }
 
                 let html = '<table class="fcxd-table"><thead><tr>';
                 html += '<th class="fcxd-col-cat">Categoria</th>';
-                days.forEach(d => { html += '<th class="fcxd-num">' + d + '</th>'; });
-                html += '<th class="fcxd-num fcxd-col-total">TOTAL MÊS</th></tr></thead><tbody>';
+                days.forEach(d => { html += `<th class="fcxd-num">${d}</th>`; });
+                html += '<th class="fcxd-num fcxd-col-total">TOTAL MÊS</th><th class="fcxd-num" style="width:40px;"></th></tr></thead><tbody>';
 
-                FCXD_ORDER.forEach(tipo => {
-                    const label = FCXD_LABELS[tipo] || tipo;
-                    const cls = FCXD_ROW_CLASS[tipo] || 'fcxd-row-item';
-                    const isEditable = cls === 'fcxd-row-item';
-                    const total = rowTotal(tipo);
-                    html += '<tr class="' + cls + '" data-tipo="' + tipo + '">';
-                    html += '<td class="fcxd-col-cat">' + esc(label) + '</td>';
+                categorias.forEach(cat => {
+                    const cls = cat.tipo === 'section' ? 'fcxd-row-total'
+                              : (cat.tipo === 'saldo_ini' || cat.tipo === 'saldo_fin') ? 'fcxd-row-section'
+                              : 'fcxd-row-item';
+                    const total = rowTotal(cat);
+                    const canDelete = cat.tipo === 'item';
+                    html += `<tr class="${cls}" data-cat-id="${cat.id}">`;
+                    html += `<td class="fcxd-col-cat">${esc(cat.nome)}</td>`;
                     days.forEach(d => {
-                        const v = (lookup[tipo] && lookup[tipo][d]) || 0;
-                        if (isEditable) {
-                            html += '<td class="fcxd-num fcxd-val-cell" contenteditable="false" data-tipo="' + tipo + '" data-dia="' + d + '" style="cursor:default;">' + rawVal(v) + '</td>';
-                        } else {
-                            html += '<td class="fcxd-num">' + fmtV(v) + '</td>';
-                        }
+                        const v = getCatVal(cat, d);
+                        html += `<td class="fcxd-num">${fmtV(v)}</td>`;
                     });
-                    html += '<td class="fcxd-num fcxd-col-total" id="fcxd-total-' + tipo + '">' + fmtV(total) + '</td></tr>';
+                    html += `<td class="fcxd-num fcxd-col-total">${fmtV(total)}</td>`;
+                    html += `<td class="fcxd-num">${canDelete ? `<button onclick="deleteCaixaRow(${cat.id})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;" title="Excluir linha">✕</button>` : ''}</td>`;
+                    html += '</tr>';
                 });
-
                 html += '</tbody></table>';
                 container.innerHTML = html;
-                _fcxdEditMode = false;
-                toggleFcxdEdit(false);
             }
 
-            async function saveFluxoCaixaData() {
-                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
-                const mes = parseInt(document.getElementById('fcxd-mes-select').value);
+            async function deleteCaixaRow(id) {
+                if (!confirm('Excluir esta linha do modelo?')) return;
                 const token = localStorage.getItem('have_token');
-                const cells = document.querySelectorAll('#fcxd-table-container .fcxd-val-cell');
-                const rows = [];
-                cells.forEach(cell => {
-                    const tipo = cell.dataset.tipo;
-                    const dia = parseInt(cell.dataset.dia);
-                    const raw = (cell.textContent || '').trim().replace(/\./g, '').replace(',', '.');
-                    const n = parseFloat(raw);
-                    const valor = isNaN(n) ? 0 : Math.round(n * 100);
-                    rows.push({ dia, tipo, valor });
+                const res = await fetch(`${API_BASE}/caixa-modelo?id=${id}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                if (res.ok) {
+                    showToast('Linha excluída','success');
+                    loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value), parseInt(document.getElementById('cx-mes-select').value));
+                } else showToast('Erro ao excluir','error');
+            }
+
+            function openAddCaixaRow() {
+                const nome = prompt('Nome da nova linha:');
+                if (!nome || !nome.trim()) return;
+                const parent = prompt('Grupo pai (ENTRADAS ou SAÍDAS):');
+                addCaixaRow(nome.trim(), 'item', parent ? parent.trim() : null);
+            }
+
+            async function addCaixaRow(nome, tipo, parent) {
+                const token = localStorage.getItem('have_token');
+                const res = await fetch(API_BASE + '/caixa-modelo', {
+                    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify({ action:'add', nome, tipo, parent })
                 });
-                if (!rows.length) { showToast('Nenhum dado para salvar', 'error'); return; }
+                if (res.ok) {
+                    showToast('Linha adicionada','success');
+                    loadCaixaFluxo(parseInt(document.getElementById('cx-ano-select').value), parseInt(document.getElementById('cx-mes-select').value));
+                } else showToast('Erro ao adicionar','error');
+            }
+
+            // ── DE-PARA ────────────────────────────────────
+            let _cxDeParaPendentes = []; // new rows to save
+
+            async function loadCaixaDepara() {
+                const token = localStorage.getItem('have_token');
+                _cxDeParaPendentes = [];
                 try {
-                    showToast('Salvando...', 'info');
-                    const res = await fetch(API_BASE + '/dfs-fluxo-caixa', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                        body: JSON.stringify({ ano, mes, rows })
-                    });
-                    if (!res.ok) {
-                        const err = await res.json().catch(() => ({}));
-                        throw new Error(err.error || 'HTTP ' + res.status);
+                    const [mappingsRes, naoClassRes] = await Promise.all([
+                        fetch(API_BASE + '/caixa-depara', { headers:{'Authorization':'Bearer '+token} }),
+                        fetch(API_BASE + '/caixa-depara?source=extract', { headers:{'Authorization':'Bearer '+token} })
+                    ]);
+                    const mappingsData = await mappingsRes.json();
+                    const naoClassData = await naoClassRes.json();
+
+                    // Render unclassified descriptions
+                    const naoClassEl = document.getElementById('cx-depara-nao-class');
+                    const naoClass = naoClassData.nao_classificadas || [];
+                    if (!naoClass.length) {
+                        naoClassEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Todas as descrições estão classificadas ✓</div>';
+                    } else {
+                        naoClassEl.innerHTML = naoClass.map(desc =>
+                            `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+                                <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(desc)}">${esc(desc)}</span>
+                                <button onclick="usarDescricaoDepara('${esc(desc).replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px;border:1px solid var(--accent);border-radius:6px;background:rgba(0,124,220,0.06);color:var(--accent);cursor:pointer;white-space:nowrap;">→ Mapear</button>
+                            </div>`
+                        ).join('');
                     }
-                    showToast('Fluxo de Caixa salvo com sucesso', 'success');
-                    toggleFcxdEdit(false);
-                    loadFluxoCaixaData(ano, mes);
-                } catch (e) {
-                    showToast('Erro ao salvar: ' + e.message, 'error');
+
+                    // Render mappings table
+                    renderDeParaTable(mappingsData.mappings || []);
+                } catch(e) {
+                    showToast('Erro: ' + e.message, 'error');
                 }
             }
+
+            function renderDeParaTable(mappings) {
+                const el = document.getElementById('cx-depara-table');
+                if (!el) return;
+                if (!mappings.length && !_cxDeParaPendentes.length) {
+                    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Nenhum mapeamento. Clique em "+ Adicionar".</div>';
+                    return;
+                }
+                const allRows = [...mappings, ..._cxDeParaPendentes];
+                el.innerHTML = '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="background:var(--bg-alt,#f8f9fa);"><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Palavra-Chave (Extrato)</th><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Categoria (Modelo)</th><th style="width:40px;"></th></tr></thead><tbody>' +
+                    allRows.map((m,i) => {
+                        const isPending = i >= mappings.length;
+                        return `<tr style="border-bottom:1px solid var(--border);" data-mapping-id="${m.id||''}">
+                            <td style="padding:6px 8px;"><input value="${esc(m.palavra_chave||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="chave" ${isPending?'':''}></td>
+                            <td style="padding:6px 8px;"><input value="${esc(m.categoria_nome||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="cat" ${isPending?'':''}></td>
+                            <td style="padding:6px 8px;"><button onclick="removeCaixaDeParaRow(this,${m.id||'null'})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;">✕</button></td>
+                        </tr>`;
+                    }).join('') + '</tbody></table>';
+            }
+
+            function addCaixaDeParaRow() {
+                _cxDeParaPendentes.push({ id: null, palavra_chave: '', categoria_nome: '' });
+                loadCaixaDepara();
+            }
+
+            function usarDescricaoDepara(desc) {
+                _cxDeParaPendentes.push({ id: null, palavra_chave: desc, categoria_nome: '' });
+                loadCaixaDepara();
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#cx-depara-table [data-field="cat"]');
+                    if (inputs.length) inputs[inputs.length-1].focus();
+                }, 100);
+            }
+
+            async function removeCaixaDeParaRow(btn, id) {
+                if (id) {
+                    if (!confirm('Remover este mapeamento?')) return;
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(`${API_BASE}/caixa-depara?id=${id}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                    if (!res.ok) { showToast('Erro ao remover','error'); return; }
+                }
+                btn.closest('tr').remove();
+            }
+
+            async function saveCaixaDepara() {
+                const token = localStorage.getItem('have_token');
+                const rows = Array.from(document.querySelectorAll('#cx-depara-table tbody tr'));
+                let saved = 0, errors = 0;
+                for (const row of rows) {
+                    const chave = row.querySelector('[data-field="chave"]')?.value.trim();
+                    const cat = row.querySelector('[data-field="cat"]')?.value.trim();
+                    if (!chave || !cat) continue;
+                    try {
+                        const res = await fetch(API_BASE + '/caixa-depara', {
+                            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                            body: JSON.stringify({ palavra_chave: chave, categoria_nome: cat })
+                        });
+                        if (res.ok) saved++; else errors++;
+                    } catch { errors++; }
+                }
+                _cxDeParaPendentes = [];
+                if (errors) showToast(`${saved} salvos, ${errors} erros`, 'error');
+                else showToast(`${saved} mapeamentos salvos`, 'success');
+                loadCaixaDepara();
+            }
+
+            // placeholder to avoid JS errors if old references remain
+            function FCXD_LABELS() {} const FCXD_ROW_CLASS = {}; const FCXD_ORDER = [];
+            let _fcxdPanelInited = false; let _fcxdEditMode = false;
+            function initFluxoCaixaPanel() {}
+            function updateFluxoCaixaYear() {}
+            function updateFluxoCaixaMonth() {}
+            function toggleFcxdEdit() {}
+            function loadFluxoCaixaData() {}
+            function renderFluxoCaixaTable() {}
+            function saveFluxoCaixaData() {}
+
         </script>
 
         <!-- Admin User Modal -->
