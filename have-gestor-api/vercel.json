@@ -7,6 +7,7 @@
     "api/admin/usuarios/[id].js": { "maxDuration": 10 },
     "api/admin/usuarios/[id]/reset-password.js": { "maxDuration": 10 },
     "api/dfs-base.js": { "maxDuration": 30 },
-    "api/dfs-estrutura.js": { "maxDuration": 10 }
+    "api/dfs-estrutura.js": { "maxDuration": 10 },
+    "api/dfs-fluxo-caixa.js": { "maxDuration": 30 }
   }
 }

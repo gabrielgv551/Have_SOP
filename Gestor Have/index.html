@@ -1551,6 +1551,26 @@
                 color: #1c2d4a;
             }
 
+            /* FCXD — Fluxo de Caixa Diário */
+            #panel-dfs-fluxo-caixa table.fcxd-table { width:100%; border-collapse:collapse; font-size:12px; }
+            #panel-dfs-fluxo-caixa table.fcxd-table thead th { background:#1c2d4a; color:#fff; font-weight:600; font-size:11px; padding:8px 6px; text-align:right; border-bottom:2px solid #2a3d5e; white-space:nowrap; position:sticky; top:0; z-index:2; }
+            #panel-dfs-fluxo-caixa table.fcxd-table thead th.fcxd-col-cat { text-align:left; padding-left:12px; min-width:180px; position:sticky; left:0; z-index:3; background:#1c2d4a; }
+            #panel-dfs-fluxo-caixa table.fcxd-table thead th.fcxd-col-total { background:#0f1d30; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-section td { background:#1c2d4a; color:#fff; font-weight:700; font-size:12px; padding:8px 6px; border-bottom:1px solid #2a3d5e; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-section td.fcxd-col-cat { padding-left:12px; position:sticky; left:0; background:#1c2d4a; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item td { background:#ffffff; border-bottom:1px solid #e8edf5; font-size:11px; padding:5px 6px; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item td.fcxd-col-cat { padding-left:22px; color:#323031; position:sticky; left:0; background:#fff; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item:hover td { background:#f5f8ff; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-item:hover td.fcxd-col-cat { background:#f5f8ff; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-total td { background:#2a3d5e; color:#fff; font-weight:700; font-size:12px; padding:6px 6px; border-bottom:2px solid #1c2d4a; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-total td.fcxd-col-cat { padding-left:12px; position:sticky; left:0; background:#2a3d5e; }
+            #panel-dfs-fluxo-caixa table.fcxd-table .fcxd-num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+            #panel-dfs-fluxo-caixa table.fcxd-table .fcxd-neg { color:#dc2626; }
+            #panel-dfs-fluxo-caixa table.fcxd-table .fcxd-pos { color:#059669; }
+            #panel-dfs-fluxo-caixa table.fcxd-table td.fcxd-col-total { background:rgba(28,45,74,0.07); font-weight:700; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-section td.fcxd-col-total { background:#0f1d30; }
+            #panel-dfs-fluxo-caixa table.fcxd-table tr.fcxd-row-total td.fcxd-col-total { background:#0f1d30; }
+
             /* FCX — Fluxo de Caixa Indireto */
             #panel-dfs-fluxo table.dfs-table thead th { background:#1c2d4a; color:#fff; font-weight:600; font-size:12px; padding:8px 6px; text-align:right; border-bottom:2px solid #2a3d5e; white-space:nowrap; }
             #panel-dfs-fluxo table.dfs-table thead th.dfs-col-desc { text-align:left; padding-left:14px; }
@@ -2026,6 +2046,7 @@
                             <div class="nav-item" onclick="showPanel('dfs-balanco')"><span class="nav-icon">▣</span>Balanço patrimonial</div>
                             <div class="nav-item" onclick="showPanel('dfs-dre')"><span class="nav-icon">▥</span>DRE</div>
                             <div class="nav-item" onclick="showPanel('dfs-fluxo')"><span class="nav-icon">⇄</span>Fluxo de caixa indireto</div>
+                            <div class="nav-item" onclick="showPanel('dfs-fluxo-caixa')"><span class="nav-icon">📊</span>Fluxo de Caixa Diário</div>
                             <div class="nav-item" onclick="showPanel('dfs-kpis')"><span class="nav-icon">◆</span>KPIs</div>
                             <div class="nav-item" onclick="showPanel('dfs-plano-contas')"><span class="nav-icon">☷</span>Plano de Contas</div>
                         </div>
@@ -2974,6 +2995,67 @@
                         </div>
                     </div>
                 </div>
+                <!-- DFS · FLUXO DE CAIXA DIÁRIO -->
+                <div class="panel" id="panel-dfs-fluxo-caixa">
+                    <div class="section-header">
+                        <div class="section-title">DFS · Fluxo de Caixa Diário</div>
+                        <div class="section-actions">
+                            <select id="fcxd-ano-select" onchange="updateFluxoCaixaYear()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;">
+                                <option value="2025" selected>2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <select id="fcxd-mes-select" onchange="updateFluxoCaixaMonth()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;">
+                                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                                <option value="3">Março</option><option value="4">Abril</option>
+                                <option value="5">Maio</option><option value="6">Junho</option>
+                                <option value="7">Julho</option><option value="8">Agosto</option>
+                                <option value="9">Setembro</option><option value="10">Outubro</option>
+                                <option value="11">Novembro</option><option value="12">Dezembro</option>
+                            </select>
+                            <input type="file" id="fcxd-file-input" accept=".xlsx,.xls" style="display:none"
+                                onchange="handleFluxoCaixaUpload(this.files)">
+                            <button class="btn-primary" onclick="document.getElementById('fcxd-file-input').click();" style="font-size:13px;">⬆ Importar planilha</button>
+                            <button class="refresh-btn" onclick="loadFluxoCaixaData(parseInt(document.getElementById('fcxd-ano-select').value), parseInt(document.getElementById('fcxd-mes-select').value))" style="font-size:13px;">↻ Atualizar</button>
+                        </div>
+                    </div>
+
+                    <!-- Upload drop zone -->
+                    <div class="table-card" style="padding:20px; margin-bottom:16px;">
+                        <div class="dfs-dropzone" id="fcxd-dropzone"
+                            onclick="document.getElementById('fcxd-file-input').click()"
+                            ondragover="event.preventDefault(); this.classList.add('dfs-dragover');"
+                            ondragleave="this.classList.remove('dfs-dragover');"
+                            ondrop="event.preventDefault(); this.classList.remove('dfs-dragover'); handleFluxoCaixaUpload(event.dataTransfer.files);"
+                            style="padding:20px;">
+                            <div class="dfs-dropzone-icon">⬆</div>
+                            <div class="dfs-dropzone-title">Arraste o arquivo aqui ou clique para selecionar</div>
+                            <div class="dfs-dropzone-sub">Aceita <strong>.xlsx</strong> · A planilha deve seguir o layout do template de caixa diário</div>
+                        </div>
+                    </div>
+
+                    <!-- Months summary -->
+                    <div class="table-card" style="margin-bottom:16px;">
+                        <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+                            <span style="font-size:14px; font-weight:600;">Meses importados</span>
+                            <button class="refresh-btn" onclick="loadFluxoCaixaMeses()" style="font-size:12px;">↻ Atualizar</button>
+                        </div>
+                        <div id="fcxd-meses-list" style="padding:12px 16px;">
+                            <div style="text-align:center; padding:30px; color:var(--muted); font-size:13px;">Carregando...</div>
+                        </div>
+                    </div>
+
+                    <!-- Data table -->
+                    <div class="table-card" id="fcxd-table-card" style="display:none; margin-top:16px;">
+                        <div style="padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border);">
+                            <span style="font-size:14px; font-weight:600;" id="fcxd-table-title">—</span>
+                            <button class="refresh-btn" onclick="document.getElementById('fcxd-table-card').style.display='none'" style="font-size:12px;">✕ Fechar</button>
+                        </div>
+                        <div class="table-scroll" style="overflow-x:auto; overflow-y:auto; max-height:520px;">
+                            <div id="fcxd-table-container"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ADMIN PANEL -->
                 <div class="panel" id="panel-admin-usuarios">
                     <div class="section-header">
@@ -5354,6 +5436,7 @@
                 'semana': 'Lista Semanal de Pedidos',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
                 'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas',
+                'dfs-fluxo-caixa': 'DFS · Fluxo de Caixa Diário',
                 'admin-usuarios': 'Gerenciar Usuários'
             }
 
@@ -5388,6 +5471,9 @@
                     const ex = document.getElementById('fcx-exercicio');
                     if (ex) ex.textContent = yr;
                     loadFluxoData(yr).then(() => { initFcxMappingUI(); applyFcxBalMappings(); });
+                }
+                if (id === 'dfs-fluxo-caixa') {
+                    initFluxoCaixaPanel();
                 }
                 if (id === 'dfs-kpis') {
                     const yr = document.getElementById('kpi-ano-select').value;
@@ -5844,6 +5930,283 @@
             const adminScript = document.createElement('script');
             adminScript.src = 'admin-panel.js';
             document.head.appendChild(adminScript);
+
+            // ══════════════════════════════════════════════
+            // DFS · FLUXO DE CAIXA DIÁRIO
+            // ══════════════════════════════════════════════
+            const FCXD_LABELS = {
+                saldo_inicial:'SALDO INICIAL DO CAIXA', saldo_final:'SALDO FINAL',
+                entradas:'ENTRADAS', farmer:'Farmer', closer:'Closer',
+                loja_fisica:'Loja Física', ecommerce:'Ecommerce', sucata:'Sucata',
+                inativator:'Inativator', provisao:'Provisão', fiscal:'Fiscal',
+                saidas:'SAÍDAS', perfibras:'Perfibras', alump:'Alump',
+                infiniti:'Infiniti', anosul:'Anosul', max:'Max',
+                pasimetal:'Pasimetal', sendeski:'Sendeski', sydorak:'Sydorak',
+                aperam:'Aperam', tecmaf:'Tecmaf', outros:'Outros',
+                importacao:'Importação', embalagem:'Embalagem',
+                despesas_fabrica:'Despesas de Fábrica', qualidade:'Qualidade',
+                fretes_compras:'Fretes Compras', fretes_vendas:'Fretes Vendas',
+                comissoes_ecommerce:'Comissões Ecommerce', marketing:'Marketing', pessoal:'Pessoal'
+            };
+            const FCXD_ROW_CLASS = {
+                saldo_inicial:'fcxd-row-section', saldo_final:'fcxd-row-section',
+                entradas:'fcxd-row-total', saidas:'fcxd-row-total'
+            };
+            const FCXD_ORDER = [
+                'saldo_inicial','saldo_final',
+                'entradas','farmer','closer','loja_fisica','ecommerce','sucata','inativator','provisao','fiscal',
+                'saidas','perfibras','alump','infiniti','anosul','max','pasimetal','sendeski','sydorak',
+                'aperam','tecmaf','outros','importacao','embalagem','despesas_fabrica','qualidade',
+                'fretes_compras','fretes_vendas','comissoes_ecommerce','marketing','pessoal'
+            ];
+            const FCXD_TIPOS_MAP = {
+                5:'saldo_inicial', 6:'saldo_final', 9:'entradas',
+                10:'farmer', 11:'closer', 12:'loja_fisica', 13:'ecommerce',
+                14:'sucata', 15:'inativator', 16:'provisao', 17:'fiscal',
+                19:'saidas', 20:'perfibras', 21:'alump', 22:'infiniti',
+                23:'anosul', 24:'max', 25:'pasimetal', 26:'sendeski',
+                27:'sydorak', 28:'aperam', 29:'tecmaf', 30:'outros',
+                31:'importacao', 32:'embalagem', 33:'despesas_fabrica',
+                34:'qualidade', 35:'fretes_compras', 36:'fretes_vendas',
+                37:'comissoes_ecommerce', 38:'marketing', 39:'pessoal'
+            };
+
+            let _fcxdPanelInited = false;
+
+            function initFluxoCaixaPanel() {
+                if (_fcxdPanelInited) return;
+                _fcxdPanelInited = true;
+                const d = new Date();
+                const mesSel = document.getElementById('fcxd-mes-select');
+                if (mesSel) mesSel.value = d.getMonth() + 1;
+                loadFluxoCaixaMeses();
+            }
+
+            function updateFluxoCaixaYear() {
+                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
+                const mes = parseInt(document.getElementById('fcxd-mes-select').value);
+                loadFluxoCaixaData(ano, mes);
+            }
+
+            function updateFluxoCaixaMonth() {
+                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
+                const mes = parseInt(document.getElementById('fcxd-mes-select').value);
+                loadFluxoCaixaData(ano, mes);
+            }
+
+            async function loadFluxoCaixaMeses() {
+                const el = document.getElementById('fcxd-meses-list');
+                if (!el) return;
+                const token = localStorage.getItem('have_token');
+                if (!token) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Faça login primeiro</div>'; return; }
+                try {
+                    const res = await fetch(API_BASE + '/dfs-fluxo-caixa', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+                    if (!data.meses || !data.meses.length) {
+                        el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px;">Nenhum mês importado ainda. Selecione o período e importe a planilha.</div>';
+                        return;
+                    }
+                    el.innerHTML = '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px;">' +
+                        data.meses.map(m => {
+                            const dt = m.ultima_atualizacao ? new Date(m.ultima_atualizacao).toLocaleString('pt-BR') : '—';
+                            return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;background:var(--bg);" ' +
+                                'onmouseover="this.style.borderColor=\'var(--accent)\';this.style.boxShadow=\'0 2px 8px rgba(0,124,220,0.1)\'" ' +
+                                'onmouseout="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'" ' +
+                                'onclick="loadFluxoCaixaData(' + m.ano + ',' + m.mes + ')">' +
+                                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                                '<span style="font-weight:700;font-size:15px;color:var(--accent);">' + DFS_MESES_NOMES[m.mes] + ' / ' + m.ano + '</span>' +
+                                '<span style="font-size:11px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:20px;">' + m.total_dias + ' dias</span>' +
+                                '</div>' +
+                                '<div style="font-size:12px;color:var(--muted);">' + m.total_registros + ' registros</div>' +
+                                '<div style="font-size:11px;color:var(--muted);margin-top:6px;">Atualizado: ' + dt + '</div>' +
+                                '<div style="display:flex;gap:6px;margin-top:8px;">' +
+                                '<button class="refresh-btn" onclick="event.stopPropagation();deleteFcxdMonth(' + m.ano + ',' + m.mes + ')" style="font-size:11px;color:var(--red);border-color:rgba(220,38,38,0.3);">Excluir</button>' +
+                                '</div></div>';
+                        }).join('') + '</div>';
+                } catch (e) {
+                    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar: ' + esc(e.message) + '</div>';
+                }
+            }
+
+            async function deleteFcxdMonth(ano, mes) {
+                if (!confirm('Excluir dados de ' + DFS_MESES_NOMES[mes] + '/' + ano + '?')) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(API_BASE + '/dfs-fluxo-caixa?ano=' + ano + '&mes=' + mes, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    showToast(DFS_MESES_NOMES[mes] + '/' + ano + ' excluído', 'success');
+                    document.getElementById('fcxd-table-card').style.display = 'none';
+                    loadFluxoCaixaMeses();
+                } catch (e) {
+                    showToast('Erro ao excluir: ' + e.message, 'error');
+                }
+            }
+
+            async function loadFluxoCaixaData(ano, mes) {
+                const card = document.getElementById('fcxd-table-card');
+                const container = document.getElementById('fcxd-table-container');
+                const titleEl = document.getElementById('fcxd-table-title');
+                if (!container) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    showToast('Carregando ' + DFS_MESES_NOMES[mes] + '/' + ano + '...', 'info');
+                    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);">Carregando...</div>';
+                    card.style.display = 'block';
+                    const res = await fetch(API_BASE + '/dfs-fluxo-caixa?ano=' + ano + '&mes=' + mes, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+                    if (titleEl) titleEl.textContent = DFS_MESES_NOMES[mes] + ' / ' + ano;
+                    const anoSel = document.getElementById('fcxd-ano-select');
+                    const mesSel = document.getElementById('fcxd-mes-select');
+                    if (anoSel) anoSel.value = ano;
+                    if (mesSel) mesSel.value = mes;
+                    if (!data.rows || !data.rows.length) {
+                        container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px;">Nenhum dado para este período.</div>';
+                        return;
+                    }
+                    renderFluxoCaixaTable(data.rows);
+                    card.scrollIntoView({ behavior: 'smooth' });
+                } catch (e) {
+                    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro: ' + esc(e.message) + '</div>';
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            function renderFluxoCaixaTable(rows) {
+                const container = document.getElementById('fcxd-table-container');
+                if (!container) return;
+
+                const lookup = {};
+                rows.forEach(r => {
+                    if (!lookup[r.tipo]) lookup[r.tipo] = {};
+                    lookup[r.tipo][parseInt(r.dia)] = parseInt(r.valor) || 0;
+                });
+
+                const daysSet = new Set();
+                rows.forEach(r => daysSet.add(parseInt(r.dia)));
+                const days = Array.from(daysSet).sort((a, b) => a - b);
+
+                function fmtV(v) {
+                    if (!v) return '<span style="color:#cbd5e1;">—</span>';
+                    const n = v / 100;
+                    const f = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    if (n < 0) return '<span class="fcxd-neg">-' + f + '</span>';
+                    return f;
+                }
+
+                function rowTotal(tipo) {
+                    return days.reduce((s, d) => s + ((lookup[tipo] && lookup[tipo][d]) || 0), 0);
+                }
+
+                let html = '<table class="fcxd-table"><thead><tr>';
+                html += '<th class="fcxd-col-cat">Categoria</th>';
+                days.forEach(d => { html += '<th class="fcxd-num">' + d + '</th>'; });
+                html += '<th class="fcxd-num fcxd-col-total">TOTAL MÊS</th></tr></thead><tbody>';
+
+                FCXD_ORDER.forEach(tipo => {
+                    const label = FCXD_LABELS[tipo] || tipo;
+                    const cls = FCXD_ROW_CLASS[tipo] || 'fcxd-row-item';
+                    const total = rowTotal(tipo);
+                    html += '<tr class="' + cls + '">';
+                    html += '<td class="fcxd-col-cat">' + esc(label) + '</td>';
+                    days.forEach(d => {
+                        const v = (lookup[tipo] && lookup[tipo][d]) || 0;
+                        html += '<td class="fcxd-num">' + fmtV(v) + '</td>';
+                    });
+                    html += '<td class="fcxd-num fcxd-col-total">' + fmtV(total) + '</td></tr>';
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            async function handleFluxoCaixaUpload(fileList) {
+                if (!fileList || !fileList.length) return;
+                const file = fileList[0];
+                const ano = parseInt(document.getElementById('fcxd-ano-select').value);
+                const mes = parseInt(document.getElementById('fcxd-mes-select').value);
+                try {
+                    await loadSheetJS();
+                    showToast('Processando ' + file.name + '...', 'info');
+
+                    const buf = await file.arrayBuffer();
+                    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+                    if (!aoa.length) { showToast('Arquivo vazio', 'error'); return; }
+
+                    const headerRow = aoa[0] || [];
+                    const dayRow = aoa[3] || [];
+
+                    const validCols = [];
+                    for (let c = 0; c < headerRow.length; c++) {
+                        const hVal = headerRow[c];
+                        let colDate = null;
+                        if (hVal instanceof Date) {
+                            colDate = hVal;
+                        } else if (typeof hVal === 'string') {
+                            const m = hVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                            if (m) colDate = new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+                        }
+                        if (!colDate) continue;
+                        if (colDate.getFullYear() !== ano || (colDate.getMonth() + 1) !== mes) continue;
+                        const dayNum = typeof dayRow[c] === 'number' ? dayRow[c] : parseInt(dayRow[c]);
+                        if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) continue;
+                        validCols.push({ colIdx: c, dia: dayNum });
+                    }
+
+                    if (!validCols.length) {
+                        showToast('Nenhuma coluna encontrada para ' + DFS_MESES_NOMES[mes] + '/' + ano + '. Verifique o período selecionado.', 'error');
+                        return;
+                    }
+
+                    const uploadRows = [];
+                    Object.entries(FCXD_TIPOS_MAP).forEach(([rowIdxStr, tipo]) => {
+                        const rowIdx = parseInt(rowIdxStr);
+                        const dataRow = aoa[rowIdx] || [];
+                        validCols.forEach(({ colIdx, dia }) => {
+                            const raw = dataRow[colIdx];
+                            let v = 0;
+                            if (raw !== null && raw !== undefined && raw !== '') {
+                                const n = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/[^\d.,\-]/g, '').replace(',', '.'));
+                                v = isNaN(n) ? 0 : Math.round(n);
+                            }
+                            uploadRows.push({ dia, tipo, valor: v });
+                        });
+                    });
+
+                    if (!uploadRows.length) { showToast('Nenhum dado extraído', 'error'); return; }
+
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(API_BASE + '/dfs-fluxo-caixa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ ano, mes, rows: uploadRows })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || 'HTTP ' + res.status);
+                    }
+                    const result = await res.json();
+                    showToast(result.count + ' registros salvos para ' + DFS_MESES_NOMES[mes] + '/' + ano, 'success');
+                    loadFluxoCaixaMeses();
+                    loadFluxoCaixaData(ano, mes);
+                } catch (e) {
+                    console.error('FCXD upload error:', e);
+                    showToast('Erro: ' + e.message, 'error');
+                }
+                const fi = document.getElementById('fcxd-file-input');
+                if (fi) fi.value = '';
+            }
         </script>
 
         <!-- Admin User Modal -->
