@@ -5455,7 +5455,16 @@
                     loadFluxoData(yr).then(() => { initFcxMappingUI(); applyFcxBalMappings(); });
                 }
                 if (id === 'dfs-fluxo-caixa') {
-                    initFluxoCaixaPanel();
+                    const _fcxdAno = parseInt(document.getElementById('fcxd-ano-select').value);
+                    const _fcxdMes = parseInt(document.getElementById('fcxd-mes-select').value);
+                    if (!_fcxdPanelInited) {
+                        _fcxdPanelInited = true;
+                        const d = new Date();
+                        const mesSel = document.getElementById('fcxd-mes-select');
+                        if (mesSel) mesSel.value = d.getMonth() + 1;
+                    }
+                    const _fcxdM = parseInt(document.getElementById('fcxd-mes-select').value);
+                    loadFluxoCaixaData(parseInt(document.getElementById('fcxd-ano-select').value), _fcxdM);
                 }
                 if (id === 'dfs-kpis') {
                     const yr = document.getElementById('kpi-ano-select').value;
@@ -5946,11 +5955,10 @@
             let _fcxdEditMode = false;
 
             function initFluxoCaixaPanel() {
-                if (_fcxdPanelInited) return;
-                _fcxdPanelInited = true;
                 const d = new Date();
                 const mesSel = document.getElementById('fcxd-mes-select');
-                if (mesSel) mesSel.value = d.getMonth() + 1;
+                if (mesSel && !_fcxdPanelInited) mesSel.value = d.getMonth() + 1;
+                _fcxdPanelInited = true;
                 const ano = parseInt(document.getElementById('fcxd-ano-select').value);
                 const mes = parseInt(mesSel ? mesSel.value : d.getMonth() + 1);
                 loadFluxoCaixaData(ano, mes);
