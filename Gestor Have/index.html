@@ -3556,8 +3556,6 @@
                             Conectar nova conta bancária
                         </button>
                     </div>
-                    <!-- Container obrigatório para o Widget Belvo -->
-                    <div id="belvo"></div>
                 </div>
 
                 <!-- ADMIN PANEL -->
@@ -7963,32 +7961,24 @@ if (id === 'dfs-kpis') {
             function saveFluxoCaixaData() {}
 
             // ══════════════════════════════════════════════
-            // OPEN FINANCE · BELVO
+            // OPEN FINANCE · PLUGGY
             // ══════════════════════════════════════════════
-            let _belvoSDKLoaded = false;
+            let _pluggySDKLoaded = false;
 
-            function _getBelvoSDK() {
-                // window.belvo pode ser o <div id="belvo"> (global de elemento DOM)
-                // O SDK real é window.belvoSDK
-                const candidates = [window.belvoSDK, window.BelvoSDK, window.belvo];
-                return candidates.find(s => s && typeof s.createWidget === 'function') || null;
-            }
-
-            async function _loadBelvoSDK() {
-                if (_getBelvoSDK()) return;
+            async function _loadPluggySDK() {
+                if (window.PluggyConnect) return;
                 await new Promise((resolve, reject) => {
                     const s = document.createElement('script');
-                    s.src = 'https://cdn.belvo.io/belvo-widget-1-stable.js';
+                    s.src = 'https://cdn.pluggy.ai/pluggy-connect/v2/pluggy-connect.js';
                     s.onload = () => {
-                        _belvoSDKLoaded = true;
-                        // Poll até o global estar disponível (máx 5s)
+                        _pluggySDKLoaded = true;
                         let tries = 0;
                         const poll = setInterval(() => {
-                            if (_getBelvoSDK()) { clearInterval(poll); resolve(); }
-                            else if (++tries > 50) { clearInterval(poll); reject(new Error('Belvo SDK não inicializou após 5s')); }
+                            if (window.PluggyConnect) { clearInterval(poll); resolve(); }
+                            else if (++tries > 50) { clearInterval(poll); reject(new Error('Pluggy SDK não inicializou após 5s')); }
                         }, 100);
                     };
-                    s.onerror = () => reject(new Error('Falha ao carregar SDK Belvo. Verifique sua conexão.'));
+                    s.onerror = () => reject(new Error('Falha ao carregar SDK Pluggy. Verifique sua conexão.'));
                     document.head.appendChild(s);
                 });
             }
@@ -7999,12 +7989,12 @@ if (id === 'dfs-kpis') {
                 grid.innerHTML = '<div class="of-empty">Carregando...</div>';
                 const token = localStorage.getItem('have_token');
                 try {
-                    const res = await fetch(API_BASE + '/caixa-extrato?module=belvo', { headers: { 'Authorization': 'Bearer ' + token } });
+                    const res = await fetch(API_BASE + '/caixa-extrato?module=pluggy', { headers: { 'Authorization': 'Bearer ' + token } });
                     if (!res.ok) {
                         const e = await res.json().catch(() => ({}));
                         if (res.status === 503) {
                             grid.innerHTML = `<div class="of-info-box" style="color:#b45309;background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);">
-                                ⚠️ <strong>Belvo não configurado.</strong> Adicione <code>BELVO_SECRET_ID</code> e <code>BELVO_SECRET_PASSWORD</code> nas variáveis de ambiente do Vercel e faça um novo deploy.
+                                ⚠️ <strong>Pluggy não configurado.</strong> Adicione <code>PLUGGY_CLIENT_ID</code> e <code>PLUGGY_CLIENT_SECRET</code> nas variáveis de ambiente do Vercel e faça um novo deploy.
                             </div>`;
                             return;
                         }
@@ -8069,54 +8059,51 @@ if (id === 'dfs-kpis') {
                 try {
                     showToast('Iniciando conexão com o banco...', 'info');
 
-                    // 1. Obter access token do backend
-                    const tokenRes = await fetch(API_BASE + '/caixa-extrato?module=belvo', {
+                    // 1. Obter connectToken do backend
+                    const tokenRes = await fetch(API_BASE + '/caixa-extrato?module=pluggy', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                         body: JSON.stringify({ action: 'widget_token' })
                     });
                     if (!tokenRes.ok) {
                         const e = await tokenRes.json().catch(() => ({}));
-                        throw new Error(e.error || 'Erro ao gerar token Belvo');
+                        throw new Error(e.error || 'Erro ao gerar token Pluggy');
                     }
                     const { access } = await tokenRes.json();
-                    if (!access) throw new Error('Token Belvo inválido');
+                    if (!access) throw new Error('Token Pluggy inválido');
 
-                    // 2. Carregar SDK Belvo
-                    await _loadBelvoSDK();
+                    // 2. Carregar SDK Pluggy
+                    await _loadPluggySDK();
+                    if (!window.PluggyConnect) throw new Error('Pluggy SDK não encontrado. Recarregue a página.');
 
-                    // 3. Abrir Widget
-                    const belvoSDK = _getBelvoSDK();
-                    if (!belvoSDK) throw new Error('Belvo SDK não encontrado. Recarregue a página.');
-                    belvoSDK.createWidget(access, {
-                        callback: async (link, institution) => {
+                    // 3. Abrir Pluggy Connect Widget
+                    const pluggy = new window.PluggyConnect({
+                        connectToken: access,
+                        onSuccess: async ({ item }) => {
                             try {
-                                const regRes = await fetch(API_BASE + '/caixa-extrato?module=belvo', {
+                                const regRes = await fetch(API_BASE + '/caixa-extrato?module=pluggy', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                                     body: JSON.stringify({
                                         action: 'register_link',
-                                        link_id: link.id || link,
-                                        institution: institution?.name || institution || '',
-                                        account_type: institution?.type || ''
+                                        link_id: item.id,
+                                        institution: item.connector?.name || '',
+                                        account_type: item.connector?.type || ''
                                     })
                                 });
-                                if (!regRes.ok) throw new Error('Erro ao salvar link');
+                                if (!regRes.ok) throw new Error('Erro ao salvar conexão');
                                 showToast('Conta bancária conectada com sucesso!', 'success');
                                 loadBelvoLinks();
                             } catch (err) {
                                 showToast('Erro ao registrar conta: ' + err.message, 'error');
                             }
                         },
-                        onExit: (data) => {
-                            if (data && data.error) showToast('Widget encerrado: ' + data.error, 'error');
-                        },
                         onError: (error) => {
                             showToast('Erro no widget: ' + (error?.message || JSON.stringify(error)), 'error');
                         },
-                        locale: 'pt',
-                        country_codes: ['BR'],
-                    }).build();
+                        onClose: () => {}
+                    });
+                    pluggy.init();
 
                 } catch (e) {
                     showToast('Erro: ' + e.message, 'error');
@@ -8134,7 +8121,7 @@ if (id === 'dfs-kpis') {
                 const token = localStorage.getItem('have_token');
                 showToast('Sincronizando transações...', 'info');
                 try {
-                    const res = await fetch(API_BASE + '/caixa-extrato?module=belvo', {
+                    const res = await fetch(API_BASE + '/caixa-extrato?module=pluggy', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                         body: JSON.stringify({ action: 'sync', link_id: linkId, date_from, date_to })
@@ -8152,7 +8139,7 @@ if (id === 'dfs-kpis') {
                 if (!confirm('Desconectar esta conta bancária? Os extratos já importados serão mantidos.')) return;
                 const token = localStorage.getItem('have_token');
                 try {
-                    const res = await fetch(`${API_BASE}/caixa-extrato?module=belvo&link_id=${encodeURIComponent(linkId)}`, {
+                    const res = await fetch(`${API_BASE}/caixa-extrato?module=pluggy&link_id=${encodeURIComponent(linkId)}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': 'Bearer ' + token }
                     });

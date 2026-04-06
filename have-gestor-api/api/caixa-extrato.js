@@ -2,9 +2,7 @@ const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const companies = require('../lib/companies');
 
-const BELVO_BASE = process.env.BELVO_ENV === 'production'
-  ? 'https://api.belvo.com'
-  : 'https://sandbox.belvo.com';
+const PLUGGY_BASE = 'https://api.pluggy.ai';
 
 const pools = {};
 function getPool(company) {
@@ -25,36 +23,56 @@ function verifyToken(req, res) {
   catch { res.status(401).json({ error: 'Token invalido' }); return null; }
 }
 
-function belvoHeaders() {
-  const cred = Buffer.from(`${process.env.BELVO_SECRET_ID}:${process.env.BELVO_SECRET_PASSWORD}`).toString('base64');
-  return { 'Authorization': `Basic ${cred}`, 'Content-Type': 'application/json' };
+async function pluggyGetApiKey() {
+  const r = await fetch(`${PLUGGY_BASE}/auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET })
+  });
+  if (!r.ok) throw new Error(`Pluggy auth error ${r.status}: ${await r.text()}`);
+  const data = await r.json();
+  return data.apiKey;
 }
 
-async function belvoGet(path) {
-  return fetch(`${BELVO_BASE}${path}`, { headers: belvoHeaders() });
+function pluggyHeaders(apiKey) {
+  return { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' };
 }
 
-async function belvoPost(path, body) {
-  return fetch(`${BELVO_BASE}${path}`, { method: 'POST', headers: belvoHeaders(), body: JSON.stringify(body) });
+async function pluggyGet(apiKey, path) {
+  return fetch(`${PLUGGY_BASE}${path}`, { headers: pluggyHeaders(apiKey) });
 }
 
-async function fetchAllTransactions(link_id, date_from, date_to) {
+async function pluggyPost(apiKey, path, body = {}) {
+  return fetch(`${PLUGGY_BASE}${path}`, { method: 'POST', headers: pluggyHeaders(apiKey), body: JSON.stringify(body) });
+}
+
+async function pluggyDelete(apiKey, path) {
+  return fetch(`${PLUGGY_BASE}${path}`, { method: 'DELETE', headers: pluggyHeaders(apiKey) });
+}
+
+async function fetchAllPluggyTransactions(apiKey, itemId, date_from, date_to) {
+  const accRes = await pluggyGet(apiKey, `/accounts?itemId=${itemId}`);
+  if (!accRes.ok) throw new Error(`Pluggy accounts error ${accRes.status}: ${await accRes.text()}`);
+  const accData = await accRes.json();
+  const accounts = accData.results || [];
   const transactions = [];
-  let url = `/api/transactions/?link=${link_id}&date_from=${date_from}&date_to=${date_to}&page_size=1000`;
-  while (url) {
-    const r = await belvoGet(url);
-    if (!r.ok) throw new Error(`Belvo API error ${r.status}: ${await r.text()}`);
-    const data = await r.json();
-    const results = Array.isArray(data) ? data : (data.results || []);
-    transactions.push(...results);
-    url = data.next ? data.next.replace(BELVO_BASE, '') : null;
+  for (const account of accounts) {
+    let page = 1;
+    while (true) {
+      const r = await pluggyGet(apiKey, `/transactions?accountId=${account.id}&from=${date_from}&to=${date_to}&pageSize=500&page=${page}`);
+      if (!r.ok) break;
+      const data = await r.json();
+      transactions.push(...(data.results || []));
+      if (page >= (data.totalPages || 1)) break;
+      page++;
+    }
   }
   return transactions;
 }
 
-async function handleBelvo(req, res, pool, company) {
-  if (!process.env.BELVO_SECRET_ID || !process.env.BELVO_SECRET_PASSWORD)
-    return res.status(503).json({ error: 'Belvo nao configurado. Adicione BELVO_SECRET_ID e BELVO_SECRET_PASSWORD nas variaveis de ambiente.' });
+async function handlePluggy(req, res, pool, company) {
+  if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET)
+    return res.status(503).json({ error: 'Pluggy nao configurado. Adicione PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET nas variaveis de ambiente.' });
 
   if (req.method === 'GET') {
     const r = await pool.query(
@@ -68,14 +86,11 @@ async function handleBelvo(req, res, pool, company) {
     const { action } = req.body;
 
     if (action === 'widget_token') {
-      const r = await belvoPost('/api/token/', {
-        id: process.env.BELVO_SECRET_ID,
-        password: process.env.BELVO_SECRET_PASSWORD,
-        scopes: 'read_institutions,write_links,read_links',
-      });
-      if (!r.ok) return res.status(r.status).json({ error: `Belvo: ${await r.text()}` });
+      const apiKey = await pluggyGetApiKey();
+      const r = await pluggyPost(apiKey, '/connect_token');
+      if (!r.ok) return res.status(r.status).json({ error: `Pluggy: ${await r.text()}` });
       const data = await r.json();
-      return res.json({ access: data.access });
+      return res.json({ access: data.accessToken });
     }
 
     if (action === 'register_link') {
@@ -97,7 +112,8 @@ async function handleBelvo(req, res, pool, company) {
       if (!link_id || !date_from || !date_to)
         return res.status(400).json({ error: 'link_id, date_from e date_to sao obrigatorios' });
 
-      const transactions = await fetchAllTransactions(link_id, date_from, date_to);
+      const apiKey = await pluggyGetApiKey();
+      const transactions = await fetchAllPluggyTransactions(apiKey, link_id, date_from, date_to);
       if (!transactions.length)
         return res.json({ ok: true, count: 0, message: 'Nenhuma transacao encontrada no periodo' });
 
@@ -106,12 +122,12 @@ async function handleBelvo(req, res, pool, company) {
         await client.query('BEGIN');
         let imported = 0;
         for (const tx of transactions) {
-          const rawDate = tx.value_date || tx.accounting_date || tx.collected_at;
+          const rawDate = tx.date;
           if (!rawDate) continue;
           const d = new Date(rawDate);
           const ano = d.getUTCFullYear(), mes = d.getUTCMonth() + 1, dia = d.getUTCDate();
-          const descricao = String(tx.description || tx.merchant?.name || '').substring(0, 500);
-          const sinal = (tx.type === 'OUTFLOW' || tx.type === 'EXPENSE') ? -1 : 1;
+          const descricao = String(tx.description || tx.descriptionRaw || '').substring(0, 500);
+          const sinal = (tx.type === 'DEBIT') ? -1 : 1;
           const valor = Math.round((parseFloat(tx.amount) || 0) * 100) * sinal;
           await client.query(
             `INSERT INTO caixa_extrato (empresa, ano, mes, dia, descricao, valor, belvo_tx_id)
@@ -136,6 +152,10 @@ async function handleBelvo(req, res, pool, company) {
   if (req.method === 'DELETE') {
     const { link_id } = req.query;
     if (!link_id) return res.status(400).json({ error: 'Informe link_id' });
+    try {
+      const apiKey = await pluggyGetApiKey();
+      await pluggyDelete(apiKey, `/items/${link_id}`);
+    } catch(e) { console.error('[PLUGGY DELETE]', e.message); }
     await pool.query('UPDATE belvo_links SET ativo=false WHERE empresa=$1 AND link_id=$2', [company, link_id]);
     return res.json({ ok: true });
   }
@@ -154,8 +174,8 @@ module.exports = async (req, res) => {
   const company = payload.company || 'lanzi';
   const pool = getPool(company);
 
-  // Roteamento: ?module=belvo → Open Finance
-  if (req.query.module === 'belvo') return handleBelvo(req, res, pool, company);
+  // Roteamento: ?module=pluggy → Open Finance
+  if (req.query.module === 'pluggy' || req.query.module === 'belvo') return handlePluggy(req, res, pool, company);
 
   try {
     if (req.method === 'GET') {
