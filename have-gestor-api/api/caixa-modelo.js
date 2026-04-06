@@ -23,36 +23,67 @@ function verifyToken(req, res) {
 
 const DEFAULT_CATEGORIAS = [
   { nome: 'SALDO INICIAL DO CAIXA', tipo: 'saldo_ini', parent: null, ordem: 0 },
-  { nome: 'ENTRADAS', tipo: 'section', parent: null, ordem: 10 },
-  { nome: 'Farmer', tipo: 'item', parent: 'ENTRADAS', ordem: 11 },
-  { nome: 'Closer', tipo: 'item', parent: 'ENTRADAS', ordem: 12 },
-  { nome: 'Loja Física', tipo: 'item', parent: 'ENTRADAS', ordem: 13 },
-  { nome: 'Ecommerce', tipo: 'item', parent: 'ENTRADAS', ordem: 14 },
-  { nome: 'Sucata', tipo: 'item', parent: 'ENTRADAS', ordem: 15 },
-  { nome: 'Inativator', tipo: 'item', parent: 'ENTRADAS', ordem: 16 },
-  { nome: 'Provisão', tipo: 'item', parent: 'ENTRADAS', ordem: 17 },
-  { nome: 'Fiscal', tipo: 'item', parent: 'ENTRADAS', ordem: 18 },
-  { nome: 'SAÍDAS', tipo: 'section', parent: null, ordem: 20 },
-  { nome: 'Perfibras', tipo: 'item', parent: 'SAÍDAS', ordem: 21 },
-  { nome: 'Alump', tipo: 'item', parent: 'SAÍDAS', ordem: 22 },
-  { nome: 'Infiniti', tipo: 'item', parent: 'SAÍDAS', ordem: 23 },
-  { nome: 'Anosul', tipo: 'item', parent: 'SAÍDAS', ordem: 24 },
-  { nome: 'Max', tipo: 'item', parent: 'SAÍDAS', ordem: 25 },
-  { nome: 'Pasimetal', tipo: 'item', parent: 'SAÍDAS', ordem: 26 },
-  { nome: 'Sendeski', tipo: 'item', parent: 'SAÍDAS', ordem: 27 },
-  { nome: 'Sydorak', tipo: 'item', parent: 'SAÍDAS', ordem: 28 },
-  { nome: 'Aperam', tipo: 'item', parent: 'SAÍDAS', ordem: 29 },
-  { nome: 'Tecmaf', tipo: 'item', parent: 'SAÍDAS', ordem: 30 },
-  { nome: 'Outros', tipo: 'item', parent: 'SAÍDAS', ordem: 31 },
-  { nome: 'Importação', tipo: 'item', parent: 'SAÍDAS', ordem: 32 },
-  { nome: 'Embalagem', tipo: 'item', parent: 'SAÍDAS', ordem: 33 },
-  { nome: 'Despesas de Fábrica', tipo: 'item', parent: 'SAÍDAS', ordem: 34 },
-  { nome: 'Qualidade', tipo: 'item', parent: 'SAÍDAS', ordem: 35 },
-  { nome: 'Fretes Compras', tipo: 'item', parent: 'SAÍDAS', ordem: 36 },
-  { nome: 'Fretes Vendas', tipo: 'item', parent: 'SAÍDAS', ordem: 37 },
-  { nome: 'Comissões Ecommerce', tipo: 'item', parent: 'SAÍDAS', ordem: 38 },
-  { nome: 'Marketing', tipo: 'item', parent: 'SAÍDAS', ordem: 39 },
-  { nome: 'Pessoal', tipo: 'item', parent: 'SAÍDAS', ordem: 40 },
+
+  // ── ATIVIDADES OPERACIONAIS ─────────────────────────────────
+  { nome: 'ATIVIDADES OPERACIONAIS', tipo: 'section', parent: null, ordem: 10 },
+
+  { nome: 'ENTRADAS', tipo: 'section', parent: 'ATIVIDADES OPERACIONAIS', ordem: 11 },
+  { nome: 'MERCADO LIVRE', tipo: 'item', parent: 'ENTRADAS', ordem: 111 },
+  { nome: 'SHOPEE', tipo: 'item', parent: 'ENTRADAS', ordem: 112 },
+  { nome: 'AMAZON', tipo: 'item', parent: 'ENTRADAS', ordem: 113 },
+  { nome: 'MAGALU', tipo: 'item', parent: 'ENTRADAS', ordem: 114 },
+  { nome: 'TIK TOK', tipo: 'item', parent: 'ENTRADAS', ordem: 115 },
+  { nome: 'ALI EXPRESS', tipo: 'item', parent: 'ENTRADAS', ordem: 116 },
+  { nome: 'TEMU', tipo: 'item', parent: 'ENTRADAS', ordem: 117 },
+  { nome: 'KWAI', tipo: 'item', parent: 'ENTRADAS', ordem: 118 },
+  { nome: 'DAFITI', tipo: 'item', parent: 'ENTRADAS', ordem: 119 },
+  { nome: 'B2B', tipo: 'item', parent: 'ENTRADAS', ordem: 120 },
+  { nome: 'OUTRAS ENTRADAS', tipo: 'item', parent: 'ENTRADAS', ordem: 121 },
+
+  { nome: 'SAÍDAS', tipo: 'section', parent: 'ATIVIDADES OPERACIONAIS', ordem: 20 },
+  { nome: 'FORNECEDORES', tipo: 'item', parent: 'SAÍDAS', ordem: 201 },
+  { nome: 'MATERIAL DE EMBALAGEM', tipo: 'item', parent: 'SAÍDAS', ordem: 202 },
+  { nome: 'FRETE DE COMPRA', tipo: 'item', parent: 'SAÍDAS', ordem: 203 },
+  { nome: 'FRETE DE VENDA', tipo: 'item', parent: 'SAÍDAS', ordem: 204 },
+  { nome: 'MARKETING', tipo: 'item', parent: 'SAÍDAS', ordem: 205 },
+  { nome: 'PESSOAL - SALÁRIOS E ENCARGOS', tipo: 'item', parent: 'SAÍDAS', ordem: 206 },
+  { nome: 'PESSOAL - BENEFÍCIOS', tipo: 'item', parent: 'SAÍDAS', ordem: 207 },
+  { nome: 'BONIFICAÇÕES', tipo: 'item', parent: 'SAÍDAS', ordem: 208 },
+  { nome: 'RETIRADA SÓCIOS', tipo: 'item', parent: 'SAÍDAS', ordem: 209 },
+  { nome: 'COMBUSTÍVEL', tipo: 'item', parent: 'SAÍDAS', ordem: 210 },
+  { nome: 'ALUGUEL', tipo: 'item', parent: 'SAÍDAS', ordem: 211 },
+  { nome: 'ENERGIA', tipo: 'item', parent: 'SAÍDAS', ordem: 212 },
+  { nome: 'ÁGUA', tipo: 'item', parent: 'SAÍDAS', ordem: 213 },
+  { nome: 'MANUTENÇÃO', tipo: 'item', parent: 'SAÍDAS', ordem: 214 },
+  { nome: 'LIMPEZA', tipo: 'item', parent: 'SAÍDAS', ordem: 215 },
+  { nome: 'MATERIAIS DE CONSUMO', tipo: 'item', parent: 'SAÍDAS', ordem: 216 },
+  { nome: 'INTERNET', tipo: 'item', parent: 'SAÍDAS', ordem: 217 },
+  { nome: 'SISTEMAS', tipo: 'item', parent: 'SAÍDAS', ordem: 218 },
+  { nome: 'PRESTAÇÃO DE SERVIÇOS', tipo: 'item', parent: 'SAÍDAS', ordem: 219 },
+  { nome: 'CARTÃO DE CRÉDITO', tipo: 'item', parent: 'SAÍDAS', ordem: 220 },
+  { nome: 'IMPOSTOS ESTADUAIS', tipo: 'item', parent: 'SAÍDAS', ordem: 221 },
+  { nome: 'IMPOSTOS FEDERAIS', tipo: 'item', parent: 'SAÍDAS', ordem: 222 },
+  { nome: 'OUTRAS SAÍDAS', tipo: 'item', parent: 'SAÍDAS', ordem: 223 },
+
+  // ── ATIVIDADES NÃO OPERACIONAIS ─────────────────────────────
+  { nome: 'ATIVIDADES NÃO OPERACIONAIS', tipo: 'section', parent: null, ordem: 50 },
+
+  { nome: 'ANO ENTRADAS', tipo: 'section', parent: 'ATIVIDADES NÃO OPERACIONAIS', ordem: 51 },
+  { nome: 'RECEITAS FINANCEIRAS', tipo: 'item', parent: 'ANO ENTRADAS', ordem: 511 },
+  { nome: 'CAPTAÇÃO DE EMPRÉSTIMOS', tipo: 'item', parent: 'ANO ENTRADAS', ordem: 512 },
+  { nome: 'RESGATE DE APLICAÇÕES', tipo: 'item', parent: 'ANO ENTRADAS', ordem: 513 },
+  { nome: 'OUTRAS ENTRADAS / APLICAÇÕES', tipo: 'item', parent: 'ANO ENTRADAS', ordem: 514 },
+
+  { nome: 'ANO SAÍDAS', tipo: 'section', parent: 'ATIVIDADES NÃO OPERACIONAIS', ordem: 54 },
+  { nome: 'IMOBILIZADO', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 541 },
+  { nome: 'INVESTIMENTOS', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 542 },
+  { nome: 'PARTICIPAÇÕES', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 543 },
+  { nome: 'PAGAMENTO DE EMPRÉSTIMOS', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 544 },
+  { nome: 'JUROS', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 545 },
+  { nome: 'DESPESAS BANCÁRIAS', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 546 },
+  { nome: 'DIVIDENDOS', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 547 },
+  { nome: 'OUTRAS SAÍDAS NÃO OPERACIONAIS', tipo: 'item', parent: 'ANO SAÍDAS', ordem: 548 },
+
   { nome: 'SALDO FINAL', tipo: 'saldo_fin', parent: null, ordem: 99 },
 ];
 
@@ -74,7 +105,7 @@ async function seedDefaults(pool, company) {
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -147,6 +178,37 @@ module.exports = async (req, res) => {
           [company, nome.substring(0, 100), tipo || 'item', parent || null, ordem]
         );
         return res.json({ ok: true, categoria: r.rows[0] });
+      }
+
+      if (action === 'reset_defaults') {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query('DELETE FROM caixa_categorias WHERE empresa=$1', [company]);
+          await client.query('COMMIT');
+        } catch (e) { await client.query('ROLLBACK'); throw e; }
+        finally { client.release(); }
+        await seedDefaults(pool, company);
+        return res.json({ ok: true, count: DEFAULT_CATEGORIAS.length });
+      }
+
+      if (action === 'bulk_save') {
+        const { categorias } = req.body;
+        if (!Array.isArray(categorias)) return res.status(400).json({ error: 'categorias deve ser array' });
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          for (const cat of categorias) {
+            if (!cat.id) continue;
+            await client.query(
+              'UPDATE caixa_categorias SET nome=$1, parent=$2, ordem=$3 WHERE id=$4 AND empresa=$5',
+              [String(cat.nome).substring(0,100), cat.parent||null, parseInt(cat.ordem)||0, parseInt(cat.id), company]
+            );
+          }
+          await client.query('COMMIT');
+        } catch (e) { await client.query('ROLLBACK'); throw e; }
+        finally { client.release(); }
+        return res.json({ ok: true });
       }
 
       return res.status(400).json({ error: 'action invalida' });

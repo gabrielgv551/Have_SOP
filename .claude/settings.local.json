@@ -8,7 +8,9 @@
       "Bash(grep:*)",
       "Bash(cd \"/c/Users/HAVE/Desktop/Arquivos/Have I/have-gestor-api\" ls -la)",
       "Bash(cd:*)",
-      "Bash(grep -n \"getElementById\\(\\\\`\" \"/c/Users/HAVE/Desktop\\\\Arquivos\\\\Have I\\\\Gestor Have\\\\index.html\")"
+      "Bash(grep -n \"getElementById\\(\\\\`\" \"/c/Users/HAVE/Desktop\\\\Arquivos\\\\Have I\\\\Gestor Have\\\\index.html\")",
+      "Bash(node -e ':*)",
+      "Bash(node --input-type=script)"
     ]
   }
 }

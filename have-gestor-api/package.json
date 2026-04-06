@@ -4,6 +4,7 @@
   "description": "API backend do Have Gestor Inteligente",
   "dependencies": {
     "bcrypt": "^5.1.0",
+    "dotenv": "^17.4.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3"
   }
