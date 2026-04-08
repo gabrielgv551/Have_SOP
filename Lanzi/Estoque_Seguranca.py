@@ -64,6 +64,7 @@ DB_CONFIG = {
     "password": "131105Gv",
 }
 
+# ── Defaults (substituídos pelo banco se sopc_config existir) ────────────────
 JANELA_MESES = 12
 
 FATOR_Z = {
@@ -74,12 +75,43 @@ FATOR_Z = {
     "CC": 1.28,
 }
 
-# Teto máximo de dias de cobertura para o ES por curva ABC
-# O ES não pode ultrapassar esse número de dias de demanda
 TETO_DIAS = {
-    "AA": 20, "AB": 20, "BA": 20, "AC": 20, "CA": 20,  # Curva A → máx 20 dias
-    "BB": 15, "BC": 15, "CB": 15, "CC": 15,              # Curva B/C → máx 15 dias
+    "AA": 20, "AB": 20, "BA": 20, "AC": 20, "CA": 20,
+    "BB": 15, "BC": 15, "CB": 15, "CC": 15,
 }
+
+
+def ler_config(engine, modulo: str) -> dict:
+    """Lê sopc_config do banco; retorna {chave: valor}. Silencioso se tabela não existe."""
+    try:
+        import pandas as _pd
+        df = _pd.read_sql(
+            f"SELECT chave, valor FROM sopc_config WHERE empresa='lanzi' AND modulo='{modulo}'",
+            engine
+        )
+        return dict(zip(df["chave"], df["valor"]))
+    except Exception:
+        return {}
+
+
+def aplicar_config(engine):
+    global JANELA_MESES, FATOR_Z, TETO_DIAS
+    cfg = ler_config(engine, 'estoque_seg')
+    if not cfg:
+        return
+    if 'janela_meses' in cfg:
+        JANELA_MESES = int(cfg['janela_meses'])
+    for classe in ['AA','AB','BA','BB','AC','CA','BC','CB','CC']:
+        k = f'fator_z_{classe}'
+        if k in cfg:
+            FATOR_Z[classe] = float(cfg[k])
+    teto_a  = float(cfg.get('teto_dias_A',  20))
+    teto_bc = float(cfg.get('teto_dias_BC', 15))
+    for c in ['AA','AB','BA','AC','CA']:
+        TETO_DIAS[c] = teto_a
+    for c in ['BB','BC','CB','CC']:
+        TETO_DIAS[c] = teto_bc
+    print(f"[CFG] Estoque Seg: janela={JANELA_MESES}m, teto_A={teto_a}d, teto_BC={teto_bc}d")
 
 
 # ─────────────────────────────────────────────
@@ -275,6 +307,7 @@ def main():
     print("=" * 55)
 
     engine    = conectar()
+    aplicar_config(engine)
     df_vendas = ler_vendas(engine)
     df_mensal = agregar_mensal(df_vendas)
     stats     = calcular_desvio(df_mensal)

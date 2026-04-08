@@ -51,6 +51,39 @@ DB_CONFIG = {
     "password": "131105Gv",
 }
 
+# ── Defaults (substituídos pelo banco se sopc_config existir) ────────────────
+HORIZONTE_DEMANDA_DIAS = 90
+CICLO_REPOSICAO_DIAS   = 30
+FATOR_EXCESSO          = 2.0
+
+
+def ler_config(engine, modulo: str) -> dict:
+    """Lê sopc_config do banco; retorna {chave: valor}. Silencioso se tabela não existe."""
+    try:
+        import pandas as _pd
+        df = _pd.read_sql(
+            f"SELECT chave, valor FROM sopc_config WHERE empresa='lanzi' AND modulo='{modulo}'",
+            engine
+        )
+        return dict(zip(df["chave"], df["valor"]))
+    except Exception:
+        return {}
+
+
+def aplicar_config(engine):
+    global HORIZONTE_DEMANDA_DIAS, CICLO_REPOSICAO_DIAS, FATOR_EXCESSO
+    cfg = ler_config(engine, 'ponto_pedido')
+    if not cfg:
+        return
+    if 'horizonte_demanda_dias' in cfg:
+        HORIZONTE_DEMANDA_DIAS = int(cfg['horizonte_demanda_dias'])
+    if 'ciclo_reposicao_dias' in cfg:
+        CICLO_REPOSICAO_DIAS = int(cfg['ciclo_reposicao_dias'])
+    if 'fator_excesso' in cfg:
+        FATOR_EXCESSO = float(cfg['fator_excesso'])
+    print(f"[CFG] Ponto Pedido: horizonte={HORIZONTE_DEMANDA_DIAS}d, ciclo={CICLO_REPOSICAO_DIAS}d, excesso=x{FATOR_EXCESSO}")
+
+
 def conectar():
     url = (
         f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}"
@@ -87,7 +120,7 @@ def limpar_sku(df: pd.DataFrame, col: str = "sku") -> pd.DataFrame:
 def ler_forecast(engine) -> pd.DataFrame:
     print("\n[...] Lendo forecast (próximos 90 dias)...")
     hoje     = datetime.today()
-    data_fim = hoje + timedelta(days=90)
+    data_fim = hoje + timedelta(days=HORIZONTE_DEMANDA_DIAS)
 
     query = text("""
         SELECT "Sku" AS sku, "Previsao_Quantidade" AS previsao_quantidade
@@ -209,7 +242,7 @@ def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
     # Cobre o consumo durante o lead time + 30 dias de ciclo + ES
     # menos o que já tem em estoque e o que já está vindo
     df["qty_sugerida"] = (
-        (df["demanda_diaria"] * (df["lead_time"] + 30))
+        (df["demanda_diaria"] * (df["lead_time"] + CICLO_REPOSICAO_DIAS))
         + df["estoque_seguranca"]
         - df["estoque_atual"]
         - df["pedidos_aberto"]
@@ -273,7 +306,7 @@ def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
         elif estoque_real <= pp:
             # Com pedido em aberto ainda fica abaixo do PP → precisa pedir
             return "PEDIR AGORA"
-        elif estoque_real <= pp * 2:
+        elif estoque_real <= pp * FATOR_EXCESSO:
             return "OK"
         else:
             return "EXCESSO"
@@ -398,6 +431,7 @@ def main():
     print("=" * 55)
 
     engine  = conectar()
+    aplicar_config(engine)
     demanda = ler_forecast(engine)
     es      = ler_estoque_seguranca(engine)
     estoque = ler_estoque_atual(engine)

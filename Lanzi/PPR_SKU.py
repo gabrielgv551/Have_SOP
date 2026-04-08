@@ -90,7 +90,7 @@ def ler_vendas(engine) -> pd.DataFrame:
             "Data"               AS data_venda,
             "Quantidade Vendida" AS quantidade
         FROM bd_vendas
-        WHERE "Status" != 'Cancelado'
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
           AND "Data"   >= :data_corte
           AND "Sku"    IS NOT NULL
     """)

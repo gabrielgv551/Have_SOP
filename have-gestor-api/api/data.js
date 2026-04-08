@@ -19,6 +19,7 @@ const TABELAS_PERMITIDAS = [
   'dashboard_kpis',
   'sopc',
   'sku_atividade',
+  'categoria_vendas',
 ];
 
 // Cache simples de pools por empresa (evita criar nova conexão a cada request)
@@ -96,6 +97,99 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Token inválido ou expirado. Faça login novamente.' });
   }
 
+  // Módulo Margens · DRE Gerencial
+  if (req.query.module === 'margens') {
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    const { ano, mes } = req.query;
+    try {
+      if (!ano || !mes) {
+        const r = await pool.query(`
+          SELECT DISTINCT "Ano" AS ano, "Mes" AS mes
+          FROM bd_vendas
+          WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL
+          ORDER BY "Ano" DESC, "Mes" DESC
+          LIMIT 24
+        `);
+        return res.json({ meses: r.rows });
+      }
+      const [r, rbRow] = await Promise.all([
+        pool.query(`
+          SELECT
+            "Sku"                                                                                AS sku,
+            MAX("Nome Produto")                                                                  AS nome_produto,
+            MAX("Categoria")                                                                     AS categoria,
+            SUM("Total Venda")                                                                   AS receita_bruta,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
+            SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
+            ROUND(
+              (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
+                THEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END)
+                   / NULLIF(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END),0) * 100
+                ELSE 0 END)::numeric
+            , 1) AS margem_pct
+          FROM bd_vendas
+          WHERE DATE_TRUNC('month', "Data"::date) = DATE_TRUNC('month', MAKE_DATE($1::int, $2::int, 1))
+            AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+          GROUP BY "Sku"
+          HAVING SUM("Total Venda") > 0
+          ORDER BY receita_liquida DESC
+        `, [parseInt(ano), parseInt(mes)]),
+        pool.query(`
+          SELECT SUM(tvp) AS receita_bruta_global
+          FROM (
+            SELECT "Order ID", MAX("Total Venda Pedido") AS tvp
+            FROM bd_vendas
+            WHERE DATE_TRUNC('month', "Data"::date) = DATE_TRUNC('month', MAKE_DATE($1::int, $2::int, 1))
+            GROUP BY "Order ID"
+          ) t
+        `, [parseInt(ano), parseInt(mes)])
+      ]);
+      return res.json({ skus: r.rows, receita_bruta_global: parseFloat(rbRow.rows[0]?.receita_bruta_global) || 0 });
+    } catch(e) {
+      console.error('[MARGENS]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // Módulo S&OP Config
+  if (req.query.module === 'sopc-config') {
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      if (req.method === 'GET') {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS sopc_config (
+            empresa VARCHAR(50), modulo VARCHAR(50), chave VARCHAR(100), valor TEXT,
+            PRIMARY KEY (empresa, modulo, chave)
+          )
+        `);
+        const r = await pool.query(
+          'SELECT modulo, chave, valor FROM sopc_config WHERE empresa=$1 ORDER BY modulo, chave',
+          [company]
+        );
+        return res.json({ config: r.rows });
+      }
+      if (req.method === 'POST') {
+        const { modulo, chave, valor } = req.body || {};
+        if (!modulo || !chave || valor === undefined) {
+          return res.status(400).json({ error: 'modulo, chave e valor são obrigatórios' });
+        }
+        await pool.query(`
+          INSERT INTO sopc_config (empresa, modulo, chave, valor)
+          VALUES ($1,$2,$3,$4)
+          ON CONFLICT (empresa, modulo, chave) DO UPDATE SET valor = EXCLUDED.valor
+        `, [company, modulo, chave, String(valor)]);
+        return res.json({ ok: true });
+      }
+    } catch(e) {
+      console.error('[SOPC-CONFIG]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // Módulo SKU Desativadas
   if (req.query.module === 'sku-desativadas') {
     const company = payload.company || 'lanzi';
@@ -156,6 +250,51 @@ module.exports = async (req, res) => {
     }
   }
 
+  // Módulo Sync Vendas
+  if (req.query.module === 'sync-vendas') {
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      const tableCheck = await pool.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name='sync_log') AS existe`);
+      if (!tableCheck.rows[0].existe) {
+        return res.json({ ultima_sincronizacao: null, registros: null, status: 'nunca_sincronizado', mensagem: 'Nenhuma sincronização realizada ainda.' });
+      }
+      const syncRes = await pool.query(`SELECT data_sync, registros, status, origem FROM sync_log WHERE tabela='bd_vendas' ORDER BY data_sync DESC LIMIT 1`);
+      if (!syncRes.rows.length) return res.json({ ultima_sincronizacao: null, registros: null, status: 'nunca_sincronizado' });
+      const ultimo = syncRes.rows[0];
+      const historicoRes = await pool.query(`SELECT data_sync, registros, status, origem FROM sync_log WHERE tabela='bd_vendas' ORDER BY data_sync DESC LIMIT 10`);
+      let registros_atuais = null;
+      try { const c = await pool.query('SELECT COUNT(*) AS total FROM bd_vendas'); registros_atuais = parseInt(c.rows[0].total); } catch(_) {}
+      return res.json({ ultima_sincronizacao: ultimo.data_sync, registros: parseInt(ultimo.registros), registros_atuais, status: ultimo.status, origem: ultimo.origem, historico: historicoRes.rows });
+    } catch(e) { console.error('[SYNC-VENDAS]', e.message); return res.status(500).json({ error: e.message }); }
+  }
+
+  // Módulo Configurações
+  if (req.query.module === 'configuracoes') {
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
+      if (req.method === 'GET') {
+        const r = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
+        const cfg = {};
+        r.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
+        return res.json({ gefinance_email: cfg['gefinance_email'] || null, gefinance_password_set: !!cfg['gefinance_password'] });
+      }
+      if (req.method === 'POST') {
+        const body = req.body || {};
+        const allowed = ['gefinance_email', 'gefinance_password'];
+        const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
+        if (!updates.length) return res.status(400).json({ error: 'Nenhum campo válido enviado.' });
+        for (const [chave, valor] of updates) {
+          await pool.query(`INSERT INTO configuracoes (empresa, chave, valor, atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa, chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`, [company, chave, String(valor)]);
+        }
+        return res.json({ ok: true, saved: updates.map(([k]) => k) });
+      }
+      return res.status(405).json({ error: 'Method not allowed' });
+    } catch(e) { console.error('[CONFIGURACOES]', e.message); return res.status(500).json({ error: e.message }); }
+  }
+
   // 2. Verificar tabela (whitelist)
   const { tabela } = req.query;
   if (!tabela || !TABELAS_PERMITIDAS.includes(tabela))
@@ -170,7 +309,7 @@ module.exports = async (req, res) => {
       const [ppRes, esRes, canalRes, full1Map, full2Map] = await Promise.all([
         pool.query(`SELECT sku, COALESCE(estoque_atual::numeric,0) AS estoque_atual, COALESCE(ponto_pedido::numeric,0) AS ponto_pedido, COALESCE(alerta,'SEM DADOS') AS alerta FROM ponto_pedido`),
         pool.query(`SELECT sku, REPLACE(media_mensal::text,',','.')::numeric AS media_mensal FROM estoque_seguranca`),
-        pool.query(`SELECT "Sku" AS sku, TRIM("Canal de venda") AS canal, ROUND(SUM("Quantidade Vendida"::numeric)/3.0,1) AS media FROM bd_vendas WHERE "Status" NOT ILIKE '%cancel%' AND "Data"::date >= (SELECT MAX("Data"::date) FROM bd_vendas) - INTERVAL '3 months' AND "Sku" IS NOT NULL AND TRIM("Canal de venda") IS NOT NULL AND TRIM("Canal de venda") != '' GROUP BY "Sku", TRIM("Canal de venda")`).catch(()=>({rows:[]})),
+        pool.query(`SELECT "Sku" AS sku, TRIM("Canal de venda") AS canal, ROUND(SUM("Quantidade Vendida"::numeric)/3.0,1) AS media FROM bd_vendas WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date >= (SELECT MAX("Data"::date) FROM bd_vendas) - INTERVAL '3 months' AND "Sku" IS NOT NULL AND TRIM("Canal de venda") IS NOT NULL AND TRIM("Canal de venda") != '' GROUP BY "Sku", TRIM("Canal de venda")`).catch(()=>({rows:[]})),
         lerEstoqueFullMap(pool,'full_1'),
         lerEstoqueFullMap(pool,'full_2'),
       ]);
@@ -225,7 +364,7 @@ module.exports = async (req, res) => {
           ROUND(SUM(CASE WHEN "Data"::date >= (SELECT d FROM max_d) - INTERVAL '6 months' THEN "Quantidade Vendida"::numeric ELSE 0 END),0) AS qtd_6m,
           ROUND(SUM("Quantidade Vendida"::numeric),0) AS qtd_12m
         FROM bd_vendas
-        WHERE "Status" NOT ILIKE '%cancel%'
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
           AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
           AND "Data"::date >= (SELECT d FROM max_d) - INTERVAL '12 months'
         GROUP BY "Sku"
@@ -246,56 +385,51 @@ module.exports = async (req, res) => {
       return res.json(result.rows.map(r => r.sku));
     }
     if (tabela === 'dashboard_kpis') {
-      const whereLatest = `
-        WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas)
-          AND "Mês" = (
-            SELECT "Mês" FROM bd_vendas
-            WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas)
-            ORDER BY "Mês" DESC LIMIT 1
-          )`;
-      try {
-        result = await pool.query(`
+      result = await pool.query(`
+          WITH lm AS (
+            SELECT DATE_TRUNC('month', MAX("Data"::date)) AS m
+            FROM bd_vendas WHERE "Data" IS NOT NULL
+          ),
+          rb AS (
+            SELECT SUM(tvp) AS receita_bruta
+            FROM (
+              SELECT "Order ID", MAX("Total Venda Pedido") AS tvp
+              FROM bd_vendas
+              WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)
+              GROUP BY "Order ID"
+            ) t
+          )
           SELECT
-            "Ano" AS ano, "Mês" AS mes,
-            SUM("Total prod. vendidos") AS receita_bruta,
-            SUM(CASE WHEN "Status" NOT ILIKE '%cancel%' THEN "Total prod. vendidos" ELSE 0 END) AS receita_liquida,
-            SUM(CASE WHEN "Status" NOT ILIKE '%cancel%' THEN "Quantidade Vendida" ELSE 0 END) AS qtd_liquida,
-            SUM(CASE WHEN "Status" NOT ILIKE '%cancel%' THEN "Margem Contribuição" ELSE 0 END) AS margem_bruta
-          FROM bd_vendas ${whereLatest}
-          GROUP BY "Ano", "Mês"
+            EXTRACT(YEAR  FROM "Data"::date)  AS ano,
+            EXTRACT(MONTH FROM "Data"::date)  AS mes,
+            (SELECT receita_bruta FROM rb)    AS receita_bruta,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_bruta,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0) ELSE 0 END)  AS custo_total
+          FROM bd_vendas
+          WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)
+          GROUP BY 1, 2
         `);
-      } catch(e) {
-        result = await pool.query(`
-          SELECT
-            "Ano" AS ano, "Mês" AS mes,
-            SUM("Total prod. vendidos") AS receita_bruta,
-            SUM(CASE WHEN "Status" NOT ILIKE '%cancel%' THEN "Total prod. vendidos" ELSE 0 END) AS receita_liquida,
-            SUM(CASE WHEN "Status" NOT ILIKE '%cancel%' THEN "Quantidade Vendida" ELSE 0 END) AS qtd_liquida,
-            NULL AS margem_bruta
-          FROM bd_vendas ${whereLatest}
-          GROUP BY "Ano", "Mês"
-        `);
-      }
       return res.json(result.rows[0] || {});
     }
     if (tabela === 'monthly_revenue') {
       result = await pool.query(`
-        SELECT "Ano" AS ano, "Mês" AS mes,
-               SUM("Total prod. vendidos") AS receita,
+        SELECT "Ano" AS ano, "Mes" AS mes,
+               SUM("Total Venda") AS receita,
                SUM("Quantidade Vendida") AS qtd
         FROM bd_vendas
-        WHERE "Status" NOT ILIKE '%cancel%'
-        GROUP BY "Ano", "Mês"
-        ORDER BY "Ano" ASC, "Mês" ASC
+        GROUP BY "Ano", "Mes"
+        ORDER BY "Ano" ASC, "Mes" ASC
       `);
       return res.json(result.rows);
     }
     if (tabela === 'pmv_months') {
       result = await pool.query(`
-        SELECT DISTINCT "Ano" AS ano, "Mês" AS mes
+        SELECT DISTINCT "Ano" AS ano, "Mes" AS mes
         FROM bd_vendas
-        WHERE "Ano" IS NOT NULL AND "Mês" IS NOT NULL
-        ORDER BY "Ano" DESC, "Mês" DESC
+        WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL
+        ORDER BY "Ano" DESC, "Mes" DESC
       `);
       return res.json(result.rows);
     }
@@ -316,21 +450,23 @@ module.exports = async (req, res) => {
       result = await pool.query(`
         SELECT
           "Sku" AS sku,
+          MAX("Nome Produto") AS nome_produto,
+          MAX("Categoria") AS categoria,
           SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Total prod. vendidos" ELSE 0 END) AS rev_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Contribuição",0) ELSE 0 END) AS mar_prev,
+          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Total Venda" ELSE 0 END) AS rev_prev,
+          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_prev,
           SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total prod. vendidos" ELSE 0 END) AS rev_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Contribuição",0) ELSE 0 END) AS mar_curr
+          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) AS rev_curr,
+          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_curr
         FROM bd_vendas
-        WHERE "Status" NOT ILIKE '%cancel%'
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
           AND (
             "Data"::date BETWEEN $1::date AND $2::date OR
             "Data"::date BETWEEN $3::date AND $4::date
           )
         GROUP BY "Sku"
         HAVING SUM("Quantidade Vendida") > 0
-        ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total prod. vendidos" ELSE 0 END) DESC
+        ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) DESC
       `, [datePrevIni, datePrevFim, dateCurrIni, dateCurrFim]);
       return res.json(result.rows);
     }
@@ -350,23 +486,23 @@ module.exports = async (req, res) => {
       const dateCurrFim = `${ano_curr}-${pad(mes_curr)}-${pad(dFimCurr)}`;
       result = await pool.query(`
         SELECT
-          COALESCE(TRIM("Canal de venda"), 'Sem canal') AS canal,
+          COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal') AS canal,
           SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Total prod. vendidos" ELSE 0 END) AS rev_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Contribuição",0) ELSE 0 END) AS mar_prev,
+          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Total Venda" ELSE 0 END) AS rev_prev,
+          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_prev,
           SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total prod. vendidos" ELSE 0 END) AS rev_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Contribuição",0) ELSE 0 END) AS mar_curr
+          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) AS rev_curr,
+          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_curr
         FROM bd_vendas
-        WHERE "Status" NOT ILIKE '%cancel%'
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
           AND "Sku" = $5
           AND (
             "Data"::date BETWEEN $1::date AND $2::date OR
             "Data"::date BETWEEN $3::date AND $4::date
           )
-        GROUP BY COALESCE(TRIM("Canal de venda"), 'Sem canal')
+        GROUP BY COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal')
         HAVING SUM("Quantidade Vendida") > 0
-        ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total prod. vendidos" ELSE 0 END) DESC
+        ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) DESC
       `, [datePrevIni, datePrevFim, dateCurrIni, dateCurrFim, sku]);
       return res.json(result.rows);
     }
@@ -385,6 +521,31 @@ module.exports = async (req, res) => {
       } catch(_) {
         // Tabelas sem coluna Ano/Mês – usa query genérica
       }
+    }
+    if (tabela === 'categoria_vendas') {
+      const { ano, mes } = req.query;
+      let whereClause = `WHERE "Categoria" IS NOT NULL AND TRIM("Categoria"::text) != '' AND "Status" !~* '(cancel|devol|n[aã]o.?pago)'`;
+      const catParams = [];
+      if (ano && mes) {
+        whereClause += ` AND "Ano" = $1 AND "Mes" = $2`;
+        catParams.push(parseInt(ano), parseInt(mes));
+      } else {
+        whereClause += ` AND "Ano" = (SELECT MAX("Ano") FROM bd_vendas) AND "Mes" = (SELECT MAX("Mes") FROM bd_vendas WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas))`;
+      }
+      result = await pool.query(`
+        SELECT
+          "Categoria"                                                              AS categoria,
+          ROUND(SUM("Total Venda"), 2)                                             AS receita,
+          ROUND(SUM(COALESCE("Margem Produto", 0)), 2)                             AS margem,
+          ROUND(SUM(COALESCE("Custo Total", 0)), 2)                                AS custo,
+          SUM("Quantidade Vendida")                                                AS qtd,
+          COUNT(DISTINCT "Sku")                                                    AS skus
+        FROM bd_vendas
+        ${whereClause}
+        GROUP BY "Categoria"
+        ORDER BY receita DESC
+      `, catParams);
+      return res.json(result.rows);
     }
     result = await pool.query(`SELECT * FROM ${tabela} LIMIT 5000`);
     res.json(result.rows);

@@ -2092,6 +2092,80 @@
                 color: var(--muted);
                 opacity: 0.6;
             }
+            /* ── AGENTS ── */
+            .ag-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+            .ag-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 16px; cursor: pointer; transition: all 0.18s; text-align: center; }
+            .ag-card:hover { border-color: var(--accent); background: rgba(0,124,220,0.06); }
+            .ag-card.selected { border-color: var(--accent); background: rgba(0,124,220,0.10); box-shadow: 0 0 0 3px rgba(0,124,220,0.15); }
+            .ag-card-icon { font-size: 28px; margin-bottom: 8px; }
+            .ag-card-label { font-size: 13px; font-weight: 700; color: var(--text); }
+            .ag-card-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+            .ag-analysis-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; font-size: 13.5px; line-height: 1.75; }
+            .ag-analysis-box h1 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin: 14px 0 8px; }
+            .ag-analysis-box h2 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin: 14px 0 8px; }
+            .ag-analysis-box h3 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin: 10px 0 5px; }
+            .ag-analysis-box ul { padding-left: 18px; margin: 4px 0 8px; }
+            .ag-analysis-box li { margin-bottom: 3px; }
+            .ag-analysis-box p { margin-bottom: 6px; }
+            .ag-analysis-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+            .ag-analysis-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+            .ag-chat-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden; }
+            .ag-chat-messages { max-height: 380px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+            .ag-msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; word-break: break-word; }
+            .ag-msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-radius: 12px 12px 2px 12px; }
+            .ag-msg.assistant { background: var(--surface2); border: 1px solid var(--border); color: var(--text); align-self: flex-start; border-radius: 12px 12px 12px 2px; }
+            .ag-msg.assistant strong { color: var(--accent); }
+            .ag-msg p { margin-bottom: 4px; }
+            .ag-msg ul { padding-left: 16px; margin: 4px 0; }
+            .ag-chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); }
+            .ag-chat-input { flex: 1; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--text); outline: none; transition: border-color 0.15s; resize: none; }
+            .ag-chat-input:focus { border-color: var(--accent); }
+            .ag-send-btn { padding: 9px 18px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+            .ag-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+            .ag-loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            .ag-all-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; margin-bottom: 16px; overflow: hidden; }
+            .ag-all-card-header { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface2); font-size: 13px; }
+            .ag-all-card-header strong { flex: 1; font-family: 'Syne', sans-serif; font-size: 13px; }
+            .ag-all-status { font-size: 12px; color: var(--muted); }
+            .ag-all-body { padding: 18px 20px; font-size: 13px; line-height: 1.75; }
+            .ag-all-body h1 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin: 12px 0 6px; }
+            .ag-all-body h2 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; margin: 12px 0 6px; }
+            .ag-all-body h3 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
+            .ag-all-body ul { padding-left: 18px; margin: 4px 0 8px; }
+            .ag-all-body li { margin-bottom: 3px; }
+            .ag-all-body p { margin-bottom: 6px; }
+            /* ── MARGENS DRE ── */
+            .dre-threshold-bar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;margin-bottom:16px;font-size:12px;color:var(--muted); }
+            .dre-th-label { font-weight:600;color:var(--text);white-space:nowrap; }
+            .dre-th-input { width:52px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);text-align:center; }
+            .dre-th-sep { color:var(--border);font-size:16px;margin:0 4px; }
+            .dre-view-btns { display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap; }
+            .dre-view-btn { padding:8px 20px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s; }
+            .dre-view-btn.active,.dre-view-btn:hover { border-color:var(--accent);color:var(--accent);background:rgba(0,124,220,0.07); }
+            .dre-view-btn.boa.active { border-color:#16a34a;color:#16a34a;background:rgba(22,163,74,0.07); }
+            .dre-view-btn.media.active { border-color:#ca8a04;color:#ca8a04;background:rgba(202,138,4,0.07); }
+            .dre-view-btn.ruim.active { border-color:#dc2626;color:#dc2626;background:rgba(220,38,38,0.07); }
+            .dre-box { background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px; }
+            .dre-box-title { padding:14px 20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between; }
+            .dre-table { width:100%;border-collapse:collapse; }
+            .dre-table td { padding:10px 20px;font-size:13px;border-bottom:1px solid var(--border); }
+            .dre-table tr:last-child td { border-bottom:none; }
+            .dre-table .dre-total td { font-weight:700;background:rgba(0,124,220,0.05);font-size:14px; }
+            .dre-table .dre-subtotal td { font-weight:600;background:var(--surface2); }
+            .dre-table .dre-deduct td { color:var(--muted); }
+            .dre-table td:last-child { text-align:right;font-variant-numeric:tabular-nums; }
+            .dre-table td:nth-child(2) { text-align:right;color:var(--muted);font-size:12px;width:70px; }
+            .dre-pct-pos { color:#16a34a;font-weight:700; }
+            .dre-pct-neg { color:#dc2626;font-weight:700; }
+            .dre-skus-table { width:100%;border-collapse:collapse;font-size:12px; }
+            .dre-skus-table th { padding:8px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1.5px solid var(--border);background:var(--surface2); }
+            .dre-skus-table td { padding:8px 14px;border-bottom:1px solid var(--border); }
+            .dre-skus-table tr:last-child td { border-bottom:none; }
+            .dre-pill { display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700; }
+            .dre-pill.boa   { background:rgba(22,163,74,0.12);color:#16a34a; }
+            .dre-pill.media { background:rgba(202,138,4,0.12);color:#ca8a04; }
+            .dre-pill.ruim  { background:rgba(220,38,38,0.12);color:#dc2626; }
         </style>
     </head>
 
@@ -2237,6 +2311,24 @@
                     <div class="nav-item" onclick="showPanel('sku-desativadas')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></span>SKUs Desativadas
                     </div>
+                    <hr class="nav-sep">
+                    <!-- MARGENS -->
+                    <div class="nav-section-label">Margens</div>
+                    <div class="nav-item" onclick="showPanel('margens-dre')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>DRE Gerencial
+                    </div>
+                    <hr class="nav-sep">
+                    <!-- IA AGENTES -->
+                    <div class="nav-section-label">IA · Agentes</div>
+                    <div class="nav-item" onclick="showPanel('agentes')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/><circle cx="9" cy="16" r="1" fill="currentColor"/><circle cx="15" cy="16" r="1" fill="currentColor"/></svg></span>Agentes IA
+                    </div>
+                    <hr class="nav-sep">
+                    <!-- CONFIGURAÇÕES -->
+                    <div class="nav-section-label">Sistema</div>
+                    <div class="nav-item" onclick="showPanel('configuracoes')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Configurações
+                    </div>
                 </div>
                 <div class="sidebar-footer">
                     <div class="user-info">
@@ -2294,6 +2386,13 @@
                         <div class="table-card" style="padding:20px">
                             <div class="section-title" style="margin-bottom:16px;font-size:14px">Distribuição ABC</div>
                             <div id="overview-abc"><div class="loading-skeleton" style="height:200px"></div></div>
+                        </div>
+                    </div>
+                    <!-- Vendas por Categoria -->
+                    <div style="margin-top:16px">
+                        <div class="table-card" style="padding:20px">
+                            <div class="section-title" style="margin-bottom:14px;font-size:14px">Vendas por Categoria · Mês Atual</div>
+                            <div id="overview-categorias"><div class="loading-skeleton" style="height:160px"></div></div>
                         </div>
                     </div>
                     <!-- Curva ABC embedded -->
@@ -3410,6 +3509,8 @@
                                 <thead>
                                     <tr>
                                         <th class="pmv-sku" rowspan="2">SKU</th>
+                                        <th class="pmv-sku" rowspan="2" style="min-width:130px">Nome</th>
+                                        <th class="pmv-sku" rowspan="2">Categoria</th>
                                         <th colspan="4" style="text-align:center;border-left:2px solid #38506b" id="pmv-th-prev">Mês Anterior</th>
                                         <th colspan="4" style="text-align:center;border-left:2px solid #38506b" id="pmv-th-curr">Mês Atual</th>
                                         <th colspan="5" style="text-align:center;border-left:2px solid #f97316;background:#1a3a6b">Análise PVM</th>
@@ -3431,7 +3532,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="pmv-tbody"></tbody>
-                                <tfoot id="pmv-tfoot"></tfoot>
+                                <tfoot id="pmv-tfoot" style="font-size:11px"></tfoot>
                             </table>
                             <div id="pmv-empty" style="padding:40px;text-align:center;color:var(--muted);display:none">Selecione os meses e clique em <strong>Analisar</strong>.</div>
                             <div id="pmv-loading" style="padding:40px;text-align:center;color:var(--muted);display:none">Carregando análise...</div>
@@ -3587,6 +3688,137 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- MARGENS · DRE GERENCIAL -->
+                <div class="panel" id="panel-margens-dre">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">DRE Gerencial · Por Margem</div>
+                            <div style="font-size:12px;color:var(--muted);margin-top:2px">Resultado até Margem de Contribuição filtrado por faixa de margem</div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                            <select id="dre-periodo" onchange="loadDreGerencial()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px"><option value="">Carregando...</option></select>
+                            <button onclick="loadDreGerencial()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">↺</button>
+                        </div>
+                    </div>
+                    <!-- Thresholds -->
+                    <div class="dre-threshold-bar">
+                        <span class="dre-th-label">🟢 Margem Boa ≥</span>
+                        <input class="dre-th-input" type="number" id="dre-boa-min" value="30" min="0" max="100"> %
+                        <span class="dre-th-sep">|</span>
+                        <span class="dre-th-label">🟡 Média entre</span>
+                        <input class="dre-th-input" type="number" id="dre-med-min" value="10" min="0" max="100"> %
+                        <span style="color:var(--muted);font-size:12px">e</span>
+                        <input class="dre-th-input" type="number" id="dre-med-max" value="30" min="0" max="100"> %
+                        <span class="dre-th-sep">|</span>
+                        <span class="dre-th-label">🔴 Ruim &lt;</span>
+                        <input class="dre-th-input" type="number" id="dre-ruim-max" value="10" min="0" max="100"> %
+                        <button onclick="loadDreGerencial()" style="margin-left:8px;padding:5px 12px;border-radius:7px;background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer">Aplicar</button>
+                    </div>
+                    <!-- Filter buttons -->
+                    <div class="dre-view-btns" id="dre-view-btns">
+                        <button class="dre-view-btn active" onclick="setDreView('todos')">📊 Todas</button>
+                        <button class="dre-view-btn boa"    onclick="setDreView('boa')">🟢 Margem Boa</button>
+                        <button class="dre-view-btn media"  onclick="setDreView('media')">🟡 Margem Média</button>
+                        <button class="dre-view-btn ruim"   onclick="setDreView('ruim')">🔴 Margem Ruim</button>
+                    </div>
+                    <!-- DRE result -->
+                    <div id="dre-gerencial-result"></div>
+                </div>
+                <!-- AGENTES IA -->
+                <div class="panel" id="panel-agentes">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Agentes · IA Analítica</div>
+                            <div style="font-size:12px;color:var(--muted);margin-top:2px">Selecione um agente para análise individual ou rode todos de uma vez</div>
+                        </div>
+                        <button onclick="runAllAgents()" id="btn-rodar-todos" style="padding:8px 18px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">▶ Rodar Todos</button>
+                    </div>
+                    <div id="ag-all-results" style="display:none;margin-bottom:24px"></div>
+                    <div class="ag-cards-grid" id="ag-cards-grid"></div>
+                    <div id="ag-workspace" style="display:none">
+                        <div class="ag-analysis-box">
+                            <div class="ag-analysis-header">
+                                <div class="ag-analysis-title">
+                                    <span id="ag-active-icon"></span>
+                                    <span id="ag-active-label"></span>
+                                    &nbsp;· Análise Automática
+                                </div>
+                                <button onclick="reloadAgentAnalysis()" style="padding:5px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">↺ Recarregar</button>
+                            </div>
+                            <div id="ag-analysis-content"><span class="ag-loading-spinner"></span> Carregando análise...</div>
+                        </div>
+                        <div class="ag-chat-box">
+                            <div class="ag-chat-messages" id="ag-chat-messages">
+                                <div class="ag-msg assistant">Análise carregada acima. Faça perguntas sobre os dados ou peça aprofundamento em qualquer ponto.</div>
+                            </div>
+                            <div class="ag-chat-input-row">
+                                <textarea class="ag-chat-input" id="ag-chat-input" rows="1" placeholder="Pergunte ao agente..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAgentMessage();}"></textarea>
+                                <button class="ag-send-btn" id="ag-send-btn" onclick="sendAgentMessage()">Enviar →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- CONFIGURAÇÕES -->
+                <div class="panel" id="panel-configuracoes">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Configurações</div>
+                            <div style="font-size:12px;color:var(--muted);margin-top:2px">Gerencie integrações e variáveis do sistema</div>
+                        </div>
+                    </div>
+                    <!-- Sub-tabs -->
+                    <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1.5px solid var(--border);padding-bottom:12px">
+                        <button class="sc-tab sc-tab-active" id="cfg-tab-apis" onclick="showCfgTab('apis')">APIs</button>
+                        <button class="sc-tab" id="cfg-tab-sopc" onclick="showCfgTab('sopc')">S&amp;OP</button>
+                    </div>
+                    <!-- Tab: S&OP -->
+                    <div id="cfg-panel-sopc" style="display:none">
+                        <div id="sopc-cfg-loading" style="color:var(--muted);font-size:13px;padding:8px 0">Carregando...</div>
+                        <div id="sopc-cfg-body" style="display:none;display:flex;flex-direction:column;gap:24px"></div>
+                    </div>
+                    <!-- Tab: APIs -->
+                    <div id="cfg-panel-apis">
+                        <div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:24px;max-width:520px">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+                                <div style="width:38px;height:38px;border-radius:9px;background:rgba(0,124,220,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                </div>
+                                <div style="flex:1">
+                                    <div style="font-weight:600;font-size:14px;color:var(--text)">Gefinance</div>
+                                    <div style="font-size:11px;color:var(--muted)">app.ge.finance · Fonte de dados de vendas</div>
+                                </div>
+                                <div id="cfg-gefinance-status" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.05);color:var(--muted);white-space:nowrap">Não configurado</div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:14px">
+                                <div>
+                                    <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">E-mail</label>
+                                    <input id="cfg-gefinance-email" type="email" placeholder="seu@email.com" autocomplete="username"
+                                        style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;transition:border-color 0.15s"
+                                        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                                </div>
+                                <div>
+                                    <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">Senha</label>
+                                    <div style="position:relative">
+                                        <input id="cfg-gefinance-password" type="password" placeholder="••••••••" autocomplete="current-password"
+                                            style="width:100%;padding:9px 12px;padding-right:42px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;transition:border-color 0.15s"
+                                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                                        <button onclick="toggleCfgPassVisibility()" title="Mostrar/ocultar senha" type="button"
+                                            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:0">
+                                            <svg id="cfg-eye-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px;border-top:1px solid var(--border)">
+                                    <div id="cfg-sync-info" style="font-size:11px;color:var(--muted);line-height:1.4">–</div>
+                                    <button onclick="saveCfgGefinance()" id="btn-cfg-save-gefinance" type="button"
+                                        style="padding:8px 22px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;margin-left:12px">
+                                        Salvar
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5456,7 +5688,7 @@
                 }
             }
 
-            function startDashboard(company, user, companyName) {
+            async function startDashboard(company, user, companyName) {
                 currentCompany = company;
                 document.getElementById('login-page').style.display = 'none';
                 document.getElementById('dashboard-page').style.display = 'block';
@@ -5515,6 +5747,7 @@
                     console.error('Failed to decode JWT:', e);
                 }
 
+                await _fetchDeactivatedSkus();
                 loadAllData();
             }
 
@@ -5581,6 +5814,7 @@
 
                 try {
                     await Promise.all([loadOverview(),
+                    loadCategoriasOverview(),
                     loadMonthlyChart(),
                     loadCurvaAbc(),
                     loadPontoPedido(),
@@ -5735,6 +5969,7 @@
                     const mbRaw  = kpiData.margem_bruta != null ? +kpiData.margem_bruta : null;
                     const mb     = mbRaw !== null ? mbRaw : totalMargem;
                     const ticket = qtd > 0 ? rl / qtd : 0;
+                    const ct     = kpiData.custo_total != null ? +kpiData.custo_total : null;
                     const mbPct  = rl > 0 ? (mb / rl * 100) : 0;
                     const mesSub = kpiData.mes ? `${MESES_OV[+kpiData.mes]}/${kpiData.ano}` : '–';
                     const fBR = v => v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -5773,7 +6008,13 @@
                             <div class="kpi-label">Ticket Médio</div>
                             <div class="kpi-value">${ticket ? fKPI(ticket) : '–'}</div>
                             <div class="kpi-sub">${mesSub} · ${qtd.toLocaleString('pt-BR')} un.</div>
-                        </div>`;
+                        </div>
+                        ${ct != null ? `<div class="kpi-card">
+                            <div class="kpi-icon">⚙</div>
+                            <div class="kpi-label">Custo Total Prod.</div>
+                            <div class="kpi-value" style="color:#e67e22">${fKPI(ct)}</div>
+                            <div class="kpi-sub">${mesSub} · excl. cancelamentos</div>
+                        </div>` : ''}`;
 
                     // ── Margem por Curva ABC (horizontal bar chart) ───────
                     const sortedByMarg = [...abcData].sort((a, b) => b.marg - a.marg);
@@ -6157,6 +6398,16 @@
                 else badge.style.display = 'none';
             }
 
+            function _refreshAllSkuPanels() {
+                if (state.abc) renderTable('abc', state.abc, 1);
+                if (state.pp) { renderPpKpis(state.pp); renderTable('pp', state.pp, 1); }
+                if (state.es) renderTable('es', state.es, 1);
+                if (state.ppr) renderTable('ppr', state.ppr, 1);
+                if (state.fc) renderTable('fc', state.fc, 1);
+                if (state.sw) renderTable('sw', state.sw, 1);
+                if (state.sc) renderTable('sc', state.sc, 1);
+            }
+
             async function _fetchDeactivatedSkus() {
                 const token = localStorage.getItem('have_token');
                 try {
@@ -6187,16 +6438,9 @@
                 const tbody = document.getElementById('sd-tbody');
                 if (tbody) tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-title">Carregando...</div></div></td></tr>`;
                 try {
-                    const [skuRes, deactRes] = await Promise.all([
-                        fetch(`${API_BASE}/data?tabela=sku_atividade`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch(`${API_BASE}/data?module=sku-desativadas`, { headers: { 'Authorization': `Bearer ${token}` } })
-                    ]);
+                    const skuRes = await fetch(`${API_BASE}/data?tabela=sku_atividade`, { headers: { 'Authorization': `Bearer ${token}` } });
                     const data = await skuRes.json();
                     if (!skuRes.ok) throw new Error(data.error || 'Erro');
-                    if (deactRes.ok) {
-                        const dd = await deactRes.json();
-                        _deactivatedSkus = new Set(dd.skus || []);
-                    }
                     state.sd = data.map(r => ({
                         sku: String(r.sku || '').trim(),
                         qtd_1m: parseFloat(r.qtd_1m) || 0,
@@ -6288,6 +6532,7 @@
                 if (_deactivatedSkus.has(sku)) _deactivatedSkus.delete(sku); else _deactivatedSkus.add(sku);
                 updateSdBadge();
                 renderSkuDesativadas();
+                _refreshAllSkuPanels();
                 await _apiSd({ action: 'toggle', sku });
             }
             async function deactivateByPeriod() {
@@ -6300,6 +6545,7 @@
                 skus.forEach(s => _deactivatedSkus.add(s));
                 updateSdBadge();
                 renderSkuDesativadas();
+                _refreshAllSkuPanels();
                 await _apiSd({ action: 'deactivate_many', skus });
             }
             async function activateAll() {
@@ -6307,6 +6553,7 @@
                 _deactivatedSkus = new Set();
                 updateSdBadge();
                 renderSkuDesativadas();
+                _refreshAllSkuPanels();
                 await _apiSd({ action: 'activate_all' });
             }
             function toggleAllSdCheck(checked) {
@@ -6326,6 +6573,7 @@
                 skus.forEach(s => _deactivatedSkus.add(s));
                 updateSdBadge();
                 renderSkuDesativadas();
+                _refreshAllSkuPanels();
                 await _apiSd({ action: 'deactivate_many', skus });
             }
             async function activateSelected() {
@@ -6333,6 +6581,7 @@
                 skus.forEach(s => _deactivatedSkus.delete(s));
                 updateSdBadge();
                 renderSkuDesativadas();
+                _refreshAllSkuPanels();
                 await _apiSd({ action: 'activate_many', skus });
             }
             // ═════════════════════════════════════════════════════
@@ -6685,6 +6934,57 @@
             let _pmvLastParams = {};
             const _pmvExpandCache = {};
 
+            async function loadCategoriasOverview() {
+                const el = document.getElementById('overview-categorias');
+                if (!el) return;
+                try {
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(`${API_BASE}/data?tabela=categoria_vendas`, { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!res.ok) { el.innerHTML = '<span style="color:var(--muted);font-size:12px">Sem dados de categoria</span>'; return; }
+                    const rows = await res.json();
+                    if (!rows.length) { el.innerHTML = '<span style="color:var(--muted);font-size:12px">Nenhuma categoria encontrada</span>'; return; }
+                    const fR = v => 'R$ ' + (+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+                    const fPct = (v,tot) => tot > 0 ? ((+v/tot)*100).toFixed(1)+'%' : '–';
+                    const totRec = rows.reduce((s,r) => s+(+r.receita||0), 0);
+                    const totMar = rows.reduce((s,r) => s+(+r.margem||0), 0);
+                    el.innerHTML = `
+                        <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+                            <div style="background:rgba(0,124,220,0.06);border:1px solid rgba(0,124,220,0.15);border-radius:8px;padding:8px 16px;font-size:12px">
+                                <span style="color:var(--muted)">Total Receita</span><br><strong style="color:var(--accent);font-size:15px">${fR(totRec)}</strong>
+                            </div>
+                            <div style="background:rgba(22,163,74,0.06);border:1px solid rgba(22,163,74,0.15);border-radius:8px;padding:8px 16px;font-size:12px">
+                                <span style="color:var(--muted)">Total Margem</span><br><strong style="color:#059669;font-size:15px">${fR(totMar)}</strong>
+                            </div>
+                        </div>
+                        <div style="overflow-x:auto">
+                        <table style="width:100%;border-collapse:collapse;font-size:12px">
+                            <thead><tr style="background:var(--surface2)">
+                                <th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">Categoria</th>
+                                <th style="text-align:right;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">Receita</th>
+                                <th style="text-align:right;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">% Receita</th>
+                                <th style="text-align:right;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">Margem</th>
+                                <th style="text-align:right;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">Marg.%</th>
+                                <th style="text-align:right;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">Qtd</th>
+                                <th style="text-align:right;padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1.5px solid var(--border)">SKUs</th>
+                            </tr></thead>
+                            <tbody>${rows.map(r => {
+                                const mpct = +r.receita > 0 ? ((+r.margem||0)/(+r.receita)*100).toFixed(1) : 0;
+                                const mpctColor = mpct >= 20 ? '#059669' : mpct >= 10 ? '#ca8a04' : '#dc2626';
+                                return `<tr style="border-bottom:1px solid var(--border)">
+                                    <td style="padding:7px 10px;font-weight:600">${r.categoria||'–'}</td>
+                                    <td style="padding:7px 10px;text-align:right;color:var(--accent)">${fR(r.receita)}</td>
+                                    <td style="padding:7px 10px;text-align:right;color:var(--muted)">${fPct(r.receita,totRec)}</td>
+                                    <td style="padding:7px 10px;text-align:right;color:#059669">${fR(r.margem)}</td>
+                                    <td style="padding:7px 10px;text-align:right;font-weight:700;color:${mpctColor}">${mpct}%</td>
+                                    <td style="padding:7px 10px;text-align:right">${(+r.qtd||0).toLocaleString('pt-BR')}</td>
+                                    <td style="padding:7px 10px;text-align:right;color:var(--muted)">${r.skus}</td>
+                                </tr>`;
+                            }).join('')}</tbody>
+                        </table>
+                        </div>`;
+                } catch(e) { console.error('categorias', e); if(el) el.innerHTML = '<span style="color:var(--muted)">–</span>'; }
+            }
+
             async function loadPmvMonths() {
                 const token = localStorage.getItem('have_token');
                 try {
@@ -6768,7 +7068,8 @@
                     preco = qtdCurr * (unitCurr - unitPrev);
                     mix   = dRev - vol - preco;
                 }
-                return { sku: r.sku, qtd_prev: qtdPrev, rev_prev: revPrev, unit_prev: unitPrev, marpct_prev: marpctPrev,
+                return { sku: r.sku, nome_produto: r.nome_produto||'', categoria: r.categoria||'',
+                         qtd_prev: qtdPrev, rev_prev: revPrev, unit_prev: unitPrev, marpct_prev: marpctPrev,
                          qtd_curr: qtdCurr, rev_curr: revCurr, unit_curr: unitCurr, marpct_curr: marpctCurr,
                          dqtd: dQtd, drev: dRev, vol, preco, mix };
             }
@@ -6781,7 +7082,7 @@
 
             function applyPmvFilter() {
                 const q = (document.getElementById('pmv-filter-sku')?.value || '').trim().toUpperCase();
-                let rows = _pmvRows.filter(r => !q || r.sku.toUpperCase().includes(q));
+                let rows = _pmvRows.filter(r => !q || r.sku.toUpperCase().includes(q) || (r.nome_produto||'').toUpperCase().includes(q) || (r.categoria||'').toUpperCase().includes(q));
                 const col = _pmvSort.col, dir = _pmvSort.dir;
                 if (col) {
                     rows = rows.slice().sort((a, b) => {
@@ -6844,6 +7145,8 @@
                     totMarCurr+=(r.rev_curr?(r.marpct_curr/100)*r.rev_curr:0);
                     return `<tr id="pmv-row-${esc(r.sku)}">
                         <td class="pmv-sku"><button class="pmv-expand-btn" onclick="togglePmvExpand('${esc(r.sku)}')" title="Ver por canal">▶</button>${esc(r.sku)}</td>
+                        <td class="pmv-sku" style="font-weight:400;color:var(--text);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.nome_produto)}">${esc(r.nome_produto)||'–'}</td>
+                        <td class="pmv-sku" style="font-weight:400"><span style="background:rgba(0,124,220,0.08);color:var(--accent);padding:1px 6px;border-radius:8px;font-size:11px">${esc(r.categoria)||'–'}</span></td>
                         <td>${fN2(r.qtd_prev)}</td><td>${fR(r.rev_prev)}</td><td>${fmtBR(r.unit_prev)}</td><td>${fPct(r.marpct_prev)}</td>
                         <td style="border-left:2px solid var(--border)">${fN2(r.qtd_curr)}</td><td>${fR(r.rev_curr)}</td><td>${fmtBR(r.unit_curr)}</td><td>${fPct(r.marpct_curr)}</td>
                         <td style="border-left:2px solid #c8d4e8">${fDelta(r.dqtd)}</td>
@@ -6854,12 +7157,13 @@
                     </tr>`;
                 }).join('');
 
-                document.getElementById('pmv-tbody').innerHTML = tbody || '<tr><td colspan="14" style="text-align:center;padding:20px;color:var(--muted)">Nenhuma SKU encontrada.</td></tr>';
+                document.getElementById('pmv-tbody').innerHTML = tbody || '<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--muted)">Nenhuma SKU encontrada.</td></tr>';
 
                 const totMarpctPrev = totRevPrev ? (totMarPrev/totRevPrev)*100 : 0;
                 const totMarpctCurr = totRevCurr ? (totMarCurr/totRevCurr)*100 : 0;
                 const tfoot = `<tr>
                     <td class="pmv-sku">TOTAL (${rows.length})</td>
+                    <td></td><td></td>
                     <td>${fN2(totQtdPrev)}</td><td>${fR(totRevPrev)}</td><td>–</td><td>${fPct(totMarpctPrev)}</td>
                     <td style="border-left:2px solid #c8d4e8">${fN2(totQtdCurr)}</td><td>${fR(totRevCurr)}</td><td>–</td><td>${fPct(totMarpctCurr)}</td>
                     <td style="border-left:2px solid #c8d4e8">${fDelta(totQtdCurr-totQtdPrev)}</td>
@@ -6914,6 +7218,7 @@
                     tr.dataset.sku = sku;
                     tr.innerHTML = `
                         <td class="pmv-canal-label">${esc(c.canal)}</td>
+                        <td colspan="2"></td>
                         <td>${fN2x(qp)}</td><td>${fR2(rp)}</td><td>${fmtBR(up)}</td><td>${fPctx(mpp)}</td>
                         <td style="border-left:2px solid var(--border)">${fN2x(qc)}</td><td>${fR2(rc)}</td><td>${fmtBR(uc)}</td><td>${fPctx(mpc)}</td>
                         <td colspan="5" style="border-left:2px solid #c8d4e8"></td>`;
@@ -6935,7 +7240,10 @@
                 'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance',
 'admin-usuarios': 'Gerenciar Usuários',
 'sopc-controle': 'S&OP · Controle Estoques',
-'sku-desativadas': 'S&OP · SKUs Desativadas'
+'sku-desativadas': 'S&OP · SKUs Desativadas',
+'margens-dre': 'Margens · DRE Gerencial',
+'agentes': 'Agentes · IA Analítica',
+'configuracoes': 'Configurações'
             }
 
                 ;
@@ -6992,6 +7300,9 @@ if (id === 'dfs-kpis') {
                 }
                 if (id === 'sopc-controle') { loadSopcControle(); }
                 if (id === 'sku-desativadas') { loadSkuAtividade(); }
+                if (id === 'margens-dre') { loadMargensMeses(); }
+                if (id === 'agentes') { renderAgentCards(); }
+                if (id === 'configuracoes') { loadConfiguracoes(); }
                 if (window.innerWidth < 900) closeSidebar();
             }
 
@@ -7969,7 +8280,7 @@ if (id === 'dfs-kpis') {
                 if (window.PluggyConnect) return;
                 await new Promise((resolve, reject) => {
                     const s = document.createElement('script');
-                    s.src = 'https://cdn.pluggy.ai/pluggy-connect/v2/pluggy-connect.js';
+                    s.src = 'https://cdn.pluggy.ai/pluggy-connect/v2.8.2/pluggy-connect.js';
                     s.onload = () => {
                         _pluggySDKLoaded = true;
                         let tries = 0;
@@ -8079,8 +8390,9 @@ if (id === 'dfs-kpis') {
                     // 3. Abrir Pluggy Connect Widget
                     const pluggy = new window.PluggyConnect({
                         connectToken: access,
-                        onSuccess: async ({ item }) => {
+                        onSuccess: async (itemData) => {
                             try {
+                                const item = itemData.item || itemData;
                                 const regRes = await fetch(API_BASE + '/caixa-extrato?module=pluggy', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -8148,6 +8460,562 @@ if (id === 'dfs-kpis') {
                     loadBelvoLinks();
                 } catch (e) {
                     showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            // ══════════════════════════════════════════════
+            // AGENTES IA
+            // ══════════════════════════════════════════════
+            const AGENT_DEFS = [
+                { key: 'sop',        icon: '📦', label: 'S&OP',       desc: 'Estoque, Ponto de Pedido e Curva ABC' },
+                { key: 'estoque',    icon: '🏭', label: 'Estoque',    desc: 'Portfólio, atividade e SKUs' },
+                { key: 'financeiro', icon: '💰', label: 'Financeiro', desc: 'DRE, Balanço e Fluxo de Caixa' },
+                { key: 'vendas',     icon: '📈', label: 'Vendas',     desc: 'Performance, canais e comparativos' },
+                { key: 'caixa',      icon: '🏦', label: 'Caixa',      desc: 'Extrato, categorias e conciliação' },
+            ];
+
+            let agentActive = null;
+            let agentContextData = null;
+
+            function renderAgentCards() {
+                const grid = document.getElementById('ag-cards-grid');
+                if (!grid) return;
+                grid.innerHTML = AGENT_DEFS.map(a =>
+                    `<div class="ag-card${agentActive === a.key ? ' selected' : ''}" onclick="selectAgent('${a.key}')">` +
+                    `<div class="ag-card-icon">${a.icon}</div>` +
+                    `<div class="ag-card-label">${a.label}</div>` +
+                    `<div class="ag-card-desc">${a.desc}</div>` +
+                    `</div>`
+                ).join('');
+            }
+
+            async function selectAgent(key) {
+                agentActive = key;
+                agentContextData = null;
+                renderAgentCards();
+                const ws = document.getElementById('ag-workspace');
+                ws.style.display = 'block';
+                const def = AGENT_DEFS.find(a => a.key === key);
+                document.getElementById('ag-active-icon').textContent = def.icon;
+                document.getElementById('ag-active-label').textContent = def.label;
+                const msgs = document.getElementById('ag-chat-messages');
+                msgs.innerHTML = '<div class="ag-msg assistant">Análise carregada acima. Faça perguntas sobre os dados ou peça aprofundamento em qualquer ponto.</div>';
+                await loadAgentAnalysis(key);
+            }
+
+            async function loadAgentAnalysis(key) {
+                const contentEl = document.getElementById('ag-analysis-content');
+                contentEl.innerHTML = '<span class="ag-loading-spinner"></span> Carregando análise automática...';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(`${API_BASE}/agents?agent=${key}`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (res.status === 401) { handleUnauthorized(); return; }
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.error || 'HTTP ' + res.status);
+                    }
+                    const data = await res.json();
+                    agentContextData = data.data;
+                    contentEl.innerHTML = renderAgentMarkdown(data.analysis || '');
+                } catch (e) {
+                    contentEl.innerHTML = '<span style="color:var(--red)">Erro ao carregar análise: ' + e.message + '</span>';
+                }
+            }
+
+            function reloadAgentAnalysis() {
+                if (!agentActive) return;
+                loadAgentAnalysis(agentActive);
+            }
+
+            async function sendAgentMessage() {
+                const input = document.getElementById('ag-chat-input');
+                const btn = document.getElementById('ag-send-btn');
+                const msg = input.value.trim();
+                if (!msg || !agentActive) return;
+                input.value = '';
+                btn.disabled = true;
+                const msgs = document.getElementById('ag-chat-messages');
+                const userDiv = document.createElement('div');
+                userDiv.className = 'ag-msg user';
+                userDiv.textContent = msg;
+                msgs.appendChild(userDiv);
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'ag-msg assistant';
+                typingDiv.innerHTML = '<span class="ag-loading-spinner"></span> Processando...';
+                msgs.appendChild(typingDiv);
+                msgs.scrollTop = msgs.scrollHeight;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(`${API_BASE}/agents`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ agent: agentActive, message: msg, contextData: agentContextData })
+                    });
+                    if (res.status === 401) { handleUnauthorized(); return; }
+                    const data = await res.json();
+                    typingDiv.innerHTML = renderAgentMarkdown(data.reply || data.error || '');
+                } catch (e) {
+                    typingDiv.innerHTML = '<span style="color:var(--red)">Erro: ' + e.message + '</span>';
+                } finally {
+                    btn.disabled = false;
+                    msgs.scrollTop = msgs.scrollHeight;
+                    input.focus();
+                }
+            }
+
+            // ══════════════════════════════════════════════
+            // MARGENS · DRE GERENCIAL
+            // ══════════════════════════════════════════════
+            let _dreSkusData = [];
+            let _dreRbGlobal = 0;
+            let _dreView = 'todos';
+
+            async function loadMargensMeses() {
+                const token = localStorage.getItem('have_token');
+                const r = await fetch(`${API_BASE}/data?module=margens`, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (r.status === 401) { handleUnauthorized(); return; }
+                const data = await r.json();
+                const sel = document.getElementById('dre-periodo');
+                if (!sel) return;
+                sel.innerHTML = (data.meses || []).map(m =>
+                    `<option value="${m.ano}-${m.mes}">${MESES_PT[+m.mes] || m.mes}/${m.ano}</option>`
+                ).join('');
+                loadDreGerencial();
+            }
+
+            async function loadDreGerencial() {
+                const sel = document.getElementById('dre-periodo');
+                const resultEl = document.getElementById('dre-gerencial-result');
+                if (!sel || !resultEl) return;
+                const [ano, mes] = (sel.value || '').split('-');
+                if (!ano || !mes) return;
+                resultEl.innerHTML = '<div style="padding:32px;text-align:center"><span class="ag-loading-spinner"></span> Carregando...</div>';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=margens&ano=${ano}&mes=${mes}`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    const data = await r.json();
+                    if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+                    _dreSkusData = data.skus || [];
+                    _dreRbGlobal = parseFloat(data.receita_bruta_global) || 0;
+                    renderDreGerencial();
+                } catch(e) {
+                    resultEl.innerHTML = `<span style="color:var(--red);font-size:13px">Erro: ${e.message}</span>`;
+                }
+            }
+
+            function setDreView(view) {
+                _dreView = view;
+                document.querySelectorAll('.dre-view-btn').forEach(b => b.classList.remove('active'));
+                const map = { todos: 0, boa: 1, media: 2, ruim: 3 };
+                const btns = document.querySelectorAll('.dre-view-btn');
+                if (btns[map[view]]) btns[map[view]].classList.add('active');
+                renderDreGerencial();
+            }
+
+            function dreClassify(margem_pct) {
+                const boaMin  = parseFloat(document.getElementById('dre-boa-min')?.value  ?? 30);
+                const medMin  = parseFloat(document.getElementById('dre-med-min')?.value  ?? 10);
+                const medMax  = parseFloat(document.getElementById('dre-med-max')?.value  ?? 30);
+                const ruimMax = parseFloat(document.getElementById('dre-ruim-max')?.value ?? 10);
+                const pct = parseFloat(margem_pct) || 0;
+                if (pct >= boaMin)  return 'boa';
+                if (pct >= medMin && pct < medMax) return 'media';
+                if (pct < ruimMax)  return 'ruim';
+                return 'media';
+            }
+
+            function renderDreGerencial() {
+                const resultEl = document.getElementById('dre-gerencial-result');
+                if (!resultEl || !_dreSkusData.length) return;
+
+                const filtered = _dreView === 'todos'
+                    ? _dreSkusData
+                    : _dreSkusData.filter(s => dreClassify(s.margem_pct) === _dreView);
+
+                const agg = filtered.reduce((acc, s) => {
+                    acc.receita_bruta        += parseFloat(s.receita_bruta)        || 0;
+                    acc.receita_liquida      += parseFloat(s.receita_liquida)      || 0;
+                    acc.devolucoes           += parseFloat(s.devolucoes)           || 0;
+                    acc.margem_contribuicao  += parseFloat(s.margem_contribuicao)  || 0;
+                    acc.qtd_liquida          += parseFloat(s.qtd_liquida)          || 0;
+                    return acc;
+                }, { receita_bruta:0, receita_liquida:0, devolucoes:0, margem_contribuicao:0, qtd_liquida:0 });
+
+                const cvp = agg.receita_liquida - agg.margem_contribuicao;
+                const rbHeader = (_dreView === 'todos' && _dreRbGlobal > 0) ? _dreRbGlobal : agg.receita_bruta;
+                const pctDev = rbHeader ? (-agg.devolucoes / rbHeader * 100) : 0;
+                const pctCvp = agg.receita_liquida ? (-cvp / agg.receita_liquida * 100) : 0;
+                const pctMc  = agg.receita_liquida ? ( agg.margem_contribuicao / agg.receita_liquida * 100) : 0;
+                const ticketMedio = agg.qtd_liquida ? agg.receita_liquida / agg.qtd_liquida : 0;
+
+                const viewLabel = { todos:'Todas as Vendas', boa:'Margem Boa', media:'Margem Média', ruim:'Margem Ruim' };
+                const fmtR = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+                const fmtRSigned = v => {
+                    const n = parseFloat(v) || 0;
+                    const abs = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+                    return n < 0 ? `<span style="color:#dc2626">-R$ ${abs}</span>` : `R$ ${abs}`;
+                };
+                const fmtP = (v, invert) => {
+                    const cls = invert ? (v < 0 ? 'dre-pct-pos' : 'dre-pct-neg') : (v >= 0 ? 'dre-pct-pos' : 'dre-pct-neg');
+                    return `<span class="${cls}">${v.toFixed(1)}%</span>`;
+                };
+
+                // Count per category
+                const counts = { boa:0, media:0, ruim:0 };
+                _dreSkusData.forEach(s => counts[dreClassify(s.margem_pct)]++);
+
+                resultEl.innerHTML = `
+                <div class="dre-box">
+                    <div class="dre-box-title">
+                        <span>DRE Gerencial — ${viewLabel[_dreView]}</span>
+                        <span style="font-size:11px;color:var(--muted);font-weight:400">${filtered.length} SKUs · ${agg.qtd_liquida.toLocaleString('pt-BR')} unid.</span>
+                    </div>
+                    <table class="dre-table">
+                        <tr><td>(+) Receita Bruta</td><td>100%</td><td>${fmtR(rbHeader)}</td></tr>
+                        <tr class="dre-deduct"><td>&nbsp;&nbsp;&nbsp;(−) Devoluções / Cancelamentos</td><td>${fmtP(pctDev, true)}</td><td>(${fmtR(agg.devolucoes)})</td></tr>
+                        <tr class="dre-subtotal"><td>(=) Receita Líquida</td><td>100%</td><td>${fmtR(agg.receita_liquida)}</td></tr>
+                        <tr class="dre-deduct"><td>&nbsp;&nbsp;&nbsp;(−) Custos Variáveis de Venda (CVV)</td><td>${fmtP(pctCvp, true)}</td><td>(${fmtR(cvp)})</td></tr>
+                        <tr class="dre-total"><td>(=) Margem de Contribuição</td><td>${fmtP(pctMc, false)}</td><td>${fmtRSigned(agg.margem_contribuicao)}</td></tr>
+                    </table>
+                </div>
+                <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+                    <div style="flex:1;min-width:140px;background:rgba(22,163,74,0.07);border:1.5px solid rgba(22,163,74,0.2);border-radius:10px;padding:12px 16px">
+                        <div style="font-size:11px;color:#16a34a;font-weight:700;text-transform:uppercase;letter-spacing:.8px">🟢 Margem Boa</div>
+                        <div style="font-size:22px;font-weight:800;color:#16a34a;margin-top:4px">${counts.boa}</div>
+                        <div style="font-size:11px;color:var(--muted)">SKUs</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:rgba(202,138,4,0.07);border:1.5px solid rgba(202,138,4,0.2);border-radius:10px;padding:12px 16px">
+                        <div style="font-size:11px;color:#ca8a04;font-weight:700;text-transform:uppercase;letter-spacing:.8px">🟡 Margem Média</div>
+                        <div style="font-size:22px;font-weight:800;color:#ca8a04;margin-top:4px">${counts.media}</div>
+                        <div style="font-size:11px;color:var(--muted)">SKUs</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:rgba(220,38,38,0.07);border:1.5px solid rgba(220,38,38,0.2);border-radius:10px;padding:12px 16px">
+                        <div style="font-size:11px;color:#dc2626;font-weight:700;text-transform:uppercase;letter-spacing:.8px">🔴 Margem Ruim</div>
+                        <div style="font-size:22px;font-weight:800;color:#dc2626;margin-top:4px">${counts.ruim}</div>
+                        <div style="font-size:11px;color:var(--muted)">SKUs</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px">
+                        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Ticket Médio</div>
+                        <div style="font-size:19px;font-weight:800;color:var(--text);margin-top:4px">${fmtR(ticketMedio)}</div>
+                        <div style="font-size:11px;color:var(--muted)">por unidade</div>
+                    </div>
+                </div>
+                <div class="dre-box">
+                    <div class="dre-box-title">SKUs — ${viewLabel[_dreView]}</div>
+                    <div style="overflow-x:auto">
+                    <table class="dre-skus-table">
+                        <thead><tr><th>SKU</th><th>Nome</th><th>Categoria</th><th>Margem</th><th>Receita Líq.</th><th>Margem Contrib.</th><th>Qtd</th><th>Classificação</th></tr></thead>
+                        <tbody>${filtered.slice(0,100).map(s => {
+                            const cls = dreClassify(s.margem_pct);
+                            const labels = { boa:'🟢 Boa', media:'🟡 Média', ruim:'🔴 Ruim' };
+                            return `<tr>
+                                <td style="font-weight:600">${s.sku}</td>
+                                <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(s.nome_produto||'')}">${esc(s.nome_produto||'–')}</td>
+                                <td><span style="background:rgba(0,124,220,0.08);color:var(--accent);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">${esc(s.categoria||'–')}</span></td>
+                                <td>${fmtP(parseFloat(s.margem_pct)||0, false)}</td>
+                                <td>${fmtR(s.receita_liquida)}</td>
+                                <td>${fmtRSigned(s.margem_contribuicao)}</td>
+                                <td>${Math.round(s.qtd_liquida).toLocaleString('pt-BR')}</td>
+                                <td><span class="dre-pill ${cls}">${labels[cls]}</span></td>
+                            </tr>`;
+                        }).join('')}</tbody>
+                    </table>
+                    </div>
+                </div>`;
+            }
+
+            async function runAllAgents() {
+                const btn = document.getElementById('btn-rodar-todos');
+                const container = document.getElementById('ag-all-results');
+                btn.disabled = true;
+                btn.textContent = '⏳ Rodando...';
+                container.style.display = 'block';
+                container.innerHTML = AGENT_DEFS.map(a =>
+                    `<div class="ag-all-card" id="ag-all-${a.key}">`+
+                    `<div class="ag-all-card-header"><span>${a.icon}</span><strong>${a.label}</strong><span class="ag-all-status" id="ag-all-status-${a.key}">⏳ Carregando...</span></div>`+
+                    `<div class="ag-all-body" id="ag-all-body-${a.key}"><span class="ag-loading-spinner"></span></div>`+
+                    `</div>`
+                ).join('');
+                const token = localStorage.getItem('have_token');
+                await Promise.all(AGENT_DEFS.map(async a => {
+                    try {
+                        const res = await fetch(`${API_BASE}/agents?agent=${a.key}`, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (res.status === 401) { handleUnauthorized(); return; }
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+                        document.getElementById('ag-all-status-' + a.key).textContent = '✅ Concluído';
+                        document.getElementById('ag-all-body-' + a.key).innerHTML = renderAgentMarkdown(data.analysis || '');
+                    } catch(e) {
+                        document.getElementById('ag-all-status-' + a.key).textContent = '❌ Erro';
+                        document.getElementById('ag-all-body-' + a.key).innerHTML = `<span style="color:var(--red);font-size:13px">${e.message}</span>`;
+                    }
+                }));
+                btn.disabled = false;
+                btn.innerHTML = '↺ Rodar Novamente';
+            }
+
+            function renderAgentMarkdown(text) {
+                if (!text) return '';
+                const lines = text.split('\n');
+                let html = '';
+                for (const line of lines) {
+                    let l = line
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+                    if (/^### /.test(l))      html += '<h3>' + l.slice(4) + '</h3>';
+                    else if (/^## /.test(l)) html += '<h2>' + l.slice(3) + '</h2>';
+                    else if (/^# /.test(l))  html += '<h1>' + l.slice(2) + '</h1>';
+                    else if (/^[-*] /.test(l)) html += '<li>' + l.slice(2) + '</li>';
+                    else if (/^\d+\. /.test(l)) html += '<li>' + l.replace(/^\d+\. /, '') + '</li>';
+                    else if (l.trim() === '') html += '';
+                    else html += '<p>' + l + '</p>';
+                }
+                return html;
+            }
+
+            // ══════════════════════════════════════════════
+            // CONFIGURAÇÕES
+            // ══════════════════════════════════════════════
+            function showCfgTab(tab) {
+                document.querySelectorAll('[id^="cfg-tab-"]').forEach(b => b.classList.remove('sc-tab-active'));
+                document.querySelectorAll('[id^="cfg-panel-"]').forEach(p => { p.style.display = 'none'; });
+                document.getElementById('cfg-tab-' + tab).classList.add('sc-tab-active');
+                document.getElementById('cfg-panel-' + tab).style.display = '';
+                if (tab === 'sopc') loadSopcConfig();
+            }
+
+            const _SOPC_META = {
+                curva_abc: {
+                    label: 'Curva ABC', icon: '📊',
+                    desc: 'Classifica SKUs em A/B/C por volume e margem. Usado para definir prioridades de estoque e nível de serviço por classe.',
+                    fields: [
+                        { chave: 'janela_meses',      label: 'Janela (meses)',      type: 'int', unit: 'm', help: 'Quantidade de meses de histórico de vendas usada para calcular volume e margem de cada SKU.' },
+                        { chave: 'corte_a',           label: 'Corte A (top %)',     type: 'pct', unit: '%', help: 'Percentual dos SKUs mais vendidos que entram na classe A. Ex: 20% = os 20% com maior volume são A.' },
+                        { chave: 'corte_b',           label: 'Corte B (acum. %)',   type: 'pct', unit: '%', help: 'Percentual acumulado até onde vai a classe B. Ex: 50% = SKUs entre a posição 20% e 50% são B.' },
+                        { chave: 'nivel_servico_AA',  label: 'Nível serviço AA',    type: 'pct', unit: '%', help: 'Probabilidade de não faltar estoque para SKUs AA (alto volume + alta margem). Padrão: 98%.' },
+                        { chave: 'nivel_servico_AB',  label: 'Nível serviço AB/BA', type: 'pct', unit: '%', help: 'Nível de serviço para SKUs cruzados AB ou BA. Padrão: 97%.' },
+                        { chave: 'nivel_servico_BB',  label: 'Nível serviço BB/AC', type: 'pct', unit: '%', help: 'Nível de serviço para SKUs BB, AC ou CA. Padrão: 95%.' },
+                        { chave: 'nivel_servico_BC',  label: 'Nível serviço BC/CB', type: 'pct', unit: '%', help: 'Nível de serviço para SKUs BC ou CB. Padrão: 92%.' },
+                        { chave: 'nivel_servico_CC',  label: 'Nível serviço CC',    type: 'pct', unit: '%', help: 'Nível de serviço para SKUs CC (baixo volume e baixa margem). Padrão: 90%.' },
+                    ]
+                },
+                estoque_seg: {
+                    label: 'Estoque de Segurança', icon: '🛡️',
+                    desc: 'Calcula o estoque mínimo para absorver variações de demanda. Fórmula: ES = Fator Z × Desvio Padrão × √(Lead Time ÷ 30), limitado pelo teto de dias.',
+                    fields: [
+                        { chave: 'janela_meses', label: 'Janela histórico (meses)', type: 'int', unit: 'm', help: 'Meses de histórico usados para calcular desvio padrão da demanda. Padrão: 12 meses.' },
+                        { chave: 'fator_z_AA',   label: 'Fator Z — AA',             type: 'dec', unit: 'σ', help: 'Multiplicador estatístico para 99% de nível de serviço (classe AA). Padrão: 2,05.' },
+                        { chave: 'fator_z_AB',   label: 'Fator Z — AB/BA',          type: 'dec', unit: 'σ', help: 'Fator Z para 97% de nível de serviço (classes AB e BA). Padrão: 1,88.' },
+                        { chave: 'fator_z_BB',   label: 'Fator Z — BB/AC/CA',       type: 'dec', unit: 'σ', help: 'Fator Z para 95% de nível de serviço (classes BB, AC e CA). Padrão: 1,65.' },
+                        { chave: 'fator_z_BC',   label: 'Fator Z — BC/CB',          type: 'dec', unit: 'σ', help: 'Fator Z para 92% de nível de serviço (classes BC e CB). Padrão: 1,41.' },
+                        { chave: 'fator_z_CC',   label: 'Fator Z — CC',             type: 'dec', unit: 'σ', help: 'Fator Z para 90% de nível de serviço (classe CC). Padrão: 1,28.' },
+                        { chave: 'teto_dias_A',  label: 'Teto dias — Curva A',      type: 'int', unit: 'd', help: 'Máximo de dias de demanda que o ES pode representar para SKUs da curva A. Padrão: 20 dias.' },
+                        { chave: 'teto_dias_BC', label: 'Teto dias — Curva B/C',    type: 'int', unit: 'd', help: 'Máximo de dias de demanda que o ES pode representar para SKUs B e C. Padrão: 15 dias.' },
+                    ]
+                },
+                prev_12m: {
+                    label: 'Previsão 12M', icon: '📈',
+                    desc: 'Modelo de previsão que combina média de longo prazo (6m) com média ponderada de curto prazo (3m). SKUs com 6+ meses usam o modelo blended; os demais usam ADIDA.',
+                    fields: [
+                        { chave: 'min_meses_grupo_a', label: 'Mín. meses Grupo A',   type: 'int', unit: 'm', help: 'SKUs com pelo menos este número de meses de histórico usam o modelo BlendedWAvg. Os demais usam ADIDA. Padrão: 6.' },
+                        { chave: 'blend_longo',       label: 'Peso média longa (6m)', type: 'pct', unit: '%', help: 'Peso dado à média dos últimos 6 meses na previsão final. Soma com o peso curto deve ser 100%.' },
+                        { chave: 'blend_curto',       label: 'Peso média curta (3m)', type: 'pct', unit: '%', help: 'Peso dado à média ponderada dos últimos 3 meses. Captura tendência recente.' },
+                        { chave: 'peso_t_minus2',     label: 'Peso mês t-2',          type: 'dec', unit: '',  help: 'Peso relativo do mês há 2 meses atrás na média curta. Valores são normalizados automaticamente.' },
+                        { chave: 'peso_t_minus1',     label: 'Peso mês t-1',          type: 'dec', unit: '',  help: 'Peso relativo do mês anterior na média curta. Padrão: 2 (dobro do t-2).' },
+                        { chave: 'peso_t',            label: 'Peso mês t (mais rec.)', type: 'dec', unit: '',  help: 'Peso relativo do mês mais recente. Padrão: 4 (quatro vezes o t-2). Quanto maior, mais reativo ao último mês.' },
+                    ]
+                },
+                ponto_pedido: {
+                    label: 'Ponto de Pedido', icon: '📦',
+                    desc: 'Define quando e quanto comprar. PP = (Demanda Diária × Lead Time) + ES. QP = Demanda × (Lead Time + Ciclo) + ES − Estoque − Em Trânsito.',
+                    fields: [
+                        { chave: 'horizonte_demanda_dias', label: 'Horizonte demanda (dias)', type: 'int', unit: 'd', help: 'Janela de dias do forecast usada para calcular a demanda diária média. Padrão: 90 dias (3 meses).' },
+                        { chave: 'ciclo_reposicao_dias',   label: 'Ciclo de reposição (dias)',type: 'int', unit: 'd', help: 'Dias de cobertura extra incluídos na quantidade pedida, além do lead time. Representa o intervalo entre pedidos. Padrão: 30 dias.' },
+                        { chave: 'fator_excesso',          label: 'Fator excesso (× PP)',     type: 'dec', unit: '×', help: 'Estoque acima de PP × fator é considerado excesso. Padrão: 2× (dobro do ponto de pedido).' },
+                    ]
+                },
+            };
+
+            let _sopcCfgData = {};
+
+            async function loadSopcConfig() {
+                const body = document.getElementById('sopc-cfg-body');
+                const loading = document.getElementById('sopc-cfg-loading');
+                body.style.display = 'none';
+                loading.style.display = '';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/data?module=sopc-config', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const data = await r.json();
+                    _sopcCfgData = {};
+                    (data.config || []).forEach(row => {
+                        if (!_sopcCfgData[row.modulo]) _sopcCfgData[row.modulo] = {};
+                        _sopcCfgData[row.modulo][row.chave] = row.valor;
+                    });
+                    renderSopcCfg();
+                    loading.style.display = 'none';
+                    body.style.display = 'flex';
+                } catch(e) {
+                    loading.textContent = 'Erro ao carregar configurações S&OP: ' + e.message;
+                }
+            }
+
+            function renderSopcCfg() {
+                const body = document.getElementById('sopc-cfg-body');
+                body.innerHTML = Object.entries(_SOPC_META).map(([modulo, meta]) => {
+                    const vals = _sopcCfgData[modulo] || {};
+                    const fieldsHtml = meta.fields.map(f => {
+                        let rawVal = vals[f.chave] ?? '';
+                        let displayVal = rawVal;
+                        if (f.type === 'pct' && rawVal !== '') displayVal = (parseFloat(rawVal) * 100).toFixed(1);
+                        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+                            <div style="flex:1">
+                                <div style="font-size:13px;color:var(--text)">${f.label}</div>
+                                ${f.help ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35">${f.help}</div>` : ''}
+                            </div>
+                            <div style="display:flex;align-items:center;gap:4px">
+                                <input type="number" step="any"
+                                    id="sopc-${modulo}-${f.chave}"
+                                    value="${displayVal}"
+                                    style="width:80px;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:right;outline:none"
+                                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                                <span style="font-size:11px;color:var(--muted);width:14px">${f.unit}</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+                    return `<div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:20px 24px;max-width:560px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${meta.desc ? '4px' : '4px'}">
+                            <div style="font-weight:700;font-size:14px;color:var(--text)">${meta.icon} ${meta.label}</div>
+                            <button onclick="saveSopcGroup('${modulo}')" id="btn-sopc-save-${modulo}"
+                                style="padding:6px 18px;border-radius:7px;background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer">
+                                Salvar
+                            </button>
+                        </div>
+                        ${meta.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45;padding-bottom:10px;border-bottom:1px solid var(--border)">${meta.desc}</div>` : ''}
+                        ${fieldsHtml}
+                    </div>`;
+                }).join('');
+            }
+
+            async function saveSopcGroup(modulo) {
+                const token = localStorage.getItem('have_token');
+                const meta  = _SOPC_META[modulo];
+                const btn   = document.getElementById('btn-sopc-save-' + modulo);
+                btn.textContent = 'Salvando...'; btn.disabled = true;
+                try {
+                    for (const f of meta.fields) {
+                        const el = document.getElementById(`sopc-${modulo}-${f.chave}`);
+                        if (!el || el.value === '') continue;
+                        let val = parseFloat(el.value);
+                        if (isNaN(val)) continue;
+                        if (f.type === 'pct') val = (val / 100).toFixed(4);
+                        await fetch(API_BASE + '/data?module=sopc-config', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({ modulo, chave: f.chave, valor: String(val) })
+                        });
+                    }
+                    showToast(meta.label + ' salvo ✓', 'success');
+                } catch(e) {
+                    showToast('Erro ao salvar: ' + e.message, 'error');
+                } finally {
+                    btn.textContent = 'Salvar'; btn.disabled = false;
+                }
+            }
+
+            function toggleCfgPassVisibility() {
+                const input = document.getElementById('cfg-gefinance-password');
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+
+            async function loadConfiguracoes() {
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/data?module=configuracoes', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!r.ok) return;
+                    const data = await r.json();
+                    if (data.gefinance_email) {
+                        document.getElementById('cfg-gefinance-email').value = data.gefinance_email;
+                        const st = document.getElementById('cfg-gefinance-status');
+                        st.textContent = 'Configurado';
+                        st.style.background = 'rgba(34,197,94,0.12)';
+                        st.style.color = '#22c55e';
+                    }
+                    if (data.gefinance_password_set) {
+                        document.getElementById('cfg-gefinance-password').placeholder = '•••••••• (salvo)';
+                    }
+                } catch(e) { /* offline */ }
+
+                try {
+                    const rs = await fetch(API_BASE + '/data?module=sync-vendas', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (rs.ok) {
+                        const sd = await rs.json();
+                        const el = document.getElementById('cfg-sync-info');
+                        if (sd.ultima_sincronizacao) {
+                            const d = new Date(sd.ultima_sincronizacao);
+                            el.textContent = 'Última sync: ' + d.toLocaleString('pt-BR') + ' · ' + (sd.registros_atuais || 0).toLocaleString('pt-BR') + ' registros';
+                        } else {
+                            el.textContent = 'Nenhuma sincronização realizada ainda';
+                        }
+                    }
+                } catch(e) { /* offline */ }
+            }
+
+            async function saveCfgGefinance() {
+                const token = localStorage.getItem('have_token');
+                const email    = document.getElementById('cfg-gefinance-email').value.trim();
+                const password = document.getElementById('cfg-gefinance-password').value;
+                if (!email) { showToast('Digite o e-mail do Gefinance', 'error'); return; }
+
+                const btn = document.getElementById('btn-cfg-save-gefinance');
+                btn.textContent = 'Salvando...';
+                btn.disabled = true;
+
+                try {
+                    const body = { gefinance_email: email };
+                    if (password) body.gefinance_password = password;
+
+                    const r = await fetch(API_BASE + '/data?module=configuracoes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!r.ok) {
+                        const err = await r.json().catch(() => ({}));
+                        showToast(err.error || 'Erro ao salvar', 'error');
+                        return;
+                    }
+
+                    showToast('Credenciais do Gefinance salvas!', 'success');
+                    const st = document.getElementById('cfg-gefinance-status');
+                    st.textContent = 'Configurado';
+                    st.style.background = 'rgba(34,197,94,0.12)';
+                    st.style.color = '#22c55e';
+                    if (password) {
+                        document.getElementById('cfg-gefinance-password').placeholder = '•••••••• (salvo)';
+                        document.getElementById('cfg-gefinance-password').value = '';
+                    }
+                } catch(e) {
+                    showToast('Erro de conexão', 'error');
+                } finally {
+                    btn.textContent = 'Salvar';
+                    btn.disabled = false;
                 }
             }
 

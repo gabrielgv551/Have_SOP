@@ -10,6 +10,7 @@
     "api/dfs-estrutura.js": { "maxDuration": 10 },
     "api/caixa-extrato.js": { "maxDuration": 30 },
     "api/caixa-modelo.js": { "maxDuration": 30 },
-    "api/caixa-depara.js": { "maxDuration": 10 }
+    "api/caixa-depara.js": { "maxDuration": 10 },
+    "api/agents.js":  { "maxDuration": 60 }
   }
 }

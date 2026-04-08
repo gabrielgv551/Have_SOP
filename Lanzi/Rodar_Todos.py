@@ -5,12 +5,13 @@
 ╚══════════════════════════════════════════════════════════════╝
 
 ORDEM DE EXECUÇÃO:
-  1. UPLOAD_ETL.py       → Carrega Excel para o banco
-  2. PREVISÃO 12M.py     → Gera previsão de demanda 12 meses
-  3. Curva_ABC.PY        → Calcula curva ABC dinâmica
-  4. Estoque_Seguranca.py → Calcula estoque de segurança por SKU
-  5. Ponto_Pedido.py     → Calcula ponto de pedido + lista semanal
-  6. PPR_SKU.py          → Performance de vendas por janela temporal
+  1. GEFINANCE_ETL.py    → Extrai vendas do Gefinance → bd_vendas
+  2. UPLOAD_ETL.py       → Carrega demais abas do Excel para o banco
+  3. PREVISÃO 12M.py     → Gera previsão de demanda 12 meses
+  4. Curva_ABC.PY        → Calcula curva ABC dinâmica
+  5. Estoque_Seguranca.py → Calcula estoque de segurança por SKU
+  6. Ponto_Pedido.py     → Calcula ponto de pedido + lista semanal
+  7. PPR_SKU.py          → Performance de vendas por janela temporal
 """
 
 import subprocess
@@ -24,12 +25,13 @@ from datetime import datetime
 PASTA = os.path.dirname(os.path.abspath(__file__))
 
 SCRIPTS = [
-    ("1/6", "UPLOAD_ETL.py",        "Carregando Excel para o banco..."),
-    ("2/6", "PREVISÃO 12M.py",      "Gerando Previsão de Demanda 12M..."),
-    ("3/6", "Curva_ABC.PY",         "Calculando Curva ABC..."),
-    ("4/6", "Estoque_Seguranca.py", "Calculando Estoque de Segurança..."),
-    ("5/6", "Ponto_Pedido.py",      "Calculando Ponto de Pedido + Lista Semanal..."),
-    ("6/6", "PPR_SKU.py",           "Calculando Performance de Vendas por Janela (PPR)..."),
+    ("1/7", "GEFINANCE_ETL.py",     "Extraindo vendas do Gefinance → bd_vendas..."),
+    ("2/7", "UPLOAD_ETL.py",        "Carregando demais abas do Excel para o banco..."),
+    ("3/7", "PREVISÃO 12M.py",      "Gerando Previsão de Demanda 12M..."),
+    ("4/7", "Curva_ABC.PY",         "Calculando Curva ABC..."),
+    ("5/7", "Estoque_Seguranca.py", "Calculando Estoque de Segurança..."),
+    ("6/7", "Ponto_Pedido.py",      "Calculando Ponto de Pedido + Lista Semanal..."),
+    ("7/7", "PPR_SKU.py",           "Calculando Performance de Vendas por Janela (PPR)..."),
 ]
 
 

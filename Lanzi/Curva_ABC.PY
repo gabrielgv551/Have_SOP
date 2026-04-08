@@ -24,11 +24,11 @@ DB_CONFIG = {
     "password": "131105Gv",
 }
 
-JANELA_MESES   = 6       # janela móvel em meses
-CORTE_A        = 0.20    # top 20% dos SKUs → A
-CORTE_B        = 0.50    # próximos 30% → B (acumulado até 50%)
+# ── Defaults (substituídos pelo banco se sopc_config existir) ────────────────
+JANELA_MESES   = 6
+CORTE_A        = 0.20
+CORTE_B        = 0.50
 
-# Nível de serviço por cruzamento ABC
 NIVEL_SERVICO = {
     "AA": 0.98,
     "AB": 0.97, "BA": 0.97,
@@ -36,6 +36,37 @@ NIVEL_SERVICO = {
     "BC": 0.92, "CB": 0.92,
     "CC": 0.90,
 }
+
+
+def ler_config(engine, modulo: str) -> dict:
+    """Lê sopc_config do banco; retorna {chave: valor}. Silencioso se tabela não existe."""
+    try:
+        import pandas as _pd
+        df = _pd.read_sql(
+            f"SELECT chave, valor FROM sopc_config WHERE empresa='lanzi' AND modulo='{modulo}'",
+            engine
+        )
+        return dict(zip(df["chave"], df["valor"]))
+    except Exception:
+        return {}
+
+
+def aplicar_config(engine):
+    global JANELA_MESES, CORTE_A, CORTE_B, NIVEL_SERVICO
+    cfg = ler_config(engine, 'curva_abc')
+    if not cfg:
+        return
+    if 'janela_meses' in cfg:
+        JANELA_MESES = int(cfg['janela_meses'])
+    if 'corte_a' in cfg:
+        CORTE_A = float(cfg['corte_a'])
+    if 'corte_b' in cfg:
+        CORTE_B = float(cfg['corte_b'])
+    for classe in ['AA','AB','BA','BB','AC','CA','BC','CB','CC']:
+        k = f'nivel_servico_{classe}'
+        if k in cfg:
+            NIVEL_SERVICO[classe] = float(cfg[k])
+    print(f"[CFG] Curva ABC: janela={JANELA_MESES}m, A={CORTE_A*100:.0f}%, B={CORTE_B*100:.0f}%")
 
 # ─────────────────────────────────────────────
 # CONEXÃO
@@ -58,10 +89,10 @@ def ler_vendas(engine) -> pd.DataFrame:
         SELECT
             "Sku"                          AS sku,
             "Quantidade Vendida"           AS quantidade,
-            "Margem Contribuição"          AS margem_contribuicao,
+            "Margem Contribuicao Calc"     AS margem_contribuicao,
             "Data"                         AS data_venda
         FROM bd_vendas
-        WHERE "Status" != 'Cancelado'
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
           AND "Data"   >= :data_corte
           AND "Sku"    IS NOT NULL
     """)
@@ -151,6 +182,7 @@ def main():
     print("=" * 55)
 
     engine = conectar()
+    aplicar_config(engine)
 
     df  = ler_vendas(engine)
     agg = agregar(df)
