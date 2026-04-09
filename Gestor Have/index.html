@@ -3783,24 +3783,23 @@
                     <!-- Tab: Fornecedores -->
                     <div id="cfg-panel-fornecedores" style="display:none">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-                            <div style="font-size:13px;color:var(--muted)">Lead time por SKU — usado pelo script <strong>Ponto de Pedido</strong></div>
-                            <input id="forn-search" class="search-input" placeholder="🔍  Buscar SKU ou nome..." oninput="filterFornTable()" style="width:240px">
+                            <div style="font-size:13px;color:var(--muted)">Lead time por marca — usado pelo script <strong>Ponto de Pedido</strong></div>
+                            <input id="forn-search" class="search-input" placeholder="🔍  Buscar marca..." oninput="filterFornTable()" style="width:240px">
                         </div>
-                        <div id="forn-loading" style="color:var(--muted);font-size:13px;padding:12px 0">Carregando SKUs...</div>
+                        <div id="forn-loading" style="color:var(--muted);font-size:13px;padding:12px 0">Carregando marcas...</div>
                         <div id="forn-body" style="display:none">
-                            <div style="overflow-x:auto;border-radius:10px;border:1.5px solid var(--border)">
+                            <div style="overflow-x:auto;border-radius:10px;border:1.5px solid var(--border);max-width:480px">
                                 <table style="width:100%;border-collapse:collapse;font-size:13px">
                                     <thead>
                                         <tr style="background:var(--surface2)">
-                                            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border)">SKU</th>
                                             <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border)">Marca</th>
-                                            <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border);width:140px">Lead Time (dias)</th>
+                                            <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border);width:160px">Lead Time (dias)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="forn-tbody"></tbody>
                                 </table>
                             </div>
-                            <div id="forn-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:13px">Nenhum SKU encontrado</div>
+                            <div id="forn-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:13px">Nenhuma marca encontrada</div>
                         </div>
                     </div>
                     <!-- Tab: APIs -->
@@ -8976,9 +8975,9 @@ if (id === 'dfs-kpis') {
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
                     if (r.status === 401) { handleUnauthorized(); return; }
-                    if (!r.ok) { loading.textContent = 'Erro ao carregar SKUs'; return; }
-                    const { skus } = await r.json();
-                    _fornData = skus || [];
+                    if (!r.ok) { loading.textContent = 'Erro ao carregar marcas'; return; }
+                    const { marcas } = await r.json();
+                    _fornData = marcas || [];
                     loading.style.display = 'none';
                     body.style.display    = '';
                     renderFornTable(_fornData);
@@ -8999,15 +8998,13 @@ if (id === 'dfs-kpis') {
                 tbody.innerHTML = rows.map((r, i) => {
                     const configured = r.lead_time_dias != null;
                     const val = configured ? r.lead_time_dias : '';
-                    const nome = r.nome ? String(r.nome).substring(0, 60) + (r.nome.length > 60 ? '…' : '') : '—';
                     return `<tr style="border-bottom:1px solid var(--border);${i % 2 === 0 ? '' : 'background:var(--surface2)'}">
-                        <td style="padding:9px 14px;font-family:'Syne',sans-serif;font-weight:600;font-size:12px;white-space:nowrap">${esc(r.sku)}</td>
-                        <td style="padding:9px 14px;font-size:12px;color:var(--muted);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.nome || '')}">${esc(nome)}</td>
+                        <td style="padding:9px 14px;font-weight:600;font-size:13px;white-space:nowrap">${esc(r.marca)}</td>
                         <td style="padding:6px 14px;text-align:center">
                             <input type="number" min="1" max="365" value="${val}"
                                 placeholder="—"
-                                data-sku="${esc(r.sku)}"
-                                style="width:80px;padding:5px 8px;border-radius:6px;border:1.5px solid ${configured ? 'var(--accent)' : 'var(--border)'};background:var(--bg);color:var(--text);font-size:13px;text-align:center;outline:none"
+                                data-marca="${esc(r.marca)}"
+                                style="width:90px;padding:5px 8px;border-radius:6px;border:1.5px solid ${configured ? 'var(--accent)' : 'var(--border)'};background:var(--bg);color:var(--text);font-size:13px;text-align:center;outline:none"
                                 onfocus="this.style.borderColor='var(--accent)'"
                                 onblur="saveFornLeadTime(this)"
                                 onkeydown="if(event.key==='Enter')this.blur()">
@@ -9018,19 +9015,16 @@ if (id === 'dfs-kpis') {
 
             function filterFornTable() {
                 const q = (document.getElementById('forn-search').value || '').toLowerCase();
-                const filtered = q ? _fornData.filter(r =>
-                    (r.sku || '').toLowerCase().includes(q) ||
-                    (r.nome || '').toLowerCase().includes(q)
-                ) : _fornData;
+                const filtered = q ? _fornData.filter(r => (r.marca || '').toLowerCase().includes(q)) : _fornData;
                 renderFornTable(filtered);
             }
 
             async function saveFornLeadTime(input) {
-                const sku  = input.dataset.sku;
-                const dias = input.value.trim();
+                const marca = input.dataset.marca;
+                const dias  = input.value.trim();
                 if (!dias || isNaN(+dias) || +dias < 1) {
                     input.style.borderColor = 'var(--border)';
-                    const orig = (_fornData.find(r => r.sku === sku) || {}).lead_time_dias;
+                    const orig = (_fornData.find(r => r.marca === marca) || {}).lead_time_dias;
                     input.value = orig != null ? orig : '';
                     return;
                 }
@@ -9040,14 +9034,14 @@ if (id === 'dfs-kpis') {
                     const r = await fetch(API_BASE + '/data?module=fornecedores-config', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                        body: JSON.stringify({ sku, lead_time_dias: +dias })
+                        body: JSON.stringify({ marca, lead_time_dias: +dias })
                     });
                     if (r.status === 401) { handleUnauthorized(); return; }
                     if (r.ok) {
                         input.style.borderColor = 'var(--accent)';
-                        const row = _fornData.find(x => x.sku === sku);
+                        const row = _fornData.find(x => x.marca === marca);
                         if (row) row.lead_time_dias = +dias;
-                        showToast(`Lead time de ${sku} salvo: ${dias} dias`, 'success');
+                        showToast(`Lead time de ${marca} salvo: ${dias} dias`, 'success');
                     } else {
                         const err = await r.json();
                         showToast('Erro: ' + (err.error || r.status), 'error');
