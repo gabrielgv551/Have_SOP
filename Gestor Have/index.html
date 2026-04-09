@@ -3773,11 +3773,35 @@
                     <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1.5px solid var(--border);padding-bottom:12px">
                         <button class="sc-tab sc-tab-active" id="cfg-tab-apis" onclick="showCfgTab('apis')">APIs</button>
                         <button class="sc-tab" id="cfg-tab-sopc" onclick="showCfgTab('sopc')">S&amp;OP</button>
+                        <button class="sc-tab" id="cfg-tab-fornecedores" onclick="showCfgTab('fornecedores')">Fornecedores</button>
                     </div>
                     <!-- Tab: S&OP -->
                     <div id="cfg-panel-sopc" style="display:none">
                         <div id="sopc-cfg-loading" style="color:var(--muted);font-size:13px;padding:8px 0">Carregando...</div>
                         <div id="sopc-cfg-body" style="display:none;display:flex;flex-direction:column;gap:24px"></div>
+                    </div>
+                    <!-- Tab: Fornecedores -->
+                    <div id="cfg-panel-fornecedores" style="display:none">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                            <div style="font-size:13px;color:var(--muted)">Lead time por SKU — usado pelo script <strong>Ponto de Pedido</strong></div>
+                            <input id="forn-search" class="search-input" placeholder="🔍  Buscar SKU ou nome..." oninput="filterFornTable()" style="width:240px">
+                        </div>
+                        <div id="forn-loading" style="color:var(--muted);font-size:13px;padding:12px 0">Carregando SKUs...</div>
+                        <div id="forn-body" style="display:none">
+                            <div style="overflow-x:auto;border-radius:10px;border:1.5px solid var(--border)">
+                                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                                    <thead>
+                                        <tr style="background:var(--surface2)">
+                                            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border)">SKU</th>
+                                            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border)">Nome Produto</th>
+                                            <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border);width:140px">Lead Time (dias)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="forn-tbody"></tbody>
+                                </table>
+                            </div>
+                            <div id="forn-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:13px">Nenhum SKU encontrado</div>
+                        </div>
                     </div>
                     <!-- Tab: APIs -->
                     <div id="cfg-panel-apis">
@@ -8791,6 +8815,7 @@ if (id === 'dfs-kpis') {
                 document.getElementById('cfg-tab-' + tab).classList.add('sc-tab-active');
                 document.getElementById('cfg-panel-' + tab).style.display = '';
                 if (tab === 'sopc') loadSopcConfig();
+                if (tab === 'fornecedores') loadFornecedores();
             }
 
             const _SOPC_META = {
@@ -8932,6 +8957,106 @@ if (id === 'dfs-kpis') {
                     showToast('Erro ao salvar: ' + e.message, 'error');
                 } finally {
                     btn.textContent = 'Salvar'; btn.disabled = false;
+                }
+            }
+
+            // ══════════════════════════════════════════════
+            // FORNECEDORES — Lead Time por SKU
+            // ══════════════════════════════════════════════
+            let _fornData = [];
+
+            async function loadFornecedores() {
+                const token = localStorage.getItem('have_token');
+                const loading = document.getElementById('forn-loading');
+                const body    = document.getElementById('forn-body');
+                loading.style.display = '';
+                body.style.display    = 'none';
+                try {
+                    const r = await fetch(API_BASE + '/data?module=fornecedores-config', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) { loading.textContent = 'Erro ao carregar SKUs'; return; }
+                    const { skus } = await r.json();
+                    _fornData = skus || [];
+                    loading.style.display = 'none';
+                    body.style.display    = '';
+                    renderFornTable(_fornData);
+                } catch(e) {
+                    loading.textContent = 'Erro: ' + e.message;
+                }
+            }
+
+            function renderFornTable(rows) {
+                const tbody = document.getElementById('forn-tbody');
+                const empty = document.getElementById('forn-empty');
+                if (!rows.length) {
+                    tbody.innerHTML = '';
+                    empty.style.display = '';
+                    return;
+                }
+                empty.style.display = 'none';
+                tbody.innerHTML = rows.map((r, i) => {
+                    const configured = r.lead_time_dias != null;
+                    const val = configured ? r.lead_time_dias : '';
+                    const nome = r.nome ? String(r.nome).substring(0, 60) + (r.nome.length > 60 ? '…' : '') : '—';
+                    return `<tr style="border-bottom:1px solid var(--border);${i % 2 === 0 ? '' : 'background:var(--surface2)'}">
+                        <td style="padding:9px 14px;font-family:'Syne',sans-serif;font-weight:600;font-size:12px;white-space:nowrap">${esc(r.sku)}</td>
+                        <td style="padding:9px 14px;font-size:12px;color:var(--muted);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.nome || '')}">${esc(nome)}</td>
+                        <td style="padding:6px 14px;text-align:center">
+                            <input type="number" min="1" max="365" value="${val}"
+                                placeholder="—"
+                                data-sku="${esc(r.sku)}"
+                                style="width:80px;padding:5px 8px;border-radius:6px;border:1.5px solid ${configured ? 'var(--accent)' : 'var(--border)'};background:var(--bg);color:var(--text);font-size:13px;text-align:center;outline:none"
+                                onfocus="this.style.borderColor='var(--accent)'"
+                                onblur="saveFornLeadTime(this)"
+                                onkeydown="if(event.key==='Enter')this.blur()">
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+
+            function filterFornTable() {
+                const q = (document.getElementById('forn-search').value || '').toLowerCase();
+                const filtered = q ? _fornData.filter(r =>
+                    (r.sku || '').toLowerCase().includes(q) ||
+                    (r.nome || '').toLowerCase().includes(q)
+                ) : _fornData;
+                renderFornTable(filtered);
+            }
+
+            async function saveFornLeadTime(input) {
+                const sku  = input.dataset.sku;
+                const dias = input.value.trim();
+                if (!dias || isNaN(+dias) || +dias < 1) {
+                    input.style.borderColor = 'var(--border)';
+                    const orig = (_fornData.find(r => r.sku === sku) || {}).lead_time_dias;
+                    input.value = orig != null ? orig : '';
+                    return;
+                }
+                const token = localStorage.getItem('have_token');
+                try {
+                    input.disabled = true;
+                    const r = await fetch(API_BASE + '/data?module=fornecedores-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ sku, lead_time_dias: +dias })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (r.ok) {
+                        input.style.borderColor = 'var(--accent)';
+                        const row = _fornData.find(x => x.sku === sku);
+                        if (row) row.lead_time_dias = +dias;
+                        showToast(`Lead time de ${sku} salvo: ${dias} dias`, 'success');
+                    } else {
+                        const err = await r.json();
+                        showToast('Erro: ' + (err.error || r.status), 'error');
+                        input.style.borderColor = 'var(--red)';
+                    }
+                } catch(e) {
+                    showToast('Erro ao salvar: ' + e.message, 'error');
+                } finally {
+                    input.disabled = false;
                 }
             }
 

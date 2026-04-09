@@ -84,6 +84,28 @@ def aplicar_config(engine):
     print(f"[CFG] Ponto Pedido: horizonte={HORIZONTE_DEMANDA_DIAS}d, ciclo={CICLO_REPOSICAO_DIAS}d, excesso=x{FATOR_EXCESSO}")
 
 
+def aplicar_leadtime_fornecedores(df: pd.DataFrame, engine) -> pd.DataFrame:
+    """Sobrescreve lead_time com valores configurados em fornecedores_config (por SKU)."""
+    try:
+        fc = pd.read_sql(
+            "SELECT sku, lead_time_dias FROM fornecedores_config WHERE empresa='lanzi'",
+            engine
+        )
+        if fc.empty:
+            return df
+        fc = fc.rename(columns={"lead_time_dias": "lead_time_fc"})
+        df = df.merge(fc, on="sku", how="left")
+        mask = df["lead_time_fc"].notna()
+        n = mask.sum()
+        if n > 0:
+            df.loc[mask, "lead_time"] = df.loc[mask, "lead_time_fc"].astype(int)
+            print(f"[CFG] Lead time por fornecedor aplicado em {n} SKUs")
+        return df.drop(columns=["lead_time_fc"])
+    except Exception as e:
+        print(f"[AVISO] aplicar_leadtime_fornecedores ignorado: {e}")
+        return df
+
+
 def conectar():
     url = (
         f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}"
@@ -437,6 +459,7 @@ def main():
     estoque = ler_estoque_atual(engine)
     pedidos = ler_pedidos_aberto(engine)
     df      = calcular_ponto_pedido(demanda, es, estoque, pedidos)
+    df      = aplicar_leadtime_fornecedores(df, engine)
     semana  = gerar_semana_pedidos(df)
     gravar(engine, df, semana)
 

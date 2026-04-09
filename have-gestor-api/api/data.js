@@ -190,6 +190,51 @@ module.exports = async (req, res) => {
     }
   }
 
+  // Módulo Fornecedores Config (lead time por SKU)
+  if (req.query.module === 'fornecedores-config') {
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS fornecedores_config (
+          empresa       VARCHAR(50)  NOT NULL,
+          sku           TEXT         NOT NULL,
+          lead_time_dias INTEGER     NOT NULL DEFAULT 30,
+          PRIMARY KEY (empresa, sku)
+        )
+      `);
+      if (req.method === 'GET') {
+        const r = await pool.query(`
+          SELECT c."Sku" AS sku, c."Nome Produto" AS nome, f.lead_time_dias
+          FROM cadastros_sku c
+          LEFT JOIN fornecedores_config f
+            ON f.sku = c."Sku" AND f.empresa = $1
+          ORDER BY c."Sku"
+        `, [company]);
+        return res.json({ skus: r.rows });
+      }
+      if (req.method === 'POST') {
+        const { sku, lead_time_dias } = req.body || {};
+        if (!sku || lead_time_dias == null) {
+          return res.status(400).json({ error: 'sku e lead_time_dias são obrigatórios' });
+        }
+        const dias = parseInt(lead_time_dias);
+        if (isNaN(dias) || dias < 1) {
+          return res.status(400).json({ error: 'lead_time_dias deve ser inteiro >= 1' });
+        }
+        await pool.query(`
+          INSERT INTO fornecedores_config (empresa, sku, lead_time_dias)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (empresa, sku) DO UPDATE SET lead_time_dias = EXCLUDED.lead_time_dias
+        `, [company, sku, dias]);
+        return res.json({ ok: true });
+      }
+    } catch(e) {
+      console.error('[FORNECEDORES-CONFIG]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // Módulo SKU Desativadas
   if (req.query.module === 'sku-desativadas') {
     const company = payload.company || 'lanzi';
