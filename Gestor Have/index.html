@@ -5756,7 +5756,7 @@
             // ══════════════════════════════════════════════
             async function queryDB(tabela) {
                 const token = localStorage.getItem('have_token');
-                if (!token) throw new Error('Token não disponível. Faça login novamente.');
+                if (!token) { handleUnauthorized(); throw new Error('Token não disponível.'); }
 
                 const res = await fetch(`${API_BASE}/data?tabela=${tabela}`, {
                     method: 'GET',
@@ -5766,6 +5766,7 @@
                     }
                 });
 
+                if (res.status === 401) { handleUnauthorized(); throw new Error('Sessão expirada'); }
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || `Erro ao buscar ${tabela}`);
                 return data;
