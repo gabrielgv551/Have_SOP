@@ -196,6 +196,17 @@ module.exports = async (req, res) => {
     const pool = getPool(company);
     try {
       await pool.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'fornecedores_config' AND column_name = 'marca'
+          ) THEN
+            DROP TABLE IF EXISTS fornecedores_config;
+          END IF;
+        END $$
+      `);
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS fornecedores_config (
           empresa        VARCHAR(50) NOT NULL,
           marca          TEXT        NOT NULL,
