@@ -85,22 +85,18 @@ def aplicar_config(engine):
 
 
 def aplicar_leadtime_fornecedores(df: pd.DataFrame, engine) -> pd.DataFrame:
-    """Sobrescreve lead_time com valores configurados em fornecedores_config (por Marca)."""
+    """Sobrescreve lead_time com LeadTtime de cadastros_sku (configurado via frontend)."""
     try:
-        fc = pd.read_sql(
-            "SELECT marca, lead_time_dias FROM fornecedores_config WHERE empresa='lanzi'",
+        cad = pd.read_sql(
+            'SELECT "Sku" AS sku, "LeadTtime" AS lead_time_fc FROM cadastros_sku',
             engine
         )
-        if fc.empty:
+        cad["sku"] = cad["sku"].astype(str).str.strip()
+        cad = cad[cad["lead_time_fc"].notna() & (cad["lead_time_fc"] > 0)]
+        if cad.empty:
             return df
-        cad = pd.read_sql('SELECT "Sku" AS sku, "Marca" AS marca FROM cadastros_sku', engine)
-        cad["sku"]   = cad["sku"].astype(str).str.strip()
-        cad["marca"] = cad["marca"].astype(str).str.strip()
-        fc["marca"]  = fc["marca"].astype(str).str.strip()
-        sku_lt = cad.merge(fc, on="marca", how="inner")[["sku", "lead_time_dias"]]
-        sku_lt = sku_lt.rename(columns={"lead_time_dias": "lead_time_fc"})
         df["sku"] = df["sku"].astype(str).str.strip()
-        df = df.merge(sku_lt, on="sku", how="left")
+        df = df.merge(cad, on="sku", how="left")
         mask = df["lead_time_fc"].notna()
         n = mask.sum()
         if n > 0:

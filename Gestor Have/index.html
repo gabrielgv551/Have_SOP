@@ -8996,7 +8996,7 @@ if (id === 'dfs-kpis') {
                 }
                 empty.style.display = 'none';
                 tbody.innerHTML = rows.map((r, i) => {
-                    const configured = r.lead_time_dias != null;
+                    const configured = r.lead_time_dias != null && +r.lead_time_dias > 0;
                     const val = configured ? r.lead_time_dias : '';
                     return `<tr style="border-bottom:1px solid var(--border);${i % 2 === 0 ? '' : 'background:var(--surface2)'}">
                         <td style="padding:9px 14px;font-weight:600;font-size:13px;white-space:nowrap">${esc(r.marca)}</td>

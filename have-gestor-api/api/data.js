@@ -195,35 +195,15 @@ module.exports = async (req, res) => {
     const company = payload.company || 'lanzi';
     const pool = getPool(company);
     try {
-      await pool.query(`
-        DO $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name = 'fornecedores_config' AND column_name = 'marca'
-          ) THEN
-            DROP TABLE IF EXISTS fornecedores_config;
-          END IF;
-        END $$
-      `);
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS fornecedores_config (
-          empresa        VARCHAR(50) NOT NULL,
-          marca          TEXT        NOT NULL,
-          lead_time_dias INTEGER     NOT NULL DEFAULT 30,
-          PRIMARY KEY (empresa, marca)
-        )
-      `);
       if (req.method === 'GET') {
         const r = await pool.query(`
-          SELECT m.marca, f.lead_time_dias
-          FROM (
-            SELECT DISTINCT "Marca" AS marca FROM cadastros_sku
-            WHERE "Marca" IS NOT NULL AND TRIM("Marca") <> ''
-          ) m
-          LEFT JOIN fornecedores_config f ON f.marca = m.marca AND f.empresa = $1
-          ORDER BY m.marca
-        `, [company]);
+          SELECT "Marca" AS marca,
+                 MAX(COALESCE("LeadTtime", 0)) AS lead_time_dias
+          FROM cadastros_sku
+          WHERE "Marca" IS NOT NULL AND TRIM("Marca") <> ''
+          GROUP BY "Marca"
+          ORDER BY "Marca"
+        `);
         return res.json({ marcas: r.rows });
       }
       if (req.method === 'POST') {
@@ -235,11 +215,10 @@ module.exports = async (req, res) => {
         if (isNaN(dias) || dias < 1) {
           return res.status(400).json({ error: 'lead_time_dias deve ser inteiro >= 1' });
         }
-        await pool.query(`
-          INSERT INTO fornecedores_config (empresa, marca, lead_time_dias)
-          VALUES ($1, $2, $3)
-          ON CONFLICT (empresa, marca) DO UPDATE SET lead_time_dias = EXCLUDED.lead_time_dias
-        `, [company, marca, dias]);
+        await pool.query(
+          `UPDATE cadastros_sku SET "LeadTtime" = $1 WHERE "Marca" = $2`,
+          [dias, marca]
+        );
         return res.json({ ok: true });
       }
     } catch(e) {
