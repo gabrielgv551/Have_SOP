@@ -205,7 +205,7 @@ module.exports = async (req, res) => {
       `);
       if (req.method === 'GET') {
         const r = await pool.query(`
-          SELECT c."Sku" AS sku, c."Nome Produto" AS nome, f.lead_time_dias
+          SELECT c."Sku" AS sku, c."Marca" AS nome, f.lead_time_dias
           FROM cadastros_sku c
           LEFT JOIN fornecedores_config f
             ON f.sku = c."Sku" AND f.empresa = $1
