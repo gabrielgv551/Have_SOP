@@ -209,7 +209,31 @@ def calcular_desvio(df_mensal: pd.DataFrame) -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────
-# 4. BUSCAR CURVA ABC E LEAD TIME
+# 4. MÉDIA MENSAL FUTURA (forecast_12m)
+# ─────────────────────────────────────────────
+def ler_media_forecast(engine) -> pd.DataFrame:
+    hoje     = datetime.today()
+    data_fim = hoje + timedelta(days=JANELA_MESES * 30)
+
+    query = text("""
+        SELECT sku, AVG(total_mes) AS media_mensal_fc
+        FROM (
+            SELECT "Sku" AS sku,
+                   DATE_TRUNC('month', "Data") AS mes,
+                   SUM("Previsao_Quantidade")  AS total_mes
+            FROM forecast_12m
+            WHERE "Data" >= :hoje AND "Data" <= :data_fim
+            GROUP BY "Sku", DATE_TRUNC('month', "Data")
+        ) sub
+        GROUP BY sku
+    """)
+    df = pd.read_sql(query, engine, params={"hoje": hoje, "data_fim": data_fim})
+    print(f"[OK] Media mensal forecast: {len(df)} SKUs (proximos {JANELA_MESES} meses)")
+    return df
+
+
+# ─────────────────────────────────────────────
+# 5. BUSCAR CURVA ABC E LEAD TIME
 # ─────────────────────────────────────────────
 def ler_abc_e_leadtime(engine) -> pd.DataFrame:
     query = text("""
@@ -226,10 +250,16 @@ def ler_abc_e_leadtime(engine) -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────
-# 5. CALCULAR ESTOQUE DE SEGURANÇA COM TETO
+# 6. CALCULAR ESTOQUE DE SEGURANÇA COM TETO
 # ─────────────────────────────────────────────
-def calcular_es(stats: pd.DataFrame, abc_lt: pd.DataFrame) -> pd.DataFrame:
+def calcular_es(stats: pd.DataFrame, abc_lt: pd.DataFrame, media_fc: pd.DataFrame) -> pd.DataFrame:
     df = stats.merge(abc_lt, on="sku", how="left")
+    df = df.merge(media_fc, on="sku", how="left")
+    use_fc = df["media_mensal_fc"].notna() & (df["media_mensal_fc"] > 0)
+    df.loc[use_fc, "media_mensal"] = df.loc[use_fc, "media_mensal_fc"]
+    df = df.drop(columns=["media_mensal_fc"])
+    fc_count = use_fc.sum()
+    print(f"[OK] Media mensal: {fc_count} SKUs usam forecast, {len(df)-fc_count} usam historico (floor)")
 
     # Fator Z da curva ABC (default CC se não encontrar)
     df["fator_z"] = df["abc_cruzada"].map(FATOR_Z).fillna(FATOR_Z["CC"])
@@ -311,8 +341,9 @@ def main():
     df_vendas = ler_vendas(engine)
     df_mensal = agregar_mensal(df_vendas)
     stats     = calcular_desvio(df_mensal)
+    media_fc  = ler_media_forecast(engine)
     abc_lt    = ler_abc_e_leadtime(engine)
-    df_es     = calcular_es(stats, abc_lt)
+    df_es     = calcular_es(stats, abc_lt, media_fc)
     gravar(engine, df_es)
 
     print("\n[OK] Estoque de Segurança finalizado com sucesso!")
