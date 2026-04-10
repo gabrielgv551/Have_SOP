@@ -344,6 +344,10 @@ def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
 
     df["alerta"] = df.apply(definir_alerta, axis=1)
 
+    # QTD sugerida = 0 quando nao ha necessidade de compra
+    sem_acao = df["alerta"].isin(["OK", "EXCESSO", "SEM MOVIMENTO", "SEM DADOS"])
+    df.loc[sem_acao, "qty_sugerida"] = 0
+
     print(f"\n[OK] Distribuição de alertas:")
     print(df["alerta"].value_counts().to_string())
     return df
