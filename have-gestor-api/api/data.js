@@ -466,8 +466,11 @@ module.exports = async (req, res) => {
         SELECT "Ano" AS ano, "Mes" AS mes,
                SUM("Total Venda") AS receita,
                SUM("Quantidade Vendida") AS qtd,
-               CASE WHEN SUM("Receita Liquida") > 0
-                    THEN ROUND((SUM("Margem Contribuicao Calc") / SUM("Receita Liquida") * 100)::numeric, 1)
+               CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
+                    THEN ROUND((
+                      SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) /
+                      SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) * 100
+                    )::numeric, 2)
                     ELSE NULL END AS mc_pct
         FROM bd_vendas
         GROUP BY "Ano", "Mes"
