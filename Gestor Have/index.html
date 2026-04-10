@@ -5882,7 +5882,7 @@
             async function loadMonthlyChart() {
                 try {
                     const raw = await queryDB('monthly_revenue');
-                    _monthlyData = raw.map(r => ({ ano: +r.ano, mes: +r.mes, receita: +r.receita || 0, qtd: +r.qtd || 0 }));
+                    _monthlyData = raw.map(r => ({ ano: +r.ano, mes: +r.mes, receita: +r.receita || 0, qtd: +r.qtd || 0, mc_pct: r.mc_pct != null ? +r.mc_pct : null }));
                     const years = [...new Set(_monthlyData.map(r => r.ano))].sort((a,b) => b-a);
                     const sel = document.getElementById('overview-chart-year');
                     sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -5898,20 +5898,10 @@
                     return row ? row.receita : null;
                 });
 
-                // Variação % mês a mês (Jan compara com Dez do ano anterior)
-                const prevYear = year - 1;
+                // Margem de Contribuição % por mês
                 const pct = Array.from({length:12},(_,i) => {
-                    const cur = filtered[i];
-                    if (cur === null) return null;
-                    let prev;
-                    if (i === 0) {
-                        const prevRow = _monthlyData.find(r => r.ano === prevYear && r.mes === 12);
-                        prev = prevRow ? prevRow.receita : null;
-                    } else {
-                        prev = filtered[i-1];
-                    }
-                    if (prev === null || prev === 0) return null;
-                    return +((cur - prev) / prev * 100).toFixed(1);
+                    const row = _monthlyData.find(r => r.ano === year && r.mes === i+1);
+                    return row ? row.mc_pct : null;
                 });
 
                 const ctx = document.getElementById('monthly-chart').getContext('2d');
@@ -5942,13 +5932,13 @@
                             },
                             {
                                 type: 'line',
-                                label: 'Var. %',
+                                label: 'MC %',
                                 data: pct,
-                                borderColor: '#f59e0b',
-                                backgroundColor: 'rgba(245,158,11,0.08)',
+                                borderColor: '#007cdc',
+                                backgroundColor: 'rgba(0,124,220,0.08)',
                                 borderWidth: 2,
-                                pointBackgroundColor: pct.map(v => v === null ? 'transparent' : (v >= 0 ? '#16a34a' : '#dc2626')),
-                                pointBorderColor: pct.map(v => v === null ? 'transparent' : (v >= 0 ? '#16a34a' : '#dc2626')),
+                                pointBackgroundColor: pct.map(v => v === null ? 'transparent' : (v >= 30 ? '#16a34a' : v >= 15 ? '#f59e0b' : '#dc2626')),
+                                pointBorderColor: pct.map(v => v === null ? 'transparent' : (v >= 30 ? '#16a34a' : v >= 15 ? '#f59e0b' : '#dc2626')),
                                 pointRadius: 4,
                                 pointHoverRadius: 6,
                                 tension: 0.35,
@@ -5962,9 +5952,10 @@
                                     font: { size: 9, weight: '700' },
                                     color: ctx => {
                                         const v = pct[ctx.dataIndex];
-                                        return v === null ? 'transparent' : (v >= 0 ? '#16a34a' : '#dc2626');
+                                        if (v === null) return 'transparent';
+                                        return v >= 30 ? '#16a34a' : v >= 15 ? '#f59e0b' : '#dc2626';
                                     },
-                                    formatter: v => v === null ? '' : (v > 0 ? '+' : '') + v + '%'
+                                    formatter: v => v === null ? '' : v + '%'
                                 }
                             }
                         ]
@@ -5983,8 +5974,8 @@
                             tooltip: {
                                 callbacks: {
                                     label: c => {
-                                        if (c.dataset.label === 'Var. %')
-                                            return c.parsed.y === null ? '' : `Var: ${c.parsed.y > 0 ? '+' : ''}${c.parsed.y}%`;
+                                        if (c.dataset.label === 'MC %')
+                                            return c.parsed.y === null ? '' : `MC: ${c.parsed.y}%`;
                                         return 'R$ ' + (c.parsed.y || 0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
                                     }
                                 }

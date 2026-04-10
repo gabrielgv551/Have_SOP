@@ -465,7 +465,10 @@ module.exports = async (req, res) => {
       result = await pool.query(`
         SELECT "Ano" AS ano, "Mes" AS mes,
                SUM("Total Venda") AS receita,
-               SUM("Quantidade Vendida") AS qtd
+               SUM("Quantidade Vendida") AS qtd,
+               CASE WHEN SUM("Receita Liquida") > 0
+                    THEN ROUND((SUM("Margem Contribuicao Calc") / SUM("Receita Liquida") * 100)::numeric, 1)
+                    ELSE NULL END AS mc_pct
         FROM bd_vendas
         GROUP BY "Ano", "Mes"
         ORDER BY "Ano" ASC, "Mes" ASC
