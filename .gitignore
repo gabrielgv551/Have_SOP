@@ -9,12 +9,17 @@ node_modules/
 # Vercel
 .vercel/
 
-# Arquivos Excel de dados (não versionados)
+# Excel e downloads
 *.xlsx
+~$*
+Lanzi/downloads_gefinance/
+Lanzi/excel.xlsx
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
+Lanzi/Lib/
 Lanzi/pip/
 
 # OS

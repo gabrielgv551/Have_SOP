@@ -239,15 +239,18 @@ def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
     df = df.merge(pedidos,      on="sku", how="left")
 
     df["pedidos_aberto"]    = df["pedidos_aberto"].fillna(0)
+    df["sem_dados_estoque"] = df["estoque_atual"].isna()
     df["estoque_atual"]     = df["estoque_atual"].fillna(0)
     df["estoque_seguranca"] = df["estoque_seguranca"].fillna(0)
     df["lead_time"]         = df["lead_time"].fillna(30)
     df["media_mensal"]      = df["media_mensal"].fillna(0)
 
-    zerados = (df["estoque_atual"] == 0).sum()
-    print(f"   [i] SKUs com estoque_atual = 0 após merge: {zerados} de {len(df)}")
-    if zerados > len(df) * 0.8:
-        print("   [ATENÇÃO] Mais de 80% dos SKUs com estoque zero.")
+    sem_dados = df["sem_dados_estoque"].sum()
+    zerados   = (df["estoque_atual"] == 0).sum()
+    print(f"   [i] SKUs sem dado em estoque_consolidado: {sem_dados} de {len(df)}")
+    print(f"   [i] SKUs com estoque_atual = 0 apos merge: {zerados} de {len(df)}")
+    if sem_dados > len(df) * 0.8:
+        print("   [ATENCAO] Mais de 80% dos SKUs sem dado de estoque.")
         print("             Verifique se a tabela 'estoque_consolidado' foi carregada corretamente.")
 
     # FALLBACK: forecast zerado mas tem histórico → usa média mensal / 30
@@ -318,14 +321,17 @@ def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
         es_val       = row["estoque_seguranca"]
         em_transito  = row["pedidos_aberto"]
         estoque_real = ea + em_transito
+        sem_dados    = row["sem_dados_estoque"]
 
         if dd == 0:
             return "SEM MOVIMENTO"
+        if sem_dados:
+            return "SEM DADOS"
         elif ea <= es_val and em_transito == 0:
             # Abaixo do ES e nada chegando → ruptura confirmada
             return "RUPTURA IMINENTE"
         elif estoque_real <= es_val:
-            # Mesmo somando o pedido em aberto, não cobre o ES → ainda crítico
+            # Mesmo somando o pedido em aberto, nao cobre o ES → ainda critico
             return "RUPTURA IMINENTE"
         elif estoque_real <= pp:
             # Com pedido em aberto ainda fica abaixo do PP → precisa pedir
@@ -356,7 +362,7 @@ def gerar_semana_pedidos(df: pd.DataFrame) -> pd.DataFrame:
     sexta   = hoje + timedelta(days=dias_ate_sexta)
     segunda = hoje - timedelta(days=hoje.weekday())
 
-    print(f"   [i] Semana: {segunda.strftime('%d/%m/%Y')} (seg) → {sexta.strftime('%d/%m/%Y')} (sex)")
+    print(f"   [i] Semana: {segunda.strftime('%d/%m/%Y')} (seg) -> {sexta.strftime('%d/%m/%Y')} (sex)")
 
     datas = pd.to_datetime(df["data_sugerida_pedido"]).dt.date
 
@@ -369,7 +375,7 @@ def gerar_semana_pedidos(df: pd.DataFrame) -> pd.DataFrame:
             (datas.notna() & (datas <= sexta)) |
             (df["alerta"].isin(["RUPTURA IMINENTE", "PEDIR AGORA"]))
         )
-        & (df["alerta"] != "SEM MOVIMENTO")
+        & (~df["alerta"].isin(["SEM MOVIMENTO", "SEM DADOS"]))
     )
     semana = df[mascara].copy()
 
@@ -379,6 +385,7 @@ def gerar_semana_pedidos(df: pd.DataFrame) -> pd.DataFrame:
         "OK"              : 3,
         "EXCESSO"         : 4,
         "SEM MOVIMENTO"   : 5,
+        "SEM DADOS"       : 6,
     })
 
     semana["semana_inicio"] = segunda
@@ -404,7 +411,7 @@ def gravar(engine, df: pd.DataFrame, semana: pd.DataFrame):
         "estoque_atual", "pedidos_aberto",
         "qty_sugerida",
         "data_sugerida_pedido", "data_prevista_entrega",
-        "alerta"
+        "alerta", "sem_dados_estoque"
     ]].copy()
 
     for col in ["demanda_diaria"]:
@@ -436,7 +443,7 @@ def gravar(engine, df: pd.DataFrame, semana: pd.DataFrame):
         semana_out.to_sql("semana_pedidos", engine, if_exists="replace", index=False)
         print(f"[OK] {len(semana_out)} SKUs salvos em 'semana_pedidos'")
 
-        print(f"\n[i] Prévia da lista semanal ({semana_out['semana_inicio'].iloc[0].strftime('%d/%m/%Y')} → {semana_out['semana_fim'].iloc[0].strftime('%d/%m/%Y')}):")
+        print(f"\n[i] Previa da lista semanal ({semana_out['semana_inicio'].iloc[0].strftime('%d/%m/%Y')} -> {semana_out['semana_fim'].iloc[0].strftime('%d/%m/%Y')}):")
         print(semana_out[[
             "sku", "estoque_atual", "pedidos_aberto",
             "qty_sugerida", "data_sugerida_pedido", "alerta"
