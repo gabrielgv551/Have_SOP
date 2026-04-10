@@ -5888,6 +5888,23 @@
                     const row = _monthlyData.find(r => r.ano === year && r.mes === i+1);
                     return row ? row.receita : null;
                 });
+
+                // Variação % mês a mês (Jan compara com Dez do ano anterior)
+                const prevYear = year - 1;
+                const pct = Array.from({length:12},(_,i) => {
+                    const cur = filtered[i];
+                    if (cur === null) return null;
+                    let prev;
+                    if (i === 0) {
+                        const prevRow = _monthlyData.find(r => r.ano === prevYear && r.mes === 12);
+                        prev = prevRow ? prevRow.receita : null;
+                    } else {
+                        prev = filtered[i-1];
+                    }
+                    if (prev === null || prev === 0) return null;
+                    return +((cur - prev) / prev * 100).toFixed(1);
+                });
+
                 const ctx = document.getElementById('monthly-chart').getContext('2d');
                 if (_monthlyChart) { _monthlyChart.destroy(); _monthlyChart = null; }
                 _monthlyChart = new Chart(ctx, {
@@ -5895,41 +5912,91 @@
                     plugins: [ChartDataLabels],
                     data: {
                         labels: MESES,
-                        datasets: [{
-                            label: 'Receita',
-                            data: filtered,
-                            backgroundColor: filtered.map(v => v === null ? 'rgba(0,124,220,0.12)' : 'rgba(0,124,220,0.75)'),
-                            borderColor: filtered.map(v => v === null ? 'rgba(0,124,220,0.2)' : '#007cdc'),
-                            borderWidth: 1.5,
-                            borderRadius: 6
-                        }]
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Receita',
+                                data: filtered,
+                                backgroundColor: filtered.map(v => v === null ? 'rgba(0,124,220,0.12)' : 'rgba(0,124,220,0.75)'),
+                                borderColor: filtered.map(v => v === null ? 'rgba(0,124,220,0.2)' : '#007cdc'),
+                                borderWidth: 1.5,
+                                borderRadius: 6,
+                                yAxisID: 'y',
+                                datalabels: {
+                                    anchor: 'end',
+                                    align: 'end',
+                                    offset: 2,
+                                    font: { size: 10, weight: '600' },
+                                    color: '#1c2d4a',
+                                    formatter: v => v === null ? '' : (v >= 1000000 ? 'R$'+(v/1000000).toFixed(1)+'M' : v >= 1000 ? 'R$'+(v/1000).toFixed(0)+'K' : 'R$'+v)
+                                }
+                            },
+                            {
+                                type: 'line',
+                                label: 'Var. %',
+                                data: pct,
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245,158,11,0.08)',
+                                borderWidth: 2,
+                                pointBackgroundColor: pct.map(v => v === null ? 'transparent' : (v >= 0 ? '#16a34a' : '#dc2626')),
+                                pointBorderColor: pct.map(v => v === null ? 'transparent' : (v >= 0 ? '#16a34a' : '#dc2626')),
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                tension: 0.35,
+                                fill: false,
+                                yAxisID: 'pct',
+                                spanGaps: false,
+                                datalabels: {
+                                    anchor: 'end',
+                                    align: 'top',
+                                    offset: 3,
+                                    font: { size: 9, weight: '700' },
+                                    color: ctx => {
+                                        const v = pct[ctx.dataIndex];
+                                        return v === null ? 'transparent' : (v >= 0 ? '#16a34a' : '#dc2626');
+                                    },
+                                    formatter: v => v === null ? '' : (v > 0 ? '+' : '') + v + '%'
+                                }
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
                         plugins: {
-                            legend: { display: false },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                align: 'end',
+                                labels: { font: { size: 11 }, boxWidth: 14, padding: 12 }
+                            },
                             tooltip: {
                                 callbacks: {
-                                    label: c => 'R$ ' + (c.parsed.y || 0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0})
+                                    label: c => {
+                                        if (c.dataset.label === 'Var. %')
+                                            return c.parsed.y === null ? '' : `Var: ${c.parsed.y > 0 ? '+' : ''}${c.parsed.y}%`;
+                                        return 'R$ ' + (c.parsed.y || 0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+                                    }
                                 }
-                            },
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'end',
-                                offset: 2,
-                                font: { size: 10, weight: '600' },
-                                color: '#1c2d4a',
-                                formatter: v => v === null ? '' : (v >= 1000000 ? 'R$'+(v/1000000).toFixed(1)+'M' : v >= 1000 ? 'R$'+(v/1000).toFixed(0)+'K' : 'R$'+v)
                             }
                         },
                         scales: {
                             x: { grid: { display: false }, ticks: { font: { size: 11 } } },
                             y: {
+                                position: 'left',
                                 grid: { color: 'rgba(0,0,0,0.05)' },
                                 ticks: {
                                     font: { size: 11 },
                                     callback: v => 'R$ ' + (v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
+                                }
+                            },
+                            pct: {
+                                position: 'right',
+                                grid: { drawOnChartArea: false },
+                                ticks: {
+                                    font: { size: 11 },
+                                    callback: v => v + '%'
                                 }
                             }
                         }
