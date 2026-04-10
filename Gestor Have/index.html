@@ -3886,14 +3886,15 @@
 
                 const reSign = parseFloat(document.getElementById('bal-res-exercicio-sign')?.value ?? '-1');
                 const dreRLCumByMonth = {};
-                let cumRaw = 0, hasDre = false;
+                let cumRaw = 0;
                 for (let m = 1; m <= 12; m++) {
                     const cell = document.getElementById(`total-dre-rl-mes${m}`);
-                    if (cell && cell.dataset.raw !== '' && cell.dataset.raw !== undefined && cell.dataset.raw !== null) {
+                    const hasThisMonth = cell && cell.dataset.raw !== '' && cell.dataset.raw !== undefined && cell.dataset.raw !== null;
+                    if (hasThisMonth) {
                         const v = parseFloat(cell.dataset.raw);
-                        if (!isNaN(v)) { cumRaw += v; hasDre = true; }
+                        if (!isNaN(v)) cumRaw += v;
                     }
-                    dreRLCumByMonth[m] = hasDre ? cumRaw : null;
+                    dreRLCumByMonth[m] = hasThisMonth ? cumRaw : null;
                 }
 
                 for (let i = 1; i <= 12; i++) {
