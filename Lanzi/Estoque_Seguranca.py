@@ -240,12 +240,15 @@ def ler_abc_e_leadtime(engine) -> pd.DataFrame:
         SELECT
             c.sku,
             c.abc_cruzada,
-            s."LeadTtime" AS lead_time
+            COALESCE(fc.lead_time_dias, 30) AS lead_time
         FROM curva_abc c
         LEFT JOIN cadastros_sku s ON s."Sku" = c.sku
+        LEFT JOIN fornecedores_config fc
+               ON fc.marca = s."Marca" AND fc.empresa = 'lanzi'
     """)
     df = pd.read_sql(query, engine)
-    print(f"[OK] Curva ABC + Lead Time: {len(df)} SKUs")
+    configurados = (df["lead_time"] != 30).sum()
+    print(f"[OK] Curva ABC + Lead Time: {len(df)} SKUs | {configurados} com lead time configurado")
     return df
 
 
@@ -264,8 +267,8 @@ def calcular_es(stats: pd.DataFrame, abc_lt: pd.DataFrame, media_fc: pd.DataFram
     # Fator Z da curva ABC (default CC se não encontrar)
     df["fator_z"] = df["abc_cruzada"].map(FATOR_Z).fillna(FATOR_Z["CC"])
 
-    # Lead time: default 30 dias se não cadastrado
-    df["lead_time"] = df["lead_time"].fillna(30)
+    # Lead time: default 30 dias se nao cadastrado (0 ou NULL = default)
+    df["lead_time"] = df["lead_time"].where(df["lead_time"] > 0).fillna(30)
 
     # ES Estatístico: Z × σ × √(LT ÷ 30)
     df["es_estatistico"] = (

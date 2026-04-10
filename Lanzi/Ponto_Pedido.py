@@ -85,18 +85,19 @@ def aplicar_config(engine):
 
 
 def aplicar_leadtime_fornecedores(df: pd.DataFrame, engine) -> pd.DataFrame:
-    """Sobrescreve lead_time com LeadTtime de cadastros_sku (configurado via frontend)."""
+    """Sobrescreve lead_time com valores de fornecedores_config (por Marca), via cadastros_sku."""
     try:
-        cad = pd.read_sql(
-            'SELECT "Sku" AS sku, "LeadTtime" AS lead_time_fc FROM cadastros_sku',
-            engine
-        )
-        cad["sku"] = cad["sku"].astype(str).str.strip()
-        cad = cad[cad["lead_time_fc"].notna() & (cad["lead_time_fc"] > 0)]
-        if cad.empty:
+        sku_lt = pd.read_sql("""
+            SELECT s."Sku" AS sku, fc.lead_time_dias AS lead_time_fc
+            FROM cadastros_sku s
+            JOIN fornecedores_config fc ON fc.marca = s."Marca" AND fc.empresa = 'lanzi'
+            WHERE fc.lead_time_dias > 0
+        """, engine)
+        if sku_lt.empty:
             return df
+        sku_lt["sku"] = sku_lt["sku"].astype(str).str.strip()
         df["sku"] = df["sku"].astype(str).str.strip()
-        df = df.merge(cad, on="sku", how="left")
+        df = df.merge(sku_lt, on="sku", how="left")
         mask = df["lead_time_fc"].notna()
         n = mask.sum()
         if n > 0:
@@ -242,7 +243,7 @@ def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
     df["sem_dados_estoque"] = df["estoque_atual"].isna()
     df["estoque_atual"]     = df["estoque_atual"].fillna(0)
     df["estoque_seguranca"] = df["estoque_seguranca"].fillna(0)
-    df["lead_time"]         = df["lead_time"].fillna(30)
+    df["lead_time"]         = df["lead_time"].where(df["lead_time"] > 0).fillna(30)
     df["media_mensal"]      = df["media_mensal"].fillna(0)
 
     sem_dados = df["sem_dados_estoque"].sum()
