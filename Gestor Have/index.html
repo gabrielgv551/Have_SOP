@@ -8120,8 +8120,8 @@ if (id === 'dfs-kpis') {
 
                 categorias.forEach(cat => {
                     const isSubSection = cat.tipo === 'section' && cat.parent !== null;
+                    if (isSubSection) return;
                     const cls = (cat.tipo === 'saldo_ini' || cat.tipo === 'saldo_fin') ? 'fcxd-row-section'
-                              : isSubSection ? 'fcxd-row-subsection'
                               : cat.tipo === 'section' ? 'fcxd-row-total'
                               : 'fcxd-row-item';
                     const canDelete = cat.tipo === 'item';
