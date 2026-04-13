@@ -8204,7 +8204,7 @@ if (id === 'dfs-kpis') {
                     const tipoBg = cat.tipo==='section'?'#1c2d4a':cat.tipo==='item'?'rgba(0,124,220,0.12)':'rgba(5,150,105,0.12)';
                     const tipoCl = cat.tipo==='section'?'#fff':cat.tipo==='item'?'var(--accent)':'#059669';
                     const tipoBadge = `<span style="font-size:11px;padding:2px 7px;border-radius:5px;background:${tipoBg};color:${tipoCl};font-weight:600;">${cat.tipo}</span>`;
-                    const canDel = cat.tipo === 'item';
+                    const canDel = cat.tipo === 'item' || (cat.tipo === 'section' && cat.parent !== null);
                     const btns = `
                         <button onclick="_modeloMoveUp(${idx})" title="Subir" style="border:none;background:none;cursor:pointer;font-size:14px;padding:2px 3px;">↑</button>
                         <button onclick="_modeloMoveDown(${idx})" title="Descer" style="border:none;background:none;cursor:pointer;font-size:14px;padding:2px 3px;">↓</button>
