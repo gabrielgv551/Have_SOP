@@ -8111,10 +8111,13 @@ if (id === 'dfs-kpis') {
 
                 // Body rows
                 let bodyHtml = '';
-                function _nestLevel(cat) {
+                function _nestLevel(cat, _visited) {
                     if (!cat.parent) return 0;
+                    _visited = _visited || new Set();
+                    if (_visited.has(cat.nome)) return 0;
+                    _visited.add(cat.nome);
                     const p = categorias.find(c => c.nome === cat.parent);
-                    return p ? 1 + _nestLevel(p) : 1;
+                    return p ? 1 + _nestLevel(p, _visited) : 1;
                 }
                 function _displayNome(nome) { return nome.replace(/^ANO /, ''); }
 
