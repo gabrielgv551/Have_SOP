@@ -8120,12 +8120,13 @@ if (id === 'dfs-kpis') {
 
                 categorias.forEach(cat => {
                     const isSubSection = cat.tipo === 'section' && cat.parent !== null;
-                    if (isSubSection) return;
+                    const level = _nestLevel(cat);
+                    if (isSubSection && level > 1) return;
                     const cls = (cat.tipo === 'saldo_ini' || cat.tipo === 'saldo_fin') ? 'fcxd-row-section'
+                              : isSubSection ? 'fcxd-row-subsection'
                               : cat.tipo === 'section' ? 'fcxd-row-total'
                               : 'fcxd-row-item';
                     const canDelete = cat.tipo === 'item';
-                    const level = _nestLevel(cat);
                     const pl = level > 1 ? `padding-left:${level * 20}px;` : '';
                     let row = `<tr class="${cls}">`;
                     row += `<td class="fcxd-col-cat fcxd-sticky-cat" style="${pl}">${esc(_displayNome(cat.nome))}</td>`;
