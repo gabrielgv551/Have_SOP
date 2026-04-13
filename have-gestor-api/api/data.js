@@ -20,6 +20,7 @@ const TABELAS_PERMITIDAS = [
   'sopc',
   'sku_atividade',
   'categoria_vendas',
+  'contas_pagar',
 ];
 
 // Cache simples de pools por empresa (evita criar nova conexão a cada request)
@@ -460,6 +461,15 @@ module.exports = async (req, res) => {
           GROUP BY 1, 2
         `);
       return res.json(result.rows[0] || {});
+    }
+    if (tabela === 'contas_pagar') {
+      result = await pool.query(`
+        SELECT id, situacao, token_origem, numero_doc, historico, fornecedor,
+               valor, saldo, data_vencimento, data_emissao, atualizado_em, data_calculo
+        FROM contas_pagar
+        ORDER BY data_vencimento ASC NULLS LAST, id ASC
+      `);
+      return res.json(result.rows);
     }
     if (tabela === 'monthly_revenue') {
       result = await pool.query(`

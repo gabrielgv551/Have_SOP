@@ -2269,6 +2269,9 @@
                     <div class="nav-item" onclick="showPanel('caixa-openfinance')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>Open Finance
                     </div>
+                    <div class="nav-item" onclick="showPanel('caixa-contas-pagar')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span>Contas a Pagar
+                    </div>
                     <hr class="nav-sep">
                     <!-- DFS -->
                     <div class="nav-section-label">DFS</div>
@@ -3664,6 +3667,88 @@
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                             Conectar nova conta bancária
                         </button>
+                    </div>
+                </div>
+
+                <!-- CAIXA · CONTAS A PAGAR -->
+                <div class="panel" id="panel-caixa-contas-pagar">
+                    <div class="section-header">
+                        <div class="section-title">Caixa · Contas a Pagar</div>
+                        <div class="section-actions">
+                            <button class="refresh-btn" onclick="loadContasPagar()" style="font-size:12px;">↻ Atualizar</button>
+                        </div>
+                    </div>
+
+                    <!-- KPI cards -->
+                    <div class="kpi-grid" style="margin-bottom:20px">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total a Pagar</div>
+                            <div class="kpi-value" id="cp-kpi-total">–</div>
+                            <div class="kpi-sub">Valor total filtrado</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Saldo em Aberto</div>
+                            <div class="kpi-value" id="cp-kpi-saldo">–</div>
+                            <div class="kpi-sub">A liquidar ainda</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Vencidos</div>
+                            <div class="kpi-value" id="cp-kpi-vencidos" style="color:#ef4444">–</div>
+                            <div class="kpi-sub">Títulos em atraso</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Títulos</div>
+                            <div class="kpi-value" id="cp-kpi-count">–</div>
+                            <div class="kpi-sub">Registros encontrados</div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="table-card" style="padding:14px 18px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <input type="text" id="cp-search" placeholder="Buscar fornecedor, histórico, nº doc..."
+                                style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);"
+                                oninput="filterContasPagar()">
+                            <select id="cp-situacao" onchange="filterContasPagar()"
+                                style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);">
+                                <option value="">Todas as situações</option>
+                            </select>
+                            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
+                                <span>Vencto de</span>
+                                <input type="date" id="cp-venc-de" onchange="filterContasPagar()"
+                                    style="padding:7px 9px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);color:var(--text);">
+                                <span>até</span>
+                                <input type="date" id="cp-venc-ate" onchange="filterContasPagar()"
+                                    style="padding:7px 9px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);color:var(--text);">
+                            </div>
+                            <button class="refresh-btn" onclick="clearContasPagarFilters()" style="font-size:12px;color:var(--muted);">✕ Limpar</button>
+                        </div>
+                    </div>
+
+                    <!-- Tabela -->
+                    <div class="table-card">
+                        <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:13px;font-weight:600;color:var(--muted);" id="cp-count-label">–</span>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                                <thead>
+                                    <tr style="background:var(--surface2);">
+                                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Situação</th>
+                                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Nº Doc</th>
+                                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Fornecedor</th>
+                                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Histórico</th>
+                                        <th style="padding:10px 14px;text-align:right;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Valor</th>
+                                        <th style="padding:10px 14px;text-align:right;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Saldo</th>
+                                        <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Vencimento</th>
+                                        <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Emissão</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cp-tbody">
+                                    <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -7328,7 +7413,7 @@
                 'semana': 'Lista Semanal de Pedidos',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
                 'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas', 'dfs-pmv': 'S&OP · PMV · Price Volume Mix',
-                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance',
+                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance', 'caixa-contas-pagar': 'Caixa · Contas a Pagar',
 'admin-usuarios': 'Gerenciar Usuários',
 'sopc-controle': 'S&OP · Controle Estoques',
 'sku-desativadas': 'S&OP · SKUs Desativadas',
@@ -7388,6 +7473,9 @@ if (id === 'dfs-kpis') {
                 }
                 if (id === 'caixa-openfinance') {
                     loadBelvoLinks();
+                }
+                if (id === 'caixa-contas-pagar') {
+                    loadContasPagar();
                 }
                 if (id === 'sopc-controle') { loadSopcControle(); }
                 if (id === 'sku-desativadas') { loadSkuAtividade(); }
@@ -8383,6 +8471,131 @@ if (id === 'dfs-kpis') {
                     s.onerror = () => reject(new Error('Falha ao carregar SDK Pluggy. Verifique sua conexão.'));
                     document.head.appendChild(s);
                 });
+            }
+
+            // ══════════════════════════════════════════════
+            // CONTAS A PAGAR
+            // ══════════════════════════════════════════════
+            let _cpData = [];
+
+            async function loadContasPagar() {
+                const tbody = document.getElementById('cp-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Carregando...</td></tr>';
+                try {
+                    const raw = await queryDB('contas_pagar');
+                    _cpData = raw;
+                    _cpPopulateSituacoes();
+                    filterContasPagar();
+                } catch(e) {
+                    console.error('contas_pagar', e);
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Erro ao carregar dados: ${e.message}</td></tr>`;
+                }
+            }
+
+            function _cpPopulateSituacoes() {
+                const sel = document.getElementById('cp-situacao');
+                if (!sel) return;
+                const cur = sel.value;
+                const sits = [...new Set(_cpData.map(r => r.situacao).filter(Boolean))].sort();
+                sel.innerHTML = '<option value="">Todas as situações</option>' +
+                    sits.map(s => `<option value="${s}"${s === cur ? ' selected' : ''}>${s}</option>`).join('');
+            }
+
+            function filterContasPagar() {
+                const search   = (document.getElementById('cp-search')?.value  || '').toLowerCase().trim();
+                const situacao = document.getElementById('cp-situacao')?.value  || '';
+                const vencDe   = document.getElementById('cp-venc-de')?.value   || '';
+                const vencAte  = document.getElementById('cp-venc-ate')?.value  || '';
+
+                const filtered = _cpData.filter(r => {
+                    if (situacao && r.situacao !== situacao) return false;
+                    const dv = r.data_vencimento ? r.data_vencimento.slice(0, 10) : '';
+                    if (vencDe  && dv && dv < vencDe)  return false;
+                    if (vencAte && dv && dv > vencAte)  return false;
+                    if (search) {
+                        const hay = [(r.fornecedor||''), (r.historico||''), (r.numero_doc||''), (r.situacao||'')].join(' ').toLowerCase();
+                        if (!hay.includes(search)) return false;
+                    }
+                    return true;
+                });
+
+                renderContasPagar(filtered);
+                _cpUpdateKpis(filtered);
+            }
+
+            function clearContasPagarFilters() {
+                const f = id => { const e = document.getElementById(id); if (e) e.value = ''; };
+                f('cp-search'); f('cp-situacao'); f('cp-venc-de'); f('cp-venc-ate');
+                filterContasPagar();
+            }
+
+            function renderContasPagar(data) {
+                const tbody      = document.getElementById('cp-tbody');
+                const countLabel = document.getElementById('cp-count-label');
+                if (!tbody) return;
+                if (countLabel) countLabel.textContent = `${data.length.toLocaleString('pt-BR')} título(s)`;
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Nenhum registro encontrado</td></tr>';
+                    return;
+                }
+
+                const today   = new Date().toISOString().slice(0, 10);
+                const fmtDate = d => d ? d.slice(0, 10).split('-').reverse().join('/') : '–';
+                const fmtVal  = v => v != null && v !== '' ? 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–';
+
+                const sitStyle = s => {
+                    if (!s) return 'background:rgba(0,0,0,0.05);color:var(--muted)';
+                    const sl = s.toLowerCase();
+                    if (sl.includes('pago') || sl.includes('baixado') || sl.includes('liquidado'))
+                        return 'background:rgba(5,150,105,0.12);color:#059669';
+                    if (sl.includes('vencido') || sl.includes('atraso'))
+                        return 'background:rgba(220,38,38,0.12);color:#dc2626';
+                    if (sl.includes('aberto') || sl.includes('pendente') || sl.includes('aprovado'))
+                        return 'background:rgba(245,158,11,0.12);color:#d97706';
+                    return 'background:rgba(0,124,220,0.08);color:var(--accent)';
+                };
+
+                tbody.innerHTML = data.map(r => {
+                    const dv = r.data_vencimento ? r.data_vencimento.slice(0, 10) : '';
+                    const sit = (r.situacao || '').toLowerCase();
+                    const isVencido = dv && dv < today && !sit.includes('pago') && !sit.includes('baixado') && !sit.includes('liquidado');
+                    const rowBg = isVencido ? 'background:rgba(220,38,38,0.03);' : '';
+                    const vencStyle = isVencido ? 'color:#dc2626;font-weight:600;' : '';
+                    const saldoV = parseFloat(r.saldo) || 0;
+                    const saldoStyle = saldoV > 0 ? 'color:#d97706;font-weight:600;' : 'color:var(--muted);';
+                    return `<tr style="border-bottom:1px solid var(--border);${rowBg}">
+                        <td style="padding:9px 14px;">
+                            <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;${sitStyle(r.situacao)}">${r.situacao || '–'}</span>
+                        </td>
+                        <td style="padding:9px 14px;font-weight:500;">${r.numero_doc || '–'}</td>
+                        <td style="padding:9px 14px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${(r.fornecedor||'').replace(/"/g,'')}">${r.fornecedor || '–'}</td>
+                        <td style="padding:9px 14px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:12px;" title="${(r.historico||'').replace(/"/g,'')}">${r.historico || '–'}</td>
+                        <td style="padding:9px 14px;text-align:right;font-weight:600;">${fmtVal(r.valor)}</td>
+                        <td style="padding:9px 14px;text-align:right;${saldoStyle}">${fmtVal(r.saldo)}</td>
+                        <td style="padding:9px 14px;text-align:center;${vencStyle}">${fmtDate(r.data_vencimento)}</td>
+                        <td style="padding:9px 14px;text-align:center;color:var(--muted);">${fmtDate(r.data_emissao)}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            function _cpUpdateKpis(data) {
+                const today     = new Date().toISOString().slice(0, 10);
+                const totalValor = data.reduce((s, r) => s + (parseFloat(r.valor)  || 0), 0);
+                const totalSaldo = data.reduce((s, r) => s + (parseFloat(r.saldo)  || 0), 0);
+                const vencidos   = data.filter(r => {
+                    const dv  = r.data_vencimento ? r.data_vencimento.slice(0, 10) : '';
+                    const sit = (r.situacao || '').toLowerCase();
+                    return dv && dv < today && !sit.includes('pago') && !sit.includes('baixado') && !sit.includes('liquidado');
+                }).length;
+                const fK = v => Math.abs(v) >= 1e6 ? 'R$' + (v/1e6).toFixed(1) + 'M'
+                               : Math.abs(v) >= 1e3 ? 'R$' + (v/1e3).toFixed(0) + 'K'
+                               : 'R$' + v.toFixed(0);
+                const s = id => document.getElementById(id);
+                if (s('cp-kpi-total'))   s('cp-kpi-total').textContent   = fK(totalValor);
+                if (s('cp-kpi-saldo'))   s('cp-kpi-saldo').textContent   = fK(totalSaldo);
+                if (s('cp-kpi-vencidos')) s('cp-kpi-vencidos').textContent = vencidos.toLocaleString('pt-BR');
+                if (s('cp-kpi-count'))   s('cp-kpi-count').textContent   = data.length.toLocaleString('pt-BR');
             }
 
             async function loadBelvoLinks() {
