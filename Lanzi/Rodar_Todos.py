@@ -12,6 +12,7 @@ ORDEM DE EXECUÇÃO:
   5. Estoque_Seguranca.py → Calcula estoque de segurança por SKU
   6. Ponto_Pedido.py     → Calcula ponto de pedido + lista semanal
   7. PPR_SKU.py          → Performance de vendas por janela temporal
+  8. FORECAST_DIARIO.py  → Desagrega forecast mensal → diário por SKU
 """
 
 import subprocess
@@ -25,13 +26,14 @@ from datetime import datetime
 PASTA = os.path.dirname(os.path.abspath(__file__))
 
 SCRIPTS = [
-    ("1/7", "GEFINANCE_ETL.py",     "Extraindo vendas do Gefinance → bd_vendas..."),
-    ("2/7", "UPLOAD_ETL.py",        "Carregando demais abas do Excel para o banco..."),
-    ("3/7", "PREVISÃO 12M.py",      "Gerando Previsão de Demanda 12M..."),
-    ("4/7", "Curva_ABC.PY",         "Calculando Curva ABC..."),
-    ("5/7", "Estoque_Seguranca.py", "Calculando Estoque de Segurança..."),
-    ("6/7", "Ponto_Pedido.py",      "Calculando Ponto de Pedido + Lista Semanal..."),
-    ("7/7", "PPR_SKU.py",           "Calculando Performance de Vendas por Janela (PPR)..."),
+    ("1/8", "GEFINANCE_ETL.py",     "Extraindo vendas do Gefinance → bd_vendas..."),
+    ("2/8", "UPLOAD_ETL.py",        "Carregando demais abas do Excel para o banco..."),
+    ("3/8", "PREVISÃO 12M.py",      "Gerando Previsão de Demanda 12M..."),
+    ("4/8", "Curva_ABC.PY",         "Calculando Curva ABC..."),
+    ("5/8", "Estoque_Seguranca.py", "Calculando Estoque de Segurança..."),
+    ("6/8", "Ponto_Pedido.py",      "Calculando Ponto de Pedido + Lista Semanal..."),
+    ("7/8", "PPR_SKU.py",           "Calculando Performance de Vendas por Janela (PPR)..."),
+    ("8/8", "FORECAST_DIARIO.py",   "Desagregando forecast mensal → diário por SKU..."),
 ]
 
 

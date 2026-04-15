@@ -199,7 +199,59 @@ def enriquecer_abc(engine, df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────
-# 6. GRAVAR NO POSTGRESQL
+# 6. REPASSE FINANCEIRO MÉDIO POR UNIDADE
+# ─────────────────────────────────────────────
+def calcular_repasse_medio(engine) -> pd.DataFrame:
+    """
+    Calcula o repasse financeiro médio por unidade nos últimos 90 dias.
+    Pro-rateia o repasse do pedido por linha de produto:
+      repasse_linha = (Total Venda / Total Venda Pedido) × Repasse Financeiro
+      repasse_medio_und = SUM(repasse_linha) / SUM(Quantidade Vendida)
+    """
+    janela_max = max(JANELAS.values())
+    data_corte = datetime.today() - timedelta(days=janela_max)
+
+    query = text("""
+        SELECT
+            TRIM("Sku"::text) AS sku,
+            COALESCE("Quantidade Vendida"::numeric, 0) AS quantidade,
+            COALESCE("Total Venda"::numeric, 0)        AS total_venda_prod,
+            COALESCE("Total Venda Pedido"::numeric, 0) AS total_venda_pedido,
+            COALESCE("Repasse Financeiro"::numeric, 0) AS repasse_financeiro
+        FROM bd_vendas
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
+          AND "Data"  >= :data_corte
+          AND "Sku"   IS NOT NULL
+          AND TRIM("Sku"::text) != ''
+    """)
+
+    df = pd.read_sql(query, engine, params={"data_corte": data_corte})
+
+    for col in ["quantidade", "total_venda_prod", "total_venda_pedido", "repasse_financeiro"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+
+    # Pro-rateia repasse por linha de produto
+    df["repasse_linha"] = df.apply(
+        lambda r: (r["total_venda_prod"] / r["total_venda_pedido"]) * r["repasse_financeiro"]
+        if r["total_venda_pedido"] > 0 else 0,
+        axis=1,
+    )
+
+    agg = (
+        df.groupby("sku")
+        .apply(lambda g: g["repasse_linha"].sum() / g["quantidade"].sum()
+               if g["quantidade"].sum() > 0 else 0, include_groups=False)
+        .rename("repasse_medio_und")
+        .round(4)
+        .reset_index()
+    )
+
+    print(f"[OK] Repasse médio por unidade calculado para {len(agg)} SKUs")
+    return agg
+
+
+# ─────────────────────────────────────────────
+# 7. GRAVAR NO POSTGRESQL
 # ─────────────────────────────────────────────
 def gravar(engine, df: pd.DataFrame):
     df["data_calculo"] = datetime.today().date()
@@ -210,6 +262,7 @@ def gravar(engine, df: pd.DataFrame):
         "media_diaria_7d", "media_diaria_14d", "media_diaria_21d",
         "media_diaria_1m", "media_diaria_3m",
         "tendencia_curto_prazo", "tendencia_medio_prazo",
+        "repasse_medio_und",
         "data_calculo",
     ]
 
@@ -245,6 +298,9 @@ def main():
     df        = calcular_medias(df)
     df        = calcular_tendencias(df)
     df        = enriquecer_abc(engine, df)
+    df_rep    = calcular_repasse_medio(engine)
+    df        = df.merge(df_rep, on="sku", how="left")
+    df["repasse_medio_und"] = df["repasse_medio_und"].fillna(0)
     gravar(engine, df)
 
     print("\n[OK] PPR por SKU finalizado com sucesso!")
