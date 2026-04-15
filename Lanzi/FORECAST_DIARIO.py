@@ -284,31 +284,42 @@ def gerar_forecast_diario(
         ano    = data_mes.year
         mes    = data_mes.month
         n_dias = calendar.monthrange(ano, mes)[1]
+        qty_int = int(round(qty_mes))   # total inteiro do mês
 
-        for sem_num, (d_ini, d_fim) in FAIXAS_SEM.items():
-            dias = list(range(d_ini, min(d_fim, n_dias) + 1))
-            if not dias:
-                continue
+        # 1. Montar vetor de pesos para todos os dias do mês
+        todos_dias   = list(range(1, n_dias + 1))
+        pesos_totais = []
+        sem_por_dia  = []
+        for dia in todos_dias:
+            sem_num = next(s for s, (di, df) in FAIXAS_SEM.items() if di <= dia <= df)
+            dow     = date(ano, mes, dia).weekday()
+            pesos_totais.append(pct_sem[sem_num - 1] * pct_dow[dow])
+            sem_por_dia.append(sem_num)
 
-            qty_semana = qty_mes * pct_sem[sem_num - 1]
+        pesos_totais = np.array(pesos_totais, dtype=float)
+        soma = pesos_totais.sum()
+        if soma > 0:
+            pesos_totais = pesos_totais / soma
+        else:
+            pesos_totais = np.ones(n_dias) / n_dias
 
-            dows_presentes = [date(ano, mes, d).weekday() for d in dias]
-            pesos = np.array([pct_dow[dow] for dow in dows_presentes], dtype=float)
-            soma_pesos = pesos.sum()
-            if soma_pesos > 0:
-                pesos = pesos / soma_pesos
-            else:
-                pesos = np.ones(len(dias)) / len(dias)
+        # 2. Largest Remainder Method → inteiros que somam qty_int
+        raw     = pesos_totais * qty_int
+        floors  = np.floor(raw).astype(int)
+        restos  = raw - floors
+        falta   = qty_int - floors.sum()
+        indices = np.argsort(-restos)[:falta]
+        floors[indices] += 1
 
-            for i, dia in enumerate(dias):
-                registros.append({
-                    "sku"                 : sku,
-                    "canal"               : canal,
-                    "data"                : date(ano, mes, dia),
-                    "semana_do_mes"       : sem_num,
-                    "quantidade_prevista" : round(qty_semana * pesos[i], 4),
-                    "data_calculo"        : hoje,
-                })
+        for i, dia in enumerate(todos_dias):
+            registros.append({
+                "sku"                 : sku,
+                "canal"               : canal,
+                "data"                : date(ano, mes, dia),
+                "semana_do_mes"       : sem_por_dia[i],
+                "quantidade_prevista" : int(floors[i]),
+                "data_calculo"        : hoje,
+            })
 
     df_diario = pd.DataFrame(registros)
     print(f"[OK] {len(df_diario)} linhas de forecast diário geradas")
