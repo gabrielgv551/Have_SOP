@@ -10922,6 +10922,19 @@ if (id === 'dfs-kpis') {
 
             let _vndForecastData = null;
             let _vndForecastSub = 'sku';
+            let _vndFcMode = 'qtd';
+
+            function switchFcMode(mode) {
+                _vndFcMode = mode;
+                ['qtd','fat','rep'].forEach(m => {
+                    const btn = document.getElementById('fc-mode-' + m);
+                    if (btn) {
+                        btn.style.background = m === mode ? 'var(--accent)' : 'none';
+                        btn.style.color      = m === mode ? '#fff' : 'var(--muted)';
+                    }
+                });
+                if (_vndForecastData) renderForecastCanais(_vndForecastData);
+            }
 
             function switchVendasTab(tab) {
                 _vndCurrentTab = tab;
@@ -11070,13 +11083,33 @@ if (id === 'dfs-kpis') {
                     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Nenhum dado em forecast_12m.</div>';
                     return;
                 }
-                const rows = _vndForecastSub === 'sku' ? por_sku : por_canal;
+                const rows     = _vndForecastSub === 'sku' ? por_sku : por_canal;
                 const labelKey = _vndForecastSub === 'sku' ? 'sku' : 'canal';
-                const fmtN = v => Math.round(v || 0).toLocaleString('pt-BR');
-                const MES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-                const fmtMes = m => { const [y,mo] = m.split('-'); return MES[parseInt(mo)] + '/' + y.slice(2); };
+                const isMoney  = _vndFcMode !== 'qtd';
+                const MES      = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                const fmtMes   = m => { const [y,mo] = m.split('-'); return MES[parseInt(mo)] + '/' + y.slice(2); };
+                const fmtN     = v => isMoney
+                    ? 'R\u00a0' + (v||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0})
+                    : Math.round(v || 0).toLocaleString('pt-BR');
 
-                let html = `<div class="table-card" style="overflow-x:auto;">
+                const mult = row => {
+                    if (_vndFcMode === 'fat') return row.preco_medio_und   || 0;
+                    if (_vndFcMode === 'rep') return row.repasse_medio_und || 0;
+                    return 1;
+                };
+
+                // Barra de modo (Qtd / Faturamento / Repasse) — só para Por SKU
+                const modeBar = _vndForecastSub === 'sku' ? `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <span style="font-size:11px;color:var(--muted);font-weight:600;">Exibir:</span>
+                    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+                        <button id="fc-mode-qtd" onclick="switchFcMode('qtd')" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:var(--accent);color:#fff;cursor:pointer;">Qtd</button>
+                        <button id="fc-mode-fat" onclick="switchFcMode('fat')" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;">Faturamento</button>
+                        <button id="fc-mode-rep" onclick="switchFcMode('rep')" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;">Repasse</button>
+                    </div>
+                </div>` : '';
+
+                let html = modeBar + `<div class="table-card" style="overflow-x:auto;">
                     <table style="width:100%;border-collapse:collapse;font-size:13px;">
                     <thead><tr style="background:#1c2d4a;color:#fff;">
                         <th style="padding:9px 14px;text-align:left;font-weight:700;white-space:nowrap;position:sticky;left:0;background:#1c2d4a;min-width:150px;">${_vndForecastSub === 'sku' ? 'SKU' : 'Canal'}</th>
@@ -11089,13 +11122,14 @@ if (id === 'dfs-kpis') {
                 let grandTotal = 0;
 
                 rows.forEach((row, idx) => {
-                    const bg = idx % 2 === 1 ? '#f8f9fa' : '#fff';
-                    const rowTotal = meses.reduce((s, m) => s + (row.meses[m] || 0), 0);
+                    const bg  = idx % 2 === 1 ? '#f8f9fa' : '#fff';
+                    const fator = mult(row);
+                    const rowTotal = meses.reduce((s, m) => s + (row.meses[m] || 0) * fator, 0);
                     grandTotal += rowTotal;
                     html += `<tr style="border-bottom:1px solid #e8edf5;background:${bg};">
                         <td style="padding:7px 14px;font-weight:500;white-space:nowrap;position:sticky;left:0;background:${bg};font-size:12px;">${esc(row[labelKey])}</td>
                         ${meses.map(m => {
-                            const v = row.meses[m] || 0;
+                            const v = (row.meses[m] || 0) * fator;
                             colTotals[m] += v;
                             return v ? `<td style="padding:7px 10px;text-align:right;color:#323031;">${fmtN(v)}</td>`
                                      : `<td style="padding:7px 10px;text-align:right;color:#cbd5e1;">—</td>`;
@@ -11111,6 +11145,15 @@ if (id === 'dfs-kpis') {
                 </tr></tbody></table></div>`;
 
                 container.innerHTML = html;
+
+                // Restaurar estado visual dos botões de modo
+                ['qtd','fat','rep'].forEach(m => {
+                    const btn = document.getElementById('fc-mode-' + m);
+                    if (btn) {
+                        btn.style.background = m === _vndFcMode ? 'var(--accent)' : 'none';
+                        btn.style.color      = m === _vndFcMode ? '#fff' : 'var(--muted)';
+                    }
+                });
             }
 
             function loadVendas() {

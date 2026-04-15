@@ -628,6 +628,23 @@ module.exports = async (req, res) => {
         Object.entries(canais).forEach(([c, q]) => { skuMix[sku][c] = q / total; });
       });
 
+      // Preço médio e repasse médio por unidade (de bd_vendas)
+      const precosR = await pool.query(`
+        SELECT
+          TRIM("Sku"::text) AS sku,
+          ROUND(AVG("Total Venda"         / NULLIF("Quantidade Vendida", 0))::numeric, 2) AS preco_medio_und,
+          ROUND(AVG("Repasse Financeiro"  / NULLIF("Quantidade Vendida", 0))::numeric, 2) AS repasse_medio_und
+        FROM bd_vendas
+        WHERE "Status" !~* '(cancel|devol|n[ãa]o.?pago)'
+          AND "Quantidade Vendida" > 0
+          AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+        GROUP BY 1
+      `);
+      const skuPrecos = {};
+      precosR.rows.forEach(({ sku, preco_medio_und, repasse_medio_und }) => {
+        skuPrecos[sku] = { preco: parseFloat(preco_medio_und || 0), repasse: parseFloat(repasse_medio_und || 0) };
+      });
+
       // Monta por_sku
       const skuMesMap = {};
       fcR.rows.forEach(({ sku, mes, prev_qtd }) => {
@@ -636,7 +653,13 @@ module.exports = async (req, res) => {
       });
       const meses = [...new Set(fcR.rows.map(r => r.mes))].sort();
       const por_sku = Object.entries(skuMesMap)
-        .map(([sku, mesesData]) => ({ sku, meses: mesesData, total: Object.values(mesesData).reduce((a, b) => a + b, 0) }))
+        .map(([sku, mesesData]) => ({
+          sku,
+          meses: mesesData,
+          total: Object.values(mesesData).reduce((a, b) => a + b, 0),
+          preco_medio_und:   skuPrecos[sku]?.preco   || 0,
+          repasse_medio_und: skuPrecos[sku]?.repasse || 0,
+        }))
         .sort((a, b) => b.total - a.total);
 
       // Monta por_canal usando mix histórico
