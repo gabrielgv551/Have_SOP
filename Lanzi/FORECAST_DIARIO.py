@@ -75,6 +75,7 @@ def ler_historico(engine) -> pd.DataFrame:
           AND "Data" >= :data_corte
           AND "Sku" IS NOT NULL
           AND TRIM("Sku"::text) != ''
+          AND COALESCE("Quantidade Vendida"::numeric, 0) >= 1
     """)
 
     df = pd.read_sql(query, engine, params={"data_corte": data_corte})
