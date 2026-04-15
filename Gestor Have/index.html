@@ -1670,31 +1670,57 @@
             tr.fcx-bal-mapped td.dfs-col-desc { background: rgba(5,150,105,0.05) !important; }
 
             /* FCXD — Fluxo de Caixa Diário */
-            #panel-caixa-fluxo .fcxd-table { width:100%; border-collapse:collapse; font-size:12px; }
+            #panel-caixa-fluxo .fcxd-table { width:100%; border-collapse:collapse; font-size:14px; }
             #panel-caixa-fluxo .fcxd-table thead th { background:#1c2d4a; color:#fff; font-weight:600; padding:7px 5px; text-align:right; white-space:nowrap; border-bottom:2px solid #2a3d5e; }
             #panel-caixa-fluxo .fcxd-table thead th.fcxd-col-cat { text-align:left; padding-left:12px; min-width:160px; }
             #panel-caixa-fluxo .fcxd-table tr.fcxd-row-section td { background:#1c2d4a; color:#fff; font-weight:700; padding:7px 12px; border-bottom:1px solid #2a3d5e; }
             #panel-caixa-fluxo .fcxd-table tr.fcxd-row-total td { background:#2a3d5e; color:#fff; font-weight:700; padding:5px 7px; border-bottom:2px solid #1c2d4a; }
-            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-item td { background:#fff; border-bottom:1px solid #e8edf5; padding:4px 6px; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-item td { background:#fff; border-bottom:1px solid #e8edf5; padding:6px 8px; color:#323031; }
             #panel-caixa-fluxo .fcxd-table td.fcxd-col-cat { text-align:left; padding-left:18px; }
-            #panel-caixa-fluxo .fcxd-table td.fcxd-num { text-align:right; }
+            #panel-caixa-fluxo .fcxd-table td.fcxd-num { text-align:right; font-weight:500; }
             #panel-caixa-fluxo .fcxd-table td.fcxd-col-total { background:rgba(0,124,220,0.07); font-weight:600; }
             #panel-caixa-fluxo .fcxd-neg { color:#dc2626; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-section td .fcxd-neg,
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-total td .fcxd-neg,
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-section .fcxd-neg,
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-total .fcxd-neg,
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-subsection .fcxd-neg { color:#fff; }
             /* FCXD horizontal layout */
             #cx-fluxo-anual { overflow-x:auto; }
-            #panel-caixa-fluxo .fcxd-horizontal { width:100%; border-collapse:collapse; font-size:12px; }
+            #panel-caixa-fluxo .fcxd-horizontal { width:100%; border-collapse:collapse; font-size:14px; }
             #panel-caixa-fluxo .fcxd-sticky-cat { position:sticky; left:0; z-index:2; min-width:160px; max-width:220px; }
             #panel-caixa-fluxo .fcxd-horizontal thead .fcxd-sticky-cat { background:#1c2d4a; z-index:3; }
             #panel-caixa-fluxo .fcxd-month-group-th { background:#1c2d4a; color:#fff; font-weight:700; font-size:12px; text-align:center; padding:8px 10px; cursor:pointer; border-right:2px solid #38506b; white-space:nowrap; }
             #panel-caixa-fluxo .fcxd-month-group-th:hover { background:#2a3d5e; }
             #panel-caixa-fluxo .fcxd-day-head { background:#2a3d5e; color:#c8d4e8; font-size:11px; border-right:1px solid #38506b; }
             #panel-caixa-fluxo .fcxd-horizontal .fcxd-col-total-head { background:#1a3a6b; color:#fff; }
-            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-item .fcxd-sticky-cat { background:#fff; }
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-item .fcxd-sticky-cat { background:#fff; color:#323031; }
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-total .fcxd-sticky-cat { background:#2a3d5e; color:#fff; }
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-section .fcxd-sticky-cat { background:#1c2d4a; color:#fff; }
             #panel-caixa-fluxo .fcxd-horizontal td.fcxd-mes-sep { border-right:2px solid #c8d4e8; }
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-subsection td { background:#3a5275; color:#fff; font-weight:600; padding:5px 10px; border-bottom:1px solid #2a3d5e; }
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-subsection .fcxd-sticky-cat { background:#3a5275; }
+            /* Previsão Contas a Pagar rows */
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao td { background:rgba(0,124,220,0.07); border-bottom:1px solid rgba(0,124,220,0.15); font-size:12px; padding:4px 6px; font-style:italic; }
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao .fcxd-sticky-cat { background:rgba(0,124,220,0.1); color:#007cdc; font-style:italic; }
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao-header td { background:#005faa; color:#fff; font-weight:700; font-size:11px; padding:5px 10px; border-bottom:2px solid #004a88; }
+            #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao-header .fcxd-sticky-cat { background:#005faa; }
+            /* Previsão sub-valor dentro da célula */
+            .fcxd-prev-sub { display:block; font-size:10px; font-style:italic; color:inherit; opacity:0.65; margin-top:1px; cursor:default; white-space:nowrap; }
+            .fcxd-prev-sub:hover { opacity:1; }
+            .fcxd-prev-sub .fcxd-neg { color:inherit; }
+            /* Previsão tooltip */
+            #cx-tip { display:none; position:fixed; z-index:9999; background:rgba(15,25,45,0.97); color:#fff; padding:11px 15px; border-radius:11px; font-size:12px; line-height:1.8; pointer-events:none; max-width:280px; box-shadow:0 6px 24px rgba(0,0,0,0.35); border:1px solid rgba(0,124,220,0.35); }
+            #cx-tip .cxt-badge { display:inline-block; background:rgba(0,124,220,0.25); color:#7ec8ff; font-size:10px; padding:1px 7px; border-radius:6px; font-weight:700; margin-bottom:4px; }
+            #cx-tip .cxt-val { font-size:16px; font-weight:700; color:#7ec8ff; }
+            #cx-tip .cxt-muted { color:#94a3b8; font-size:11px; }
+            /* Toggle switch */
+            .cx-toggle-wrap { position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; }
+            .cx-toggle-wrap input { opacity:0; width:0; height:0; }
+            .cx-toggle-slider { position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.3s; }
+            .cx-toggle-slider:before { content:''; position:absolute; width:18px; height:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
+            .cx-toggle-wrap input:checked + .cx-toggle-slider { background:#007cdc; }
+            .cx-toggle-wrap input:checked + .cx-toggle-slider:before { transform:translateX(18px); }
 
             /* Open Finance */
             #panel-caixa-openfinance .of-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-bottom:24px; }
@@ -2271,6 +2297,15 @@
                     </div>
                     <div class="nav-item" onclick="showPanel('caixa-contas-pagar')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span>Contas a Pagar
+                    </div>
+                    <div class="nav-item" onclick="showPanel('caixa-pedidos-compra')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M8 9h8M8 12h5"/></svg></span>Pedidos de Compra
+                    </div>
+                    <div class="nav-item" onclick="showPanel('caixa-config')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Configurações
+                    </div>
+                    <div class="nav-item" onclick="showPanel('caixa-vendas')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Vendas
                     </div>
                     <hr class="nav-sep">
                     <!-- DFS -->
@@ -3622,12 +3657,28 @@
                     <div class="section-header">
                         <div class="section-title">Caixa · De-Para</div>
                         <div class="section-actions">
-                            <button class="refresh-btn" onclick="loadCaixaDepara()" style="font-size:12px;">↻ Atualizar</button>
-                            <button class="btn-primary" onclick="addCaixaDeParaRow()" style="font-size:13px;">+ Adicionar</button>
-                            <button class="btn-primary" onclick="saveCaixaDepara()" style="font-size:13px;">💾 Salvar</button>
+                            <button class="refresh-btn" onclick="loadCaixaDeParaAtivo()" style="font-size:12px;">↻ Atualizar</button>
+                            <button class="btn-primary" onclick="addCaixaDeParaRowAtivo()" style="font-size:13px;">+ Adicionar</button>
+                            <button class="btn-primary" onclick="saveCaixaDeParaAtivo()" style="font-size:13px;">💾 Salvar</button>
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                    <!-- Tabs -->
+                    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">
+                        <button id="dp-tab-extrato" onclick="switchDeParaTab('extrato')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;color:var(--accent);">
+                            Extrato Bancário
+                        </button>
+                        <button id="dp-tab-cp" onclick="switchDeParaTab('contas_pagar')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);">
+                            Contas a Pagar
+                        </button>
+                        <button id="dp-tab-vendas" onclick="switchDeParaTab('vendas')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);">
+                            Canais de Venda
+                        </button>
+                    </div>
+                    <!-- Extrato tab content -->
+                    <div id="dp-tab-content-extrato" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                         <div class="table-card" style="padding:16px;">
                             <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Descrições não classificadas</div>
                             <div id="cx-depara-nao-class">
@@ -3635,8 +3686,42 @@
                             </div>
                         </div>
                         <div class="table-card" style="padding:16px;">
-                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos · Extrato</div>
                             <div id="cx-depara-table">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Contas a Pagar tab content -->
+                    <div id="dp-tab-content-contas_pagar" style="display:none;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Fornecedores não mapeados</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Clique em "→ Mapear" para vincular um fornecedor a uma categoria do Fluxo Diário</div>
+                            <div id="cx-depara-cp-nao-class">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos · Contas a Pagar</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Fornecedor → categoria que alimenta a Previsão no Fluxo Diário</div>
+                            <div id="cx-depara-cp-table">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Canais de Venda tab content -->
+                    <div id="dp-tab-content-vendas" style="display:none;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Canais sem mapeamento</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Clique em "→ Mapear" para vincular um canal a uma linha de entrada no Fluxo Diário</div>
+                            <div id="cx-depara-vnd-nao-class">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos · Canais de Venda</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Canal → linha de entrada que alimenta a Previsão no Fluxo Diário</div>
+                            <div id="cx-depara-vnd-table">
                                 <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                             </div>
                         </div>
@@ -3748,6 +3833,324 @@
                                     <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Carregando...</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAIXA · PEDIDOS DE COMPRA -->
+                <div class="panel" id="panel-caixa-pedidos-compra" style="position:relative;">
+
+                    <!-- TOP BAR -->
+                    <div class="section-header">
+                        <div class="section-title">Caixa · Pedidos de Compra</div>
+                        <div class="section-actions" style="gap:8px;">
+                            <!-- View toggle -->
+                            <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+                                <button id="pc-btn-tabela" onclick="pcSetView('tabela')"
+                                    style="padding:7px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:background .15s;">
+                                    ☰ Tabela
+                                </button>
+                                <button id="pc-btn-calendario" onclick="pcSetView('calendario')"
+                                    style="padding:7px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:background .15s;">
+                                    📅 Calendário
+                                </button>
+                            </div>
+                            <button onclick="openPcFornecedoresModal()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;">
+                                👥 Fornecedores
+                            </button>
+                            <button onclick="openPedidoSidebar()" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+                                + Novo Pedido
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- KPI CARDS -->
+                    <div class="kpi-grid" style="margin-bottom:20px">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Pedidos</div>
+                            <div class="kpi-value" id="pc-kpi-count">–</div>
+                            <div class="kpi-sub">Registros</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Valor Total</div>
+                            <div class="kpi-value" id="pc-kpi-valor">–</div>
+                            <div class="kpi-sub">Soma dos pedidos</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Próx. Vencimento</div>
+                            <div class="kpi-value" id="pc-kpi-prox" style="font-size:18px;">–</div>
+                            <div class="kpi-sub">Data mais próxima</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Vencidos</div>
+                            <div class="kpi-value" id="pc-kpi-vencidos" style="color:#ef4444">–</div>
+                            <div class="kpi-sub">Títulos em atraso</div>
+                        </div>
+                    </div>
+
+                    <!-- TABLE VIEW -->
+                    <div id="pc-view-tabela">
+                        <div class="table-card">
+                            <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                                <span style="font-size:13px;font-weight:600;color:var(--muted);" id="pc-count-label">–</span>
+                                <input type="text" id="pc-search" placeholder="Buscar fornecedor, NF..." oninput="pcFilterTable()"
+                                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);color:var(--text);width:200px;">
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                                    <thead>
+                                        <tr style="background:var(--surface2);">
+                                            <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Fornecedor</th>
+                                            <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Emissão</th>
+                                            <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">NF</th>
+                                            <th style="padding:10px 14px;text-align:right;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Valor</th>
+                                            <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Vencimento</th>
+                                            <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Vencto. Ajustado</th>
+                                            <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Parcela</th>
+                                            <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">Linha Fluxo</th>
+                                            <th style="padding:10px 14px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pc-tbody">
+                                        <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Carregando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CALENDAR VIEW -->
+                    <div id="pc-view-calendario" style="display:none;">
+                        <div class="table-card" style="padding:0;overflow:hidden;">
+                            <!-- Calendar nav -->
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);">
+                                <button onclick="pcCalNav(-1)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;cursor:pointer;font-size:14px;color:var(--muted);">‹</button>
+                                <span id="pc-cal-title" style="font-size:15px;font-weight:700;color:var(--text);"></span>
+                                <button onclick="pcCalNav(1)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;cursor:pointer;font-size:14px;color:var(--muted);">›</button>
+                            </div>
+                            <!-- Day headers -->
+                            <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border);">
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Dom</div>
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Seg</div>
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Ter</div>
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Qua</div>
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Qui</div>
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Sex</div>
+                                <div style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Sáb</div>
+                            </div>
+                            <!-- Calendar grid -->
+                            <div id="pc-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);min-height:420px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- SLIDE-IN SIDEBAR FOR NEW ORDER -->
+                    <div id="pc-sidebar-overlay" onclick="closePedidoSidebar()"
+                        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1200;"></div>
+                    <div id="pc-sidebar"
+                        style="position:fixed;top:0;right:-440px;width:420px;max-width:95vw;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:1201;transition:right .3s ease;overflow-y:auto;box-shadow:-4px 0 24px rgba(0,0,0,0.12);">
+                        <div style="padding:20px 20px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:14px;">
+                            <div style="font-size:15px;font-weight:700;color:var(--text);">Novo Pedido de Compra</div>
+                            <button onclick="closePedidoSidebar()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+                        </div>
+                        <div style="padding:20px;">
+                            <!-- Fornecedor -->
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Fornecedor *</label>
+                                <input id="pc-form-fornecedor" list="pc-fornecedores-list" type="text" placeholder="Digite ou selecione..."
+                                    oninput="pcFornecedorAutofill()"
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                                <datalist id="pc-fornecedores-list"></datalist>
+                                <div id="pc-form-prazo-hint" style="font-size:11px;color:var(--accent);margin-top:4px;display:none;"></div>
+                            </div>
+                            <!-- Data emissão -->
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Data de Emissão *</label>
+                                <input id="pc-form-emissao" type="date" onchange="pcAutoVencimento()"
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                            </div>
+                            <!-- NF -->
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nº da NF</label>
+                                <input id="pc-form-nf" type="text" placeholder="ex: 12345"
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                            </div>
+                            <!-- Valor -->
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Valor *</label>
+                                <input id="pc-form-valor" type="number" step="0.01" min="0" placeholder="0,00"
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                            </div>
+                            <!-- Parcelamento -->
+                            <div style="margin-bottom:14px;padding:12px;background:rgba(0,124,220,0.05);border:1px solid rgba(0,124,220,0.15);border-radius:8px;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);">
+                                    <input id="pc-form-parcelamento" type="checkbox" onchange="pcToggleParcelamento()" style="width:15px;height:15px;cursor:pointer;">
+                                    Parcelamento em parcelas
+                                </label>
+                                <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-left:23px;">Informe os prazos em dias a partir da emissão — cria uma parcela por prazo</div>
+                                <div id="pc-prazos-group" style="display:none;margin-top:10px;">
+                                    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Prazos (dias a partir da emissão)</div>
+                                    <div style="display:flex;gap:6px;align-items:center;" id="pc-prazos-inputs">
+                                        <input type="number" min="1" placeholder="ex: 30" value="30"
+                                            style="width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);text-align:center;">
+                                        <input type="number" min="1" placeholder="ex: 60" value="60"
+                                            style="width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);text-align:center;">
+                                        <input type="number" min="1" placeholder="ex: 90" value="90"
+                                            style="width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);text-align:center;">
+                                        <button onclick="pcAddPrazoInput()" title="Adicionar prazo" style="padding:6px 10px;border:1px solid var(--accent);border-radius:7px;background:transparent;color:var(--accent);font-size:16px;cursor:pointer;line-height:1;">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Vencimento (hidden when 30/60/90) -->
+                            <div id="pc-venc-group" style="margin-bottom:14px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Vencimento *</label>
+                                <input id="pc-form-vencimento" type="date"
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                            </div>
+                            <!-- Linha Fluxo -->
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Linha do Fluxo Diário <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+                                <input id="pc-form-linha-fluxo" list="pc-linha-fluxo-list" type="text" placeholder="Selecione ou deixe em branco..."
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                                <datalist id="pc-linha-fluxo-list"></datalist>
+                                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Vincula o valor ao Fluxo Diário como previsão</div>
+                            </div>
+                            <!-- Vencimento ajustado -->
+                            <div id="pc-venc-aj-group" style="margin-bottom:20px;">
+                                <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Vencimento Ajustado <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+                                <input id="pc-form-vencimento-ajustado" type="date"
+                                    style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+                                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Deixe em branco se não houver ajuste</div>
+                            </div>
+                            <!-- Actions -->
+                            <div style="display:flex;gap:8px;">
+                                <button onclick="closePedidoSidebar()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Cancelar</button>
+                                <button onclick="savePedido()" style="flex:2;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Salvar Pedido</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TOOLTIP for calendar -->
+                    <div id="pc-cal-tooltip" style="display:none;position:fixed;z-index:1300;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-width:280px;font-size:12px;"></div>
+                </div>
+
+                <!-- MODAL: Gerenciar Fornecedores -->
+                <div id="pc-forn-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1400;align-items:center;justify-content:center;">
+                    <div style="background:var(--surface);border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:80vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,0.28);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <strong style="font-size:14px;color:var(--text);">Fornecedores · Prazos Padrão</strong>
+                            <button onclick="closePcFornecedoresModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">&times;</button>
+                        </div>
+                        <!-- Add form -->
+                        <div style="display:flex;gap:8px;margin-bottom:16px;">
+                            <input id="pc-forn-nome" type="text" placeholder="Nome do fornecedor"
+                                style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+                            <input id="pc-forn-prazo" type="number" min="1" max="365" placeholder="Dias" value="30"
+                                style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);text-align:center;">
+                            <button onclick="savePcFornecedor()" style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">+ Add</button>
+                        </div>
+                        <!-- List -->
+                        <div id="pc-forn-list" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;"></div>
+                    </div>
+                </div>
+
+                <!-- CAIXA · CONFIGURAÇÕES -->
+                <div class="panel" id="panel-caixa-config">
+                    <div class="section-header">
+                        <div class="section-title">Caixa · Configurações</div>
+                        <div class="section-actions">
+                            <button class="btn-primary" onclick="salvarCaixaConfig()" style="font-size:13px;">💾 Salvar configurações</button>
+                        </div>
+                    </div>
+
+                    <div class="table-card" style="padding:24px;max-width:680px;">
+                        <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Regras de Previsão</div>
+                        <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Controla como os dados de Contas a Pagar são usados no Fluxo Diário.</div>
+
+                        <!-- Toggle: apenas_futuros -->
+                        <div style="display:flex;align-items:flex-start;gap:16px;padding:16px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;">
+                            <label class="cx-toggle-wrap" style="margin-top:2px;">
+                                <input type="checkbox" id="cfg-apenas-futuros" checked onchange="onCfgChange()">
+                                <span class="cx-toggle-slider"></span>
+                            </label>
+                            <div>
+                                <div style="font-size:13px;font-weight:600;">Contas a Pagar: apenas vencimentos futuros</div>
+                                <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+                                    Quando ativo, somente títulos com vencimento <strong>após hoje</strong> aparecem como previsão no Fluxo Diário.<br>
+                                    O realizado é coberto pelo extrato bancário — este toggle evita duplicidade.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info box -->
+                        <div style="background:rgba(0,124,220,0.06);border:1px solid rgba(0,124,220,0.18);border-radius:10px;padding:14px 18px;font-size:12px;color:var(--text);margin-top:16px;">
+                            <strong>Como funciona a separação Realizado × Previsão:</strong><br>
+                            <ul style="margin:8px 0 0 18px;line-height:1.8;">
+                                <li><strong>Extrato Bancário</strong> → Realizado (lançamentos já ocorridos, via De-Para Extrato)</li>
+                                <li><strong>Contas a Pagar</strong> → Previsão (vencimentos futuros, via De-Para Contas a Pagar)</li>
+                            </ul>
+                            <div style="margin-top:10px;color:var(--muted);">
+                                Os mapeamentos são configurados no painel <strong>De-Para</strong>, aba "Contas a Pagar".
+                                A previsão aparece no <strong>Fluxo Diário</strong> como linhas "Prev." por categoria.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAIXA · VENDAS -->
+                <div class="panel" id="panel-caixa-vendas">
+                    <div class="section-header">
+                        <div class="section-title">Vendas</div>
+                        <div class="section-actions">
+                            <select id="vnd-meses-select" onchange="loadVendasRealizadas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;display:none;">
+                                <option value="3">3 meses</option>
+                                <option value="6">6 meses</option>
+                                <option value="12" selected>12 meses</option>
+                                <option value="24">24 meses</option>
+                            </select>
+                            <button class="refresh-btn" onclick="loadVendas()" style="font-size:12px;">↻ Atualizar</button>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">
+                        <button id="vnd-tab-realizadas" onclick="switchVendasTab('realizadas')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;color:var(--accent);">
+                            A Receber
+                        </button>
+                        <button id="vnd-tab-previsao" onclick="switchVendasTab('previsao')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);">
+                            Previsão de Vendas
+                        </button>
+                        <button id="vnd-tab-canais" onclick="switchVendasTab('canais')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);">
+                            Canais
+                        </button>
+                    </div>
+
+                    <!-- TAB: A Receber -->
+                    <div id="vnd-content-realizadas">
+                        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Receitas a receber por vencimento (data da venda + lead time do canal). Filtre pelo dia do mês para ver os repasses previstos.</div>
+                        <div id="vnd-realizadas-container">
+                            <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: Previsão de Vendas -->
+                    <div id="vnd-content-previsao" style="display:none;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <div style="font-size:12px;color:var(--muted);">Insira a previsão de receita mensal por canal. Os valores são salvos automaticamente ao sair do campo.</div>
+                            <button onclick="addVendasPrevisaoMes()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Período</button>
+                        </div>
+                        <div id="vnd-previsao-container">
+                            <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: Canais -->
+                    <div id="vnd-content-canais" style="display:none;">
+                        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Configure o lead time de recebimento (em dias) para cada canal de venda. Usado para antecipar recebimentos no fluxo de caixa.</div>
+                        <div id="vnd-canais-container">
+                            <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                         </div>
                     </div>
                 </div>
@@ -3867,6 +4270,16 @@
                         <button class="sc-tab sc-tab-active" id="cfg-tab-apis" onclick="showCfgTab('apis')">APIs</button>
                         <button class="sc-tab" id="cfg-tab-sopc" onclick="showCfgTab('sopc')">S&amp;OP</button>
                         <button class="sc-tab" id="cfg-tab-fornecedores" onclick="showCfgTab('fornecedores')">Fornecedores</button>
+                        <button class="sc-tab" id="cfg-tab-canais" onclick="showCfgTab('canais')">Canais de Venda</button>
+                    </div>
+                    <!-- Tab: Canais de Venda (grupos) -->
+                    <div id="cfg-panel-canais" style="display:none">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+                            <div style="font-size:13px;color:var(--muted)">Agrupe canais distintos sob um nome único. Os grupos aparecem como colunas em <strong>Vendas Realizadas</strong> e <strong>Previsão de Vendas</strong>.</div>
+                            <button onclick="cfgCanaisNovoGrupo()" style="padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">+ Novo Grupo</button>
+                        </div>
+                        <div id="cfg-canais-loading" style="color:var(--muted);font-size:13px;padding:12px 0">Carregando...</div>
+                        <div id="cfg-canais-body" style="display:none;display:flex;flex-direction:column;gap:12px;max-width:640px"></div>
                     </div>
                     <!-- Tab: S&OP -->
                     <div id="cfg-panel-sopc" style="display:none">
@@ -3941,6 +4354,38 @@
             </div><!-- /main-content -->
         </div><!-- /dashboard-page --><!-- Toast -->
         <div id="toast"></div>
+        <div id="cx-tip"></div>
+        <script>
+            // ── Previsão tooltip ──────────────────────────────────────────
+            (function() {
+                const tip = document.getElementById('cx-tip');
+                document.addEventListener('mouseover', function(e) {
+                    const td = e.target.closest('[data-tip]');
+                    if (!td) { tip.style.display = 'none'; return; }
+                    const parts = td.dataset.tip.split('|');
+                    // parts: [tipo, categoria, periodo, valor, label]
+                    const [tipo, categoria, periodo, valor, label] = parts;
+                    tip.innerHTML =
+                        `<div class="cxt-badge">📋 ${tipo}</div>` +
+                        `<div style="font-weight:700;margin:2px 0 1px;">${categoria}</div>` +
+                        `<div class="cxt-muted">${periodo} · ${label}</div>` +
+                        `<div class="cxt-val">${valor}</div>` +
+                        `<div class="cxt-muted" style="margin-top:4px;">Fonte: Contas a Pagar</div>`;
+                    tip.style.display = 'block';
+                });
+                document.addEventListener('mousemove', function(e) {
+                    if (tip.style.display === 'none') return;
+                    const x = e.clientX + 14, y = e.clientY + 14;
+                    const w = tip.offsetWidth, h = tip.offsetHeight;
+                    tip.style.left = (x + w > window.innerWidth  ? e.clientX - w - 10 : x) + 'px';
+                    tip.style.top  = (y + h > window.innerHeight ? e.clientY - h - 10 : y) + 'px';
+                });
+                document.addEventListener('mouseout', function(e) {
+                    if (!e.target.closest('[data-tip]')) return;
+                    if (!e.relatedTarget || !e.relatedTarget.closest('[data-tip]')) tip.style.display = 'none';
+                });
+            })();
+        </script>
         <script>
             function _genAccId() {
                 return 'acc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
@@ -7413,7 +7858,7 @@
                 'semana': 'Lista Semanal de Pedidos',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
                 'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas', 'dfs-pmv': 'S&OP · PMV · Price Volume Mix',
-                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance', 'caixa-contas-pagar': 'Caixa · Contas a Pagar',
+                'caixa-base': 'Caixa · Base de Dados', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance', 'caixa-contas-pagar': 'Caixa · Contas a Pagar', 'caixa-pedidos-compra': 'Caixa · Pedidos de Compra', 'caixa-config': 'Caixa · Configurações', 'caixa-vendas': 'Vendas',
 'admin-usuarios': 'Gerenciar Usuários',
 'sopc-controle': 'S&OP · Controle Estoques',
 'sku-desativadas': 'S&OP · SKUs Desativadas',
@@ -7476,6 +7921,15 @@ if (id === 'dfs-kpis') {
                 }
                 if (id === 'caixa-contas-pagar') {
                     loadContasPagar();
+                }
+                if (id === 'caixa-pedidos-compra') {
+                    loadPedidosCompra();
+                }
+                if (id === 'caixa-config') {
+                    loadCaixaConfig();
+                }
+                if (id === 'caixa-vendas') {
+                    loadVendas();
                 }
                 if (id === 'sopc-controle') { loadSopcControle(); }
                 if (id === 'sku-desativadas') { loadSkuAtividade(); }
@@ -8034,13 +8488,16 @@ if (id === 'dfs-kpis') {
                 _cxExpandedMeses.clear();
                 container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando todos os meses...</div>';
                 const token = localStorage.getItem('have_token');
+                const cfg = _getCaixaConfig();
+                const apenasFuturos = cfg.apenas_futuros !== false;
                 try {
                     const results = await Promise.all(
                         Array.from({length:12}, (_, i) => i + 1).map(async mes => {
-                            const res = await fetch(`${API_BASE}/caixa-modelo?ano=${ano}&mes=${mes}`, { headers:{'Authorization':'Bearer '+token} });
+                            const url = `${API_BASE}/caixa-modelo?ano=${ano}&mes=${mes}&apenas_futuros=${apenasFuturos}`;
+                            const res = await fetch(url, { headers:{'Authorization':'Bearer '+token} });
                             if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||'HTTP '+res.status); }
                             const data = await res.json();
-                            return { mes, categorias: data.categorias || [], valores: data.valores || {} };
+                            return { mes, categorias: data.categorias || [], valores: data.valores || {}, valores_previsao: data.valores_previsao || {} };
                         })
                     );
                     _cxAllMonthsData = { ano, months: results };
@@ -8058,25 +8515,59 @@ if (id === 'dfs-kpis') {
                 return n < 0 ? `<span class="fcxd-neg">-${f}</span>` : f;
             }
 
-            function _getCatVal(cat, dia, categorias, valores) {
+            function _getCatVal(cat, dia, categorias, valores, _visited) {
+                _visited = _visited || new Set();
+                if (_visited.has(cat.nome)) return 0;
                 if (cat.tipo === 'section') {
+                    const v2 = new Set(_visited); v2.add(cat.nome);
                     return categorias.filter(c => c.parent === cat.nome)
-                        .reduce((s, c) => s + _getCatVal(c, dia, categorias, valores), 0);
+                        .reduce((s, c) => s + _getCatVal(c, dia, categorias, valores, v2), 0);
                 }
                 if (cat.tipo === 'saldo_fin') {
+                    const v2 = new Set(_visited); v2.add(cat.nome);
                     const ini = categorias.find(c => c.tipo === 'saldo_ini');
                     const entCat = categorias.find(c => c.nome === 'ENTRADAS');
                     const saiCat = categorias.find(c => c.nome === 'SAÍDAS');
                     const entNopCat = categorias.find(c => c.nome === 'ANO ENTRADAS');
                     const saiNopCat = categorias.find(c => c.nome === 'ANO SAÍDAS');
-                    const saldoIni = ini ? _getCatVal(ini, dia, categorias, valores) : 0;
-                    const ent = entCat ? _getCatVal(entCat, dia, categorias, valores) : 0;
-                    const sai = saiCat ? _getCatVal(saiCat, dia, categorias, valores) : 0;
-                    const entNop = entNopCat ? _getCatVal(entNopCat, dia, categorias, valores) : 0;
-                    const saiNop = saiNopCat ? _getCatVal(saiNopCat, dia, categorias, valores) : 0;
+                    const saldoIni = ini ? _getCatVal(ini, dia, categorias, valores, v2) : 0;
+                    const ent = entCat ? _getCatVal(entCat, dia, categorias, valores, v2) : 0;
+                    const sai = saiCat ? _getCatVal(saiCat, dia, categorias, valores, v2) : 0;
+                    const entNop = entNopCat ? _getCatVal(entNopCat, dia, categorias, valores, v2) : 0;
+                    const saiNop = saiNopCat ? _getCatVal(saiNopCat, dia, categorias, valores, v2) : 0;
                     return saldoIni + ent - sai + entNop - saiNop;
                 }
                 return (valores[cat.nome] || {})[dia] || 0;
+            }
+
+            function _fmtVInt(v) {
+                if (!v) return '<span style="color:#cbd5e1;">—</span>';
+                const n = Math.round(v / 100);
+                const f = Math.abs(n).toLocaleString('pt-BR');
+                return n < 0 ? `<span class="fcxd-neg">-${f}</span>` : f;
+            }
+
+            function _getPrevCatVal(cat, dia, categorias, vp, _visited) {
+                _visited = _visited || new Set();
+                if (_visited.has(cat.nome)) return 0;
+                if (cat.tipo === 'section') {
+                    const v2 = new Set(_visited); v2.add(cat.nome);
+                    return categorias.filter(c => c.parent === cat.nome)
+                        .reduce((s, c) => s + _getPrevCatVal(c, dia, categorias, vp, v2), 0);
+                }
+                if (cat.tipo === 'saldo_fin') {
+                    const v2 = new Set(_visited); v2.add(cat.nome);
+                    const entCat    = categorias.find(c => c.nome === 'ENTRADAS');
+                    const saiCat    = categorias.find(c => c.nome === 'SAÍDAS');
+                    const entNopCat = categorias.find(c => c.nome === 'ANO ENTRADAS');
+                    const saiNopCat = categorias.find(c => c.nome === 'ANO SAÍDAS');
+                    const ent    = entCat    ? _getPrevCatVal(entCat,    dia, categorias, vp, v2) : 0;
+                    const sai    = saiCat    ? _getPrevCatVal(saiCat,    dia, categorias, vp, v2) : 0;
+                    const entNop = entNopCat ? _getPrevCatVal(entNopCat, dia, categorias, vp, v2) : 0;
+                    const saiNop = saiNopCat ? _getPrevCatVal(saiNopCat, dia, categorias, vp, v2) : 0;
+                    return ent - sai + entNop - saiNop;
+                }
+                return (vp[cat.nome] || {})[dia] || 0;
             }
 
             function renderCaixaFluxoHorizontal() {
@@ -8100,13 +8591,12 @@ if (id === 'dfs-kpis') {
                 months.forEach(({mes}) => {
                     const isExp = _cxExpandedMeses.has(mes);
                     const daysInMonth = new Date(ano, mes, 0).getDate();
-                    headR2 += '<th class="fcxd-num fcxd-col-total fcxd-col-total-head">Total</th>';
                     if (isExp) {
                         for (let d = 1; d <= daysInMonth; d++) {
-                            const isLast = d === daysInMonth;
-                            headR2 += `<th class="fcxd-num fcxd-day-head${isLast ? ' fcxd-mes-sep' : ''}">${d}</th>`;
+                            headR2 += `<th class="fcxd-num fcxd-day-head">${d}</th>`;
                         }
                     }
+                    headR2 += '<th class="fcxd-num fcxd-col-total fcxd-col-total-head fcxd-mes-sep">Total</th>';
                 });
 
                 // Body rows
@@ -8121,30 +8611,45 @@ if (id === 'dfs-kpis') {
                 }
                 function _displayNome(nome) { return nome.replace(/^ANO /, ''); }
 
+                // Build a map: catNome → true if any month has previsão for it
+                const prevCatNames = new Set();
+                months.forEach(({valores_previsao}) => {
+                    Object.keys(valores_previsao || {}).forEach(k => prevCatNames.add(k));
+                });
+
                 categorias.forEach(cat => {
                     const isSubSection = cat.tipo === 'section' && cat.parent !== null;
-                    if (isSubSection && cat.parent !== 'ATIVIDADES NÃO OPERACIONAIS') return;
+                    if (isSubSection && cat.parent !== 'ATIVIDADES NÃO OPERACIONAIS' && cat.parent !== 'ATIVIDADES OPERACIONAIS') return;
                     const level = _nestLevel(cat);
                     const cls = (cat.tipo === 'saldo_ini' || cat.tipo === 'saldo_fin') ? 'fcxd-row-section'
                               : isSubSection ? 'fcxd-row-subsection'
                               : cat.tipo === 'section' ? 'fcxd-row-total'
                               : 'fcxd-row-item';
-                    const canDelete = cat.tipo === 'item';
                     const pl = level > 1 ? `padding-left:${level * 20}px;` : '';
                     let row = `<tr class="${cls}">`;
                     row += `<td class="fcxd-col-cat fcxd-sticky-cat" style="${pl}">${esc(_displayNome(cat.nome))}</td>`;
-                    months.forEach(({mes, categorias: cats, valores}) => {
+                    months.forEach(({mes, categorias: cats, valores, valores_previsao}) => {
                         const isExp = _cxExpandedMeses.has(mes);
                         const daysInMonth = new Date(ano, mes, 0).getDate();
                         const days = Array.from({length:daysInMonth}, (_,i) => i+1);
                         const total = days.reduce((s,d) => s + _getCatVal(cat, d, cats, valores), 0);
-                        row += `<td class="fcxd-num fcxd-col-total">${_fmtV(total)}</td>`;
+                        const vp = valores_previsao || {};
+                        const fmtReais = v => { const n=v/100; return (n<0?'-':'')+'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+                        const mesNome = CX_MESES_NOMES[mes];
+                        const prevTotal = days.reduce((s,d) => s + _getPrevCatVal(cat, d, cats, vp), 0);
+                        const tipTotal = `PREVISÃO|${esc(cat.nome)}|${mesNome} ${ano}|${fmtReais(prevTotal)}|Total do mês`;
+                        const prevHtmlTotal = prevTotal ? `<span class="fcxd-prev-sub" data-tip="${tipTotal}">${_fmtVInt(prevTotal)}</span>` : '';
                         if (isExp) {
                             days.forEach(d => {
-                                const isLast = d === daysInMonth;
-                                row += `<td class="fcxd-num${isLast ? ' fcxd-mes-sep' : ''}">${_fmtV(_getCatVal(cat, d, cats, valores))}</td>`;
+                                const dayVal = _getCatVal(cat, d, cats, valores);
+                                const realized = (dayVal || !_getPrevCatVal(cat, d, cats, vp)) ? _fmtV(dayVal) : '';
+                                const pv = _getPrevCatVal(cat, d, cats, vp);
+                                const tipDay = `PREVISÃO|${esc(cat.nome)}|${d}/${String(mes).padStart(2,'0')}/${ano}|${fmtReais(pv)}|Dia ${d}`;
+                                const prevHtml = pv ? `<span class="fcxd-prev-sub" data-tip="${tipDay}">${_fmtVInt(pv)}</span>` : '';
+                                row += `<td class="fcxd-num">${realized}${prevHtml}</td>`;
                             });
                         }
+                        row += `<td class="fcxd-num fcxd-col-total fcxd-mes-sep">${(total || !prevTotal) ? _fmtV(total) : ''}${prevHtmlTotal}</td>`;
                     });
                     row += '</tr>';
                     bodyHtml += row;
@@ -8330,31 +8835,81 @@ if (id === 'dfs-kpis') {
                 } else showToast('Erro ao adicionar','error');
             }
 
-            // ── DE-PARA ────────────────────────────────────
-            let _cxDeParaPendentes = []; // new rows to save
+            // ── DE-PARA tabs ─────────────────────────────────────────────────
+            let _deParaAbaAtiva = 'extrato'; // 'extrato' | 'contas_pagar'
+            let _cxDeParaPendentes = [];      // pending extrato rows
+            let _cxDeParaCpPendentes = [];    // pending contas_pagar rows
+            let _cxCategoriasModelo = [];     // category names from modelo
 
+            async function _ensureCategoriasModelo() {
+                try {
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(API_BASE + '/caixa-modelo', { headers:{'Authorization':'Bearer '+token} });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    _cxCategoriasModelo = (data.categorias || []).map(c => c.nome);
+                } catch {}
+            }
+
+            function _injectCatDatalist() {
+                let dl = document.getElementById('cx-dp-cat-datalist');
+                if (!dl) {
+                    dl = document.createElement('datalist');
+                    dl.id = 'cx-dp-cat-datalist';
+                    document.body.appendChild(dl);
+                }
+                dl.innerHTML = _cxCategoriasModelo.map(n => `<option value="${esc(n)}"></option>`).join('');
+            }
+
+            function switchDeParaTab(tab) {
+                _deParaAbaAtiva = tab;
+                const tabs = ['extrato','contas_pagar','vendas'];
+                tabs.forEach(t => {
+                    const id = t === 'contas_pagar' ? 'dp-tab-cp' : 'dp-tab-' + t;
+                    const btn = document.getElementById(id);
+                    const cont = document.getElementById('dp-tab-content-' + t);
+                    const active = t === tab;
+                    if (btn) { btn.style.borderBottomColor = active ? 'var(--accent)' : 'transparent'; btn.style.color = active ? 'var(--accent)' : 'var(--muted)'; }
+                    if (cont) cont.style.display = active ? 'grid' : 'none';
+                });
+                if (tab === 'extrato') loadCaixaDepara();
+                else if (tab === 'contas_pagar') loadCaixaDeParaCP();
+                else if (tab === 'vendas') loadCaixaDeParaVendas();
+            }
+
+            function loadCaixaDeParaAtivo() {
+                if (_deParaAbaAtiva === 'contas_pagar') loadCaixaDeParaCP();
+                else if (_deParaAbaAtiva === 'vendas') loadCaixaDeParaVendas();
+                else loadCaixaDepara();
+            }
+
+            function addCaixaDeParaRowAtivo() {
+                if (_deParaAbaAtiva === 'contas_pagar') addCaixaDeParaCpRow();
+                else if (_deParaAbaAtiva === 'vendas') addCaixaDeParaVendasRow();
+                else addCaixaDeParaRow();
+            }
+
+            function saveCaixaDeParaAtivo() {
+                if (_deParaAbaAtiva === 'contas_pagar') saveCaixaDeParaCP();
+                else if (_deParaAbaAtiva === 'vendas') saveCaixaDeParaVendas();
+                else saveCaixaDepara();
+            }
+
+            // ── Extrato tab ──────────────────────────────────────────────────
             async function loadCaixaDepara() {
                 const token = localStorage.getItem('have_token');
-                _cxDeParaPendentes = [];
+                await _ensureCategoriasModelo(); _injectCatDatalist();
                 const naoClassEl = document.getElementById('cx-depara-nao-class');
-                const deParaEl = document.getElementById('cx-depara-table');
+                const deParaEl   = document.getElementById('cx-depara-table');
                 try {
                     const [mappingsRes, naoClassRes] = await Promise.all([
-                        fetch(API_BASE + '/caixa-depara', { headers:{'Authorization':'Bearer '+token} }),
+                        fetch(API_BASE + '/caixa-depara?tipo=extrato', { headers:{'Authorization':'Bearer '+token} }),
                         fetch(API_BASE + '/caixa-depara?source=extract', { headers:{'Authorization':'Bearer '+token} })
                     ]);
-                    if (!mappingsRes.ok) {
-                        const e = await mappingsRes.json().catch(()=>({}));
-                        throw new Error(e.error || 'HTTP ' + mappingsRes.status);
-                    }
-                    if (!naoClassRes.ok) {
-                        const e = await naoClassRes.json().catch(()=>({}));
-                        throw new Error(e.error || 'HTTP ' + naoClassRes.status);
-                    }
+                    if (!mappingsRes.ok) { const e = await mappingsRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+mappingsRes.status); }
+                    if (!naoClassRes.ok) { const e = await naoClassRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+naoClassRes.status); }
                     const mappingsData = await mappingsRes.json();
                     const naoClassData = await naoClassRes.json();
-
-                    // Render unclassified descriptions
                     const naoClass = naoClassData.nao_classificadas || [];
                     if (!naoClass.length) {
                         naoClassEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Todas as descrições estão classificadas ✓</div>';
@@ -8366,13 +8921,11 @@ if (id === 'dfs-kpis') {
                             </div>`
                         ).join('');
                     }
-
-                    // Render mappings table
                     renderDeParaTable(mappingsData.mappings || []);
                 } catch(e) {
                     const errHtml = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro: ${esc(e.message)}</div>`;
                     if (naoClassEl) naoClassEl.innerHTML = errHtml;
-                    if (deParaEl) deParaEl.innerHTML = errHtml;
+                    if (deParaEl)   deParaEl.innerHTML   = errHtml;
                     showToast('Erro: ' + e.message, 'error');
                 }
             }
@@ -8388,10 +8941,9 @@ if (id === 'dfs-kpis') {
                 el.innerHTML = '<table style="width:100%;border-collapse:collapse;">' +
                     '<thead><tr style="background:var(--bg-alt,#f8f9fa);"><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Palavra-Chave (Extrato)</th><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Categoria (Modelo)</th><th style="width:40px;"></th></tr></thead><tbody>' +
                     allRows.map((m,i) => {
-                        const isPending = i >= mappings.length;
                         return `<tr style="border-bottom:1px solid var(--border);" data-mapping-id="${m.id||''}">
-                            <td style="padding:6px 8px;"><input value="${esc(m.palavra_chave||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="chave" ${isPending?'':''}></td>
-                            <td style="padding:6px 8px;"><input value="${esc(m.categoria_nome||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="cat" ${isPending?'':''}></td>
+                            <td style="padding:6px 8px;"><input value="${esc(m.palavra_chave||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="chave"></td>
+                            <td style="padding:6px 8px;"><input value="${esc(m.categoria_nome||'')}" list="cx-dp-cat-datalist" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="cat"></td>
                             <td style="padding:6px 8px;"><button onclick="removeCaixaDeParaRow(this,${m.id||'null'})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;">✕</button></td>
                         </tr>`;
                     }).join('') + '</tbody></table>';
@@ -8427,12 +8979,12 @@ if (id === 'dfs-kpis') {
                 let saved = 0, errors = 0;
                 for (const row of rows) {
                     const chave = row.querySelector('[data-field="chave"]')?.value.trim();
-                    const cat = row.querySelector('[data-field="cat"]')?.value.trim();
+                    const cat   = row.querySelector('[data-field="cat"]')?.value.trim();
                     if (!chave || !cat) continue;
                     try {
                         const res = await fetch(API_BASE + '/caixa-depara', {
                             method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-                            body: JSON.stringify({ palavra_chave: chave, categoria_nome: cat })
+                            body: JSON.stringify({ palavra_chave: chave, categoria_nome: cat, tipo: 'extrato' })
                         });
                         if (res.ok) saved++; else errors++;
                     } catch { errors++; }
@@ -8441,6 +8993,208 @@ if (id === 'dfs-kpis') {
                 if (errors) showToast(`${saved} salvos, ${errors} erros`, 'error');
                 else showToast(`${saved} mapeamentos salvos`, 'success');
                 loadCaixaDepara();
+            }
+
+            // ── Contas a Pagar tab ───────────────────────────────────────────
+            async function loadCaixaDeParaCP() {
+                const token = localStorage.getItem('have_token');
+                await _ensureCategoriasModelo(); _injectCatDatalist();
+                const naoClassEl = document.getElementById('cx-depara-cp-nao-class');
+                const tableEl    = document.getElementById('cx-depara-cp-table');
+                try {
+                    const [mappingsRes, naoClassRes] = await Promise.all([
+                        fetch(API_BASE + '/caixa-depara?tipo=contas_pagar', { headers:{'Authorization':'Bearer '+token} }),
+                        fetch(API_BASE + '/caixa-depara?source=contas_pagar', { headers:{'Authorization':'Bearer '+token} })
+                    ]);
+                    if (!mappingsRes.ok) { const e = await mappingsRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+mappingsRes.status); }
+                    if (!naoClassRes.ok) { const e = await naoClassRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+naoClassRes.status); }
+                    const mappingsData  = await mappingsRes.json();
+                    const naoClassData  = await naoClassRes.json();
+                    const naoClass = naoClassData.nao_classificados || [];
+                    if (!naoClass.length) {
+                        naoClassEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Todos os fornecedores estão mapeados ✓</div>';
+                    } else {
+                        naoClassEl.innerHTML = naoClass.map(forn =>
+                            `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+                                <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(forn)}">${esc(forn)}</span>
+                                <button onclick="usarFornecedorDeParaCP('${esc(forn).replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px;border:1px solid var(--accent);border-radius:6px;background:rgba(0,124,220,0.06);color:var(--accent);cursor:pointer;white-space:nowrap;">→ Mapear</button>
+                            </div>`
+                        ).join('');
+                    }
+                    renderDeParaCpTable(mappingsData.mappings || []);
+                } catch(e) {
+                    const errHtml = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro: ${esc(e.message)}</div>`;
+                    if (naoClassEl) naoClassEl.innerHTML = errHtml;
+                    if (tableEl)    tableEl.innerHTML    = errHtml;
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            function renderDeParaCpTable(mappings) {
+                const el = document.getElementById('cx-depara-cp-table');
+                if (!el) return;
+                if (!mappings.length && !_cxDeParaCpPendentes.length) {
+                    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Nenhum mapeamento. Clique em "+ Adicionar" ou use "→ Mapear" ao lado do fornecedor.</div>';
+                    return;
+                }
+                const allRows = [...mappings, ..._cxDeParaCpPendentes];
+                el.innerHTML = '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="background:var(--bg-alt,#f8f9fa);"><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Fornecedor (palavra-chave)</th><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Categoria no Fluxo Diário</th><th style="width:40px;"></th></tr></thead><tbody>' +
+                    allRows.map(m => {
+                        return `<tr style="border-bottom:1px solid var(--border);" data-mapping-id="${m.id||''}">
+                            <td style="padding:6px 8px;"><input value="${esc(m.palavra_chave||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="chave"></td>
+                            <td style="padding:6px 8px;"><input value="${esc(m.categoria_nome||'')}" list="cx-dp-cat-datalist" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="cat" placeholder="Selecione ou digite..."></td>
+                            <td style="padding:6px 8px;"><button onclick="removeCaixaDeParaCpRow(this,${m.id||'null'})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;">✕</button></td>
+                        </tr>`;
+                    }).join('') + '</tbody></table>';
+            }
+
+            function addCaixaDeParaCpRow() {
+                _cxDeParaCpPendentes.push({ id: null, palavra_chave: '', categoria_nome: '' });
+                loadCaixaDeParaCP();
+            }
+
+            function usarFornecedorDeParaCP(forn) {
+                _cxDeParaCpPendentes.push({ id: null, palavra_chave: forn, categoria_nome: '' });
+                loadCaixaDeParaCP();
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#cx-depara-cp-table [data-field="cat"]');
+                    if (inputs.length) inputs[inputs.length-1].focus();
+                }, 100);
+            }
+
+            async function removeCaixaDeParaCpRow(btn, id) {
+                if (id) {
+                    if (!confirm('Remover este mapeamento?')) return;
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(`${API_BASE}/caixa-depara?id=${id}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                    if (!res.ok) { showToast('Erro ao remover','error'); return; }
+                }
+                btn.closest('tr').remove();
+            }
+
+            async function saveCaixaDeParaCP() {
+                const token = localStorage.getItem('have_token');
+                const rows = Array.from(document.querySelectorAll('#cx-depara-cp-table tbody tr'));
+                let saved = 0, errors = 0;
+                for (const row of rows) {
+                    const chave = row.querySelector('[data-field="chave"]')?.value.trim();
+                    const cat   = row.querySelector('[data-field="cat"]')?.value.trim();
+                    if (!chave || !cat) continue;
+                    try {
+                        const res = await fetch(API_BASE + '/caixa-depara', {
+                            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                            body: JSON.stringify({ palavra_chave: chave, categoria_nome: cat, tipo: 'contas_pagar' })
+                        });
+                        if (res.ok) saved++; else errors++;
+                    } catch { errors++; }
+                }
+                _cxDeParaCpPendentes = [];
+                if (errors) showToast(`${saved} salvos, ${errors} erros`, 'error');
+                else showToast(`${saved} mapeamentos salvos`, 'success');
+                loadCaixaDeParaCP();
+            }
+
+            // ── Canais de Venda tab ──────────────────────────────────────────
+            let _cxDeParaVndasPendentes = [];
+
+            async function loadCaixaDeParaVendas() {
+                const token = localStorage.getItem('have_token');
+                await _ensureCategoriasModelo(); _injectCatDatalist();
+                const naoClassEl = document.getElementById('cx-depara-vnd-nao-class');
+                const tableEl    = document.getElementById('cx-depara-vnd-table');
+                try {
+                    const [mappingsRes, canaisRes] = await Promise.all([
+                        fetch(API_BASE + '/caixa-depara?tipo=vendas', { headers:{'Authorization':'Bearer '+token} }),
+                        fetch(API_BASE + '/caixa-depara?source=canais', { headers:{'Authorization':'Bearer '+token} })
+                    ]);
+                    if (!mappingsRes.ok) { const e = await mappingsRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+mappingsRes.status); }
+                    if (!canaisRes.ok)   { const e = await canaisRes.json().catch(()=>({}));   throw new Error(e.error||'HTTP '+canaisRes.status); }
+                    const mappingsData = await mappingsRes.json();
+                    const canaisData   = await canaisRes.json();
+                    const naoMapeados  = canaisData.nao_mapeados || [];
+                    if (!naoMapeados.length) {
+                        naoClassEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Todos os canais estão mapeados ✓</div>';
+                    } else {
+                        naoClassEl.innerHTML = naoMapeados.map(canal =>
+                            `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+                                <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(canal)}">${esc(canal)}</span>
+                                <button onclick="usarCanalDeParaVendas('${esc(canal).replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px;border:1px solid var(--accent);border-radius:6px;background:rgba(0,124,220,0.06);color:var(--accent);cursor:pointer;white-space:nowrap;">→ Mapear</button>
+                            </div>`
+                        ).join('');
+                    }
+                    renderDeParaVendasTable(mappingsData.mappings || []);
+                } catch(e) {
+                    const errHtml = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro: ${esc(e.message)}</div>`;
+                    if (naoClassEl) naoClassEl.innerHTML = errHtml;
+                    if (tableEl)    tableEl.innerHTML    = errHtml;
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            function renderDeParaVendasTable(mappings) {
+                const el = document.getElementById('cx-depara-vnd-table');
+                if (!el) return;
+                const allRows = [...mappings, ..._cxDeParaVndasPendentes];
+                if (!allRows.length) {
+                    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Nenhum mapeamento. Use "→ Mapear" ou "+ Adicionar".</div>';
+                    return;
+                }
+                el.innerHTML = '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="background:var(--bg-alt,#f8f9fa);"><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Canal de Venda</th><th style="padding:8px;font-size:12px;text-align:left;border-bottom:1px solid var(--border);">Linha no Fluxo Diário</th><th style="width:40px;"></th></tr></thead><tbody>' +
+                    allRows.map(m =>
+                        `<tr style="border-bottom:1px solid var(--border);" data-mapping-id="${m.id||''}">
+                            <td style="padding:6px 8px;"><input value="${esc(m.palavra_chave||'')}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="chave"></td>
+                            <td style="padding:6px 8px;"><input value="${esc(m.categoria_nome||'')}" list="cx-dp-cat-datalist" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" data-field="cat" placeholder="Selecione a linha..."></td>
+                            <td style="padding:6px 8px;"><button onclick="removeCaixaDeParaVendasRow(this,${m.id||'null'})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;">✕</button></td>
+                        </tr>`
+                    ).join('') + '</tbody></table>';
+            }
+
+            function addCaixaDeParaVendasRow() {
+                _cxDeParaVndasPendentes.push({ id: null, palavra_chave: '', categoria_nome: '' });
+                loadCaixaDeParaVendas();
+            }
+
+            function usarCanalDeParaVendas(canal) {
+                _cxDeParaVndasPendentes.push({ id: null, palavra_chave: canal, categoria_nome: '' });
+                loadCaixaDeParaVendas();
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#cx-depara-vnd-table [data-field="cat"]');
+                    if (inputs.length) inputs[inputs.length-1].focus();
+                }, 100);
+            }
+
+            async function removeCaixaDeParaVendasRow(btn, id) {
+                if (id) {
+                    if (!confirm('Remover este mapeamento?')) return;
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(`${API_BASE}/caixa-depara?id=${id}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                    if (!res.ok) { showToast('Erro ao remover','error'); return; }
+                }
+                btn.closest('tr').remove();
+            }
+
+            async function saveCaixaDeParaVendas() {
+                const token = localStorage.getItem('have_token');
+                const rows = Array.from(document.querySelectorAll('#cx-depara-vnd-table tbody tr'));
+                let saved = 0, errors = 0;
+                for (const row of rows) {
+                    const chave = row.querySelector('[data-field="chave"]')?.value.trim();
+                    const cat   = row.querySelector('[data-field="cat"]')?.value.trim();
+                    if (!chave || !cat) continue;
+                    try {
+                        const res = await fetch(API_BASE + '/caixa-depara', {
+                            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                            body: JSON.stringify({ palavra_chave: chave, categoria_nome: cat, tipo: 'vendas' })
+                        });
+                        if (res.ok) saved++; else errors++;
+                    } catch { errors++; }
+                }
+                _cxDeParaVndasPendentes = [];
+                if (errors) showToast(`${saved} salvos, ${errors} erros`, 'error');
+                else showToast(`${saved} mapeamentos salvos`, 'success');
+                loadCaixaDeParaVendas();
             }
 
             // placeholder to avoid JS errors if old references remain
@@ -8600,6 +9354,488 @@ if (id === 'dfs-kpis') {
                 if (s('cp-kpi-saldo'))   s('cp-kpi-saldo').textContent   = fK(totalSaldo);
                 if (s('cp-kpi-vencidos')) s('cp-kpi-vencidos').textContent = vencidos.toLocaleString('pt-BR');
                 if (s('cp-kpi-count'))   s('cp-kpi-count').textContent   = data.length.toLocaleString('pt-BR');
+            }
+
+            // ══════════════════════════════════════════════
+            // PEDIDOS DE COMPRA
+            // ══════════════════════════════════════════════
+            let _pcPedidos = [];
+            let _pcFornecedores = [];
+            let _pcCategorias = [];
+            let _pcCalYear = new Date().getFullYear();
+            let _pcCalMonth = new Date().getMonth(); // 0-indexed
+            let _pcCurrentView = 'tabela';
+
+            const _PC_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+            function _pcFmt(v) {
+                const n = parseFloat(v) || 0;
+                return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+            function _pcFmtDate(s) {
+                if (!s) return '–';
+                const d = new Date(s.slice(0, 10) + 'T00:00:00Z');
+                return d.toLocaleDateString('pt-BR');
+            }
+            function _pcAddDays(dateStr, days) {
+                const d = new Date(dateStr + 'T00:00:00Z');
+                d.setUTCDate(d.getUTCDate() + days);
+                return d.toISOString().slice(0, 10);
+            }
+
+            async function loadPedidosCompra() {
+                const token = localStorage.getItem('have_token');
+                try {
+                    const [pedRes, fornRes, catRes] = await Promise.all([
+                        fetch(API_BASE + '/pedidos-compra', { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(API_BASE + '/pedidos-compra?module=fornecedores', { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(API_BASE + '/pedidos-compra?module=categorias', { headers: { 'Authorization': 'Bearer ' + token } })
+                    ]);
+                    if (pedRes.ok) { const d = await pedRes.json(); _pcPedidos = d.pedidos || []; }
+                    if (fornRes.ok) { const d = await fornRes.json(); _pcFornecedores = d.fornecedores || []; }
+                    if (catRes.ok)  { const d = await catRes.json(); _pcCategorias = d.categorias || []; }
+                } catch(e) {
+                    showToast('Erro ao carregar pedidos: ' + e.message, 'error');
+                }
+                _pcUpdateKpis();
+                renderPedidosTable();
+                _pcRebuildDatalist();
+                _pcRebuildLinhaFluxoList();
+                if (_pcCurrentView === 'calendario') renderPedidosCalendar();
+            }
+
+            function _pcUpdateKpis() {
+                const today = new Date().toISOString().slice(0, 10);
+                const total = _pcPedidos.length;
+                const valor = _pcPedidos.reduce((s, r) => s + (parseFloat(r.valor) || 0), 0);
+                const futuras = _pcPedidos
+                    .map(r => r.vencimento_ajustado || r.vencimento)
+                    .filter(d => d && d >= today)
+                    .sort();
+                const proxima = futuras.length ? _pcFmtDate(futuras[0]) : '–';
+                const vencidos = _pcPedidos.filter(r => {
+                    const d = (r.vencimento_ajustado || r.vencimento || '').slice(0, 10);
+                    return d && d < today;
+                }).length;
+                const s = id => document.getElementById(id);
+                if (s('pc-kpi-count'))   s('pc-kpi-count').textContent   = total.toLocaleString('pt-BR');
+                if (s('pc-kpi-valor'))   s('pc-kpi-valor').textContent   = _pcFmt(valor);
+                if (s('pc-kpi-prox'))    s('pc-kpi-prox').textContent    = proxima;
+                if (s('pc-kpi-vencidos')) s('pc-kpi-vencidos').textContent = vencidos.toLocaleString('pt-BR');
+            }
+
+            function renderPedidosTable() {
+                const tbody = document.getElementById('pc-tbody');
+                const label = document.getElementById('pc-count-label');
+                const q = (document.getElementById('pc-search')?.value || '').toLowerCase();
+                const today = new Date().toISOString().slice(0, 10);
+                const filtered = _pcPedidos.filter(r =>
+                    (r.fornecedor || '').toLowerCase().includes(q) ||
+                    (r.nf || '').toLowerCase().includes(q)
+                );
+                if (label) label.textContent = filtered.length + ' pedido(s)';
+                if (!filtered.length) {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Nenhum pedido encontrado</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = filtered.map(r => {
+                    const dVenc = (r.vencimento_ajustado || r.vencimento || '').slice(0, 10);
+                    const vencido = dVenc && dVenc < today;
+                    const parcBadge = r.total_parcelas
+                        ? `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:rgba(0,124,220,0.1);color:var(--accent);font-size:11px;font-weight:700;">${r.parcela}/${r.total_parcelas}</span>`
+                        : '<span style="color:var(--muted);font-size:12px;">–</span>';
+                    const vencBadge = vencido
+                        ? `<span style="color:#ef4444;font-weight:600;">${_pcFmtDate(r.vencimento)}</span>`
+                        : `<span>${_pcFmtDate(r.vencimento)}</span>`;
+                    return `<tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+                        <td style="padding:10px 14px;font-weight:500;">${esc(r.fornecedor || '–')}</td>
+                        <td style="padding:10px 14px;text-align:center;color:var(--muted);">${_pcFmtDate(r.data_emissao)}</td>
+                        <td style="padding:10px 14px;font-family:monospace;font-size:12px;">${esc(r.nf || '–')}</td>
+                        <td style="padding:10px 14px;text-align:right;font-weight:600;">${_pcFmt(r.valor)}</td>
+                        <td style="padding:10px 14px;text-align:center;">${vencBadge}</td>
+                        <td style="padding:10px 14px;text-align:center;color:${r.vencimento_ajustado ? 'var(--accent)' : 'var(--muted)'};">${r.vencimento_ajustado ? _pcFmtDate(r.vencimento_ajustado) : '–'}</td>
+                        <td style="padding:10px 14px;text-align:center;">${parcBadge}</td>
+                        <td style="padding:10px 14px;font-size:12px;color:${r.linha_fluxo ? 'var(--accent)' : 'var(--muted)'}">${r.linha_fluxo ? esc(r.linha_fluxo) : '–'}</td>
+                        <td style="padding:10px 14px;text-align:center;">
+                            <button onclick="deletePedido(${r.id})" title="Excluir"
+                                style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:2px 6px;border-radius:6px;transition:color .15s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">✕</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+
+            function pcFilterTable() { renderPedidosTable(); }
+
+            function renderPedidosCalendar() {
+                const grid = document.getElementById('pc-cal-grid');
+                const title = document.getElementById('pc-cal-title');
+                if (!grid) return;
+                title.textContent = _PC_MESES[_pcCalMonth] + ' ' + _pcCalYear;
+
+                const today = new Date().toISOString().slice(0, 10);
+                const firstDay = new Date(_pcCalYear, _pcCalMonth, 1).getDay();
+                const daysInMonth = new Date(_pcCalYear, _pcCalMonth + 1, 0).getDate();
+
+                // Group pedidos by effective date (vencimento_ajustado ?? vencimento)
+                const byDay = {};
+                _pcPedidos.forEach(r => {
+                    const d = r.vencimento_ajustado || r.vencimento;
+                    if (!d) return;
+                    const dt = new Date(d + 'T00:00:00Z');
+                    if (dt.getUTCFullYear() !== _pcCalYear || dt.getUTCMonth() !== _pcCalMonth) return;
+                    const day = dt.getUTCDate();
+                    if (!byDay[day]) byDay[day] = [];
+                    byDay[day].push(r);
+                });
+
+                let html = '';
+                // Empty cells before first day
+                for (let i = 0; i < firstDay; i++) {
+                    html += `<div style="min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface2);opacity:.5;"></div>`;
+                }
+                // Days
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${_pcCalYear}-${String(_pcCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                    const isToday = dateStr === today;
+                    const pedidos = byDay[day] || [];
+                    const totalValor = pedidos.reduce((s, r) => s + (parseFloat(r.valor) || 0), 0);
+                    const hasVencidos = pedidos.some(r => {
+                        const dv = r.vencimento_ajustado || r.vencimento || '';
+                        return dv.slice(0,10) < today;
+                    });
+                    html += `<div style="min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px;position:relative;${isToday ? 'background:rgba(0,124,220,0.04);' : ''}">
+                        <div style="font-size:12px;font-weight:${isToday ? '800' : '500'};color:${isToday ? 'var(--accent)' : 'var(--muted)'};">${day}</div>
+                        ${pedidos.length ? `<div onclick="pcShowDayTooltip(event,${day})" style="cursor:pointer;margin-top:4px;">
+                            <div style="padding:3px 6px;border-radius:6px;background:${hasVencidos ? 'rgba(239,68,68,0.12)' : 'rgba(0,124,220,0.1)'};border:1px solid ${hasVencidos ? 'rgba(239,68,68,0.25)' : 'rgba(0,124,220,0.2)'};font-size:11px;font-weight:600;color:${hasVencidos ? '#ef4444' : 'var(--accent)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                ${pedidos.length} pedido${pedidos.length > 1 ? 's' : ''}
+                            </div>
+                            <div style="font-size:10px;color:var(--muted);margin-top:2px;">${_pcFmt(totalValor)}</div>
+                        </div>` : ''}
+                    </div>`;
+                }
+                // Trailing empty cells
+                const total = firstDay + daysInMonth;
+                const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+                for (let i = 0; i < remainder; i++) {
+                    html += `<div style="min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface2);opacity:.5;"></div>`;
+                }
+                grid.innerHTML = html;
+            }
+
+            function pcShowDayTooltip(e, day) {
+                e.stopPropagation();
+                const tt = document.getElementById('pc-cal-tooltip');
+                const pedidos = _pcPedidos.filter(r => {
+                    const d = r.vencimento_ajustado || r.vencimento;
+                    if (!d) return false;
+                    const dt = new Date(d + 'T00:00:00Z');
+                    return dt.getUTCFullYear() === _pcCalYear && dt.getUTCMonth() === _pcCalMonth && dt.getUTCDate() === day;
+                });
+                if (!pedidos.length) return;
+                const today = new Date().toISOString().slice(0, 10);
+                tt.innerHTML = `<div style="font-weight:700;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">📅 ${day} de ${_PC_MESES[_pcCalMonth]}</div>` +
+                    pedidos.map(r => {
+                        const dv = r.vencimento_ajustado || r.vencimento || '';
+                        const vencido = dv.slice(0,10) < today;
+                        return `<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+                            <div style="font-weight:600;font-size:12px;">${esc(r.fornecedor)}</div>
+                            <div style="color:var(--muted);font-size:11px;">NF: ${esc(r.nf || '–')} · ${_pcFmt(r.valor)}</div>
+                            ${r.total_parcelas ? `<div style="font-size:11px;color:var(--accent);">Parcela ${r.parcela}/${r.total_parcelas}</div>` : ''}
+                            ${vencido ? '<div style="font-size:11px;color:#ef4444;font-weight:600;">⚠ Vencido</div>' : ''}
+                        </div>`;
+                    }).join('') +
+                    `<button onclick="document.getElementById('pc-cal-tooltip').style.display='none'" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;width:100%;text-align:center;margin-top:2px;">Fechar</button>`;
+                const rect = e.currentTarget.getBoundingClientRect();
+                tt.style.display = 'block';
+                tt.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+                tt.style.top = (rect.bottom + 6) + 'px';
+            }
+
+            document.addEventListener('click', function(e) {
+                const tt = document.getElementById('pc-cal-tooltip');
+                if (tt && !tt.contains(e.target)) tt.style.display = 'none';
+            });
+
+            function pcCalNav(dir) {
+                _pcCalMonth += dir;
+                if (_pcCalMonth > 11) { _pcCalMonth = 0; _pcCalYear++; }
+                if (_pcCalMonth < 0)  { _pcCalMonth = 11; _pcCalYear--; }
+                renderPedidosCalendar();
+            }
+
+            function pcSetView(view) {
+                _pcCurrentView = view;
+                document.getElementById('pc-view-tabela').style.display     = view === 'tabela' ? '' : 'none';
+                document.getElementById('pc-view-calendario').style.display = view === 'calendario' ? '' : 'none';
+                document.getElementById('pc-btn-tabela').style.background     = view === 'tabela' ? 'var(--accent)' : 'transparent';
+                document.getElementById('pc-btn-tabela').style.color          = view === 'tabela' ? '#fff' : 'var(--muted)';
+                document.getElementById('pc-btn-calendario').style.background = view === 'calendario' ? 'var(--accent)' : 'transparent';
+                document.getElementById('pc-btn-calendario').style.color      = view === 'calendario' ? '#fff' : 'var(--muted)';
+                if (view === 'calendario') renderPedidosCalendar();
+            }
+
+            // ── Sidebar ──────────────────────────────────────────────────────
+            function openPedidoSidebar() {
+                document.getElementById('pc-form-linha-fluxo').value = '';
+                document.getElementById('pc-form-fornecedor').value = '';
+                document.getElementById('pc-form-emissao').value    = new Date().toISOString().slice(0, 10);
+                document.getElementById('pc-form-nf').value          = '';
+                document.getElementById('pc-form-valor').value       = '';
+                document.getElementById('pc-form-vencimento').value  = '';
+                document.getElementById('pc-form-vencimento-ajustado').value = '';
+                document.getElementById('pc-form-parcelamento').checked = false;
+                document.getElementById('pc-form-prazo-hint').style.display = 'none';
+                document.getElementById('pc-venc-group').style.display = '';
+                document.getElementById('pc-venc-aj-group').style.display = '';
+                document.getElementById('pc-prazos-group').style.display = 'none';
+                // Reset prazo inputs to default 3
+                const container = document.getElementById('pc-prazos-inputs');
+                if (container) {
+                    const addBtn = container.querySelector('button');
+                    container.innerHTML = '';
+                    [30, 60, 90].forEach(v => {
+                        const inp = document.createElement('input');
+                        inp.type = 'number'; inp.min = '1'; inp.placeholder = 'ex: ' + v; inp.value = v;
+                        inp.style.cssText = 'width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);text-align:center;';
+                        container.appendChild(inp);
+                    });
+                    if (addBtn) container.appendChild(addBtn);
+                    else {
+                        const btn = document.createElement('button');
+                        btn.onclick = pcAddPrazoInput; btn.title = 'Adicionar prazo';
+                        btn.style.cssText = 'padding:6px 10px;border:1px solid var(--accent);border-radius:7px;background:transparent;color:var(--accent);font-size:16px;cursor:pointer;line-height:1;';
+                        btn.textContent = '+';
+                        container.appendChild(btn);
+                    }
+                }
+                const sb = document.getElementById('pc-sidebar');
+                const ov = document.getElementById('pc-sidebar-overlay');
+                sb.style.right = '0';
+                ov.style.display = 'block';
+            }
+
+            function closePedidoSidebar() {
+                document.getElementById('pc-sidebar').style.right  = '-440px';
+                document.getElementById('pc-sidebar-overlay').style.display = 'none';
+            }
+
+            function pcToggleParcelamento() {
+                const checked = document.getElementById('pc-form-parcelamento').checked;
+                document.getElementById('pc-venc-group').style.display    = checked ? 'none' : '';
+                document.getElementById('pc-venc-aj-group').style.display = checked ? 'none' : '';
+                document.getElementById('pc-prazos-group').style.display  = checked ? '' : 'none';
+            }
+
+            function pcAddPrazoInput() {
+                const container = document.getElementById('pc-prazos-inputs');
+                const addBtn = container.querySelector('button');
+                const inp = document.createElement('input');
+                inp.type = 'number'; inp.min = '1'; inp.placeholder = 'dias';
+                inp.style.cssText = 'width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);text-align:center;';
+                container.insertBefore(inp, addBtn);
+            }
+
+            function _pcRebuildDatalist() {
+                const dl = document.getElementById('pc-fornecedores-list');
+                if (!dl) return;
+                dl.innerHTML = _pcFornecedores.map(f => `<option value="${esc(f.nome)}">`).join('');
+            }
+
+            function _pcRebuildLinhaFluxoList() {
+                const dl = document.getElementById('pc-linha-fluxo-list');
+                if (!dl) return;
+                dl.innerHTML = _pcCategorias.map(c => `<option value="${esc(c)}">`).join('');
+            }
+
+            function pcFornecedorAutofill() {
+                const val = document.getElementById('pc-form-fornecedor').value.trim();
+                const match = _pcFornecedores.find(f => f.nome.toLowerCase() === val.toLowerCase());
+                const hint = document.getElementById('pc-form-prazo-hint');
+                if (match) {
+                    hint.style.display = 'block';
+                    hint.textContent = '✓ Prazo padrão: ' + match.prazo_padrao_dias + ' dias';
+                    pcAutoVencimento();
+                } else {
+                    hint.style.display = 'none';
+                }
+            }
+
+            function pcAutoVencimento() {
+                const emissao = document.getElementById('pc-form-emissao').value;
+                const fornNome = document.getElementById('pc-form-fornecedor').value.trim();
+                const parcelado = document.getElementById('pc-form-parcelamento').checked;
+                if (!emissao || parcelado) return;
+                const match = _pcFornecedores.find(f => f.nome.toLowerCase() === fornNome.toLowerCase());
+                if (match && match.prazo_padrao_dias) {
+                    document.getElementById('pc-form-vencimento').value = _pcAddDays(emissao, match.prazo_padrao_dias);
+                }
+            }
+
+            async function savePedido() {
+                const token = localStorage.getItem('have_token');
+                const fornecedor = document.getElementById('pc-form-fornecedor').value.trim();
+                const data_emissao = document.getElementById('pc-form-emissao').value;
+                const nf = document.getElementById('pc-form-nf').value.trim();
+                const valor = document.getElementById('pc-form-valor').value;
+                const vencimento = document.getElementById('pc-form-vencimento').value;
+                const vencimento_ajustado = document.getElementById('pc-form-vencimento-ajustado').value;
+                const parcelado = document.getElementById('pc-form-parcelamento').checked;
+
+                if (!fornecedor || !data_emissao || !valor) {
+                    showToast('Preencha Fornecedor, Data de Emissão e Valor', 'error'); return;
+                }
+
+                const linha_fluxo = document.getElementById('pc-form-linha-fluxo').value.trim() || null;
+
+                let body;
+                if (parcelado) {
+                    const inputs = document.querySelectorAll('#pc-prazos-inputs input[type=number]');
+                    const prazos = Array.from(inputs).map(i => parseInt(i.value)).filter(v => v > 0);
+                    if (!prazos.length) { showToast('Informe ao menos um prazo', 'error'); return; }
+                    body = { fornecedor, data_emissao, nf: nf || null, valor: parseFloat(valor), prazos, linha_fluxo };
+                } else {
+                    if (!vencimento) { showToast('Informe o Vencimento', 'error'); return; }
+                    body = {
+                        fornecedor, data_emissao, nf: nf || null,
+                        valor: parseFloat(valor), vencimento,
+                        vencimento_ajustado: vencimento_ajustado || null,
+                        linha_fluxo
+                    };
+                }
+
+                try {
+                    const res = await fetch(API_BASE + '/pedidos-compra', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify(body)
+                    });
+                    if (!res.ok) {
+                        const e = await res.json().catch(() => ({}));
+                        showToast('Erro: ' + (e.error || 'HTTP ' + res.status), 'error'); return;
+                    }
+                    const d = await res.json();
+                    const count = d.pedidos ? d.pedidos.length : 1;
+                    showToast(count > 1 ? count + ' parcelas criadas!' : 'Pedido salvo!', 'success');
+                    closePedidoSidebar();
+                    loadPedidosCompra();
+                } catch (e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            async function deletePedido(id) {
+                if (!confirm('Excluir este pedido?')) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(API_BASE + '/pedidos-compra?id=' + id, {
+                        method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) { showToast('Erro ao excluir', 'error'); return; }
+                    showToast('Pedido excluído', 'success');
+                    loadPedidosCompra();
+                } catch (e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            // ── Fornecedores Modal ────────────────────────────────────────────
+            function openPcFornecedoresModal() {
+                const ov = document.getElementById('pc-forn-modal-overlay');
+                ov.style.display = 'flex';
+                renderPcFornecedoresList();
+            }
+
+            function closePcFornecedoresModal() {
+                document.getElementById('pc-forn-modal-overlay').style.display = 'none';
+            }
+
+            function renderPcFornecedoresList() {
+                const el = document.getElementById('pc-forn-list');
+                if (!el) return;
+                if (!_pcFornecedores.length) {
+                    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">Nenhum fornecedor cadastrado</div>';
+                    return;
+                }
+                el.innerHTML = '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="background:var(--surface2);"><th style="padding:8px 12px;font-size:11px;font-weight:700;text-align:left;color:var(--muted);">Fornecedor</th><th style="padding:8px 12px;font-size:11px;font-weight:700;text-align:center;color:var(--muted);">Prazo (dias)</th><th style="width:40px;"></th></tr></thead><tbody>' +
+                    _pcFornecedores.map(f =>
+                        `<tr style="border-top:1px solid var(--border);">
+                            <td style="padding:9px 12px;font-size:13px;">${esc(f.nome)}</td>
+                            <td style="padding:9px 12px;text-align:center;font-size:13px;color:var(--accent);font-weight:600;">${f.prazo_padrao_dias}</td>
+                            <td style="padding:9px 12px;">
+                                <button onclick="deletePcFornecedor(${f.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">✕</button>
+                            </td>
+                        </tr>`
+                    ).join('') +
+                    '</tbody></table>';
+            }
+
+            async function savePcFornecedor() {
+                const token = localStorage.getItem('have_token');
+                const nome  = document.getElementById('pc-forn-nome').value.trim();
+                const prazo = parseInt(document.getElementById('pc-forn-prazo').value) || 30;
+                if (!nome) { showToast('Informe o nome do fornecedor', 'error'); return; }
+                try {
+                    const res = await fetch(API_BASE + '/pedidos-compra?module=fornecedores', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ nome, prazo_padrao_dias: prazo })
+                    });
+                    if (!res.ok) { const e = await res.json().catch(()=>({})); showToast('Erro: ' + (e.error || 'HTTP ' + res.status), 'error'); return; }
+                    const d = await res.json();
+                    const exists = _pcFornecedores.findIndex(f => f.id === d.fornecedor.id);
+                    if (exists >= 0) _pcFornecedores[exists] = d.fornecedor;
+                    else _pcFornecedores.push(d.fornecedor);
+                    document.getElementById('pc-forn-nome').value  = '';
+                    document.getElementById('pc-forn-prazo').value = '30';
+                    showToast('Fornecedor salvo', 'success');
+                    renderPcFornecedoresList();
+                    _pcRebuildDatalist();
+                } catch (e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            async function deletePcFornecedor(id) {
+                if (!confirm('Remover este fornecedor?')) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(API_BASE + '/pedidos-compra?module=fornecedores&id=' + id, {
+                        method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) { showToast('Erro ao remover', 'error'); return; }
+                    _pcFornecedores = _pcFornecedores.filter(f => f.id !== id);
+                    showToast('Fornecedor removido', 'success');
+                    renderPcFornecedoresList();
+                    _pcRebuildDatalist();
+                } catch (e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            // ══════════════════════════════════════════════
+            // CONFIGURAÇÕES DE CAIXA
+            // ══════════════════════════════════════════════
+            const _CAIXA_CFG_KEY = 'have_caixa_config';
+
+            function _getCaixaConfig() {
+                try { return JSON.parse(localStorage.getItem(_CAIXA_CFG_KEY) || '{}'); } catch { return {}; }
+            }
+
+            function loadCaixaConfig() {
+                const cfg = _getCaixaConfig();
+                const el = document.getElementById('cfg-apenas-futuros');
+                if (el) el.checked = cfg.apenas_futuros !== false; // default true
+            }
+
+            function onCfgChange() { /* live preview — save is explicit */ }
+
+            function salvarCaixaConfig() {
+                const cfg = {
+                    apenas_futuros: document.getElementById('cfg-apenas-futuros')?.checked !== false
+                };
+                localStorage.setItem(_CAIXA_CFG_KEY, JSON.stringify(cfg));
+                showToast('Configurações salvas', 'success');
             }
 
             async function loadBelvoLinks() {
@@ -9099,6 +10335,7 @@ if (id === 'dfs-kpis') {
                 document.getElementById('cfg-panel-' + tab).style.display = '';
                 if (tab === 'sopc') loadSopcConfig();
                 if (tab === 'fornecedores') loadFornecedores();
+                if (tab === 'canais') loadCfgCanais();
             }
 
             const _SOPC_META = {
@@ -9421,6 +10658,582 @@ if (id === 'dfs-kpis') {
                     btn.textContent = 'Salvar';
                     btn.disabled = false;
                 }
+            }
+
+            // ══════════════════════════════════════════════
+            // VENDAS
+            // ══════════════════════════════════════════════
+            let _vndCurrentTab = 'realizadas';
+            let _vndCanaisData = [];
+            let _vndPrevisaoData = [];
+            let _vndRealizadasData = [];
+            let _vndGruposData = {};
+
+            function _vndBuildColunas(canaisAll, grupos) {
+                const canalParaGrupo = {};
+                Object.entries(grupos).forEach(([g, cs]) => cs.forEach(c => { canalParaGrupo[c] = g; }));
+                const gruposVistos = new Set();
+                const colunas = [];
+                canaisAll.forEach(canal => {
+                    const g = canalParaGrupo[canal];
+                    if (g) {
+                        if (!gruposVistos.has(g)) {
+                            gruposVistos.add(g);
+                            colunas.push({ label: g, canais: grupos[g] });
+                        }
+                    } else {
+                        colunas.push({ label: canal, canais: [canal] });
+                    }
+                });
+                return colunas;
+            }
+
+            function _vndEscape(str) {
+                return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+
+            function switchVendasTab(tab) {
+                _vndCurrentTab = tab;
+                ['realizadas','previsao','canais'].forEach(t => {
+                    const btn = document.getElementById('vnd-tab-' + t);
+                    const content = document.getElementById('vnd-content-' + t);
+                    const active = t === tab;
+                    if (btn) {
+                        btn.style.borderBottomColor = active ? 'var(--accent)' : 'transparent';
+                        btn.style.color = active ? 'var(--accent)' : 'var(--muted)';
+                    }
+                    if (content) content.style.display = active ? '' : 'none';
+                });
+                const sel = document.getElementById('vnd-meses-select');
+                if (sel) sel.style.display = tab === 'realizadas' ? '' : 'none';
+                if (tab === 'realizadas') loadVendasRealizadas();
+                else if (tab === 'previsao') loadVendasPrevisao();
+                else if (tab === 'canais') loadVendasCanais();
+            }
+
+            function loadVendas() {
+                switchVendasTab(_vndCurrentTab);
+            }
+
+            async function loadVendasRealizadas() {
+                const container = document.getElementById('vnd-realizadas-container');
+                if (!container) return;
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>';
+                const token = localStorage.getItem('have_token');
+                const meses = document.getElementById('vnd-meses-select')?.value || 3;
+                try {
+                    const [r1, r2, r3] = await Promise.all([
+                        fetch(`${API_BASE}/data?module=vendas&action=realizadas&meses=${meses}`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(`${API_BASE}/data?module=vendas&action=canais`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(`${API_BASE}/data?module=vendas&action=grupos`, { headers: { 'Authorization': 'Bearer ' + token } })
+                    ]);
+                    if (r1.status === 401 || r2.status === 401 || r3.status === 401) { handleUnauthorized(); return; }
+                    if (!r1.ok) { let e = 'HTTP ' + r1.status; try { const ej = await r1.json(); e = ej.error || e; } catch {} throw new Error(e); }
+                    const [j1, j2, j3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
+                    _vndRealizadasData = j1.rows || [];
+                    _vndCanaisData = j2.canais || [];
+                    _vndGruposData = j3.grupos || {};
+                    renderVendasRealizadas();
+                } catch(e) {
+                    container.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;font-size:13px;">Erro: ${e.message}</div>`;
+                }
+            }
+
+            function renderVendasRealizadas() {
+                const container = document.getElementById('vnd-realizadas-container');
+                const rows = _vndRealizadasData;
+                if (!rows.length) {
+                    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Nenhum recebimento futuro encontrado. Verifique os lead times na aba Canais.</div>';
+                    return;
+                }
+
+                const datesSet = new Set();
+                rows.forEach(r => datesSet.add(r.vencimento_data.slice(0,10)));
+                const dates = [...datesSet].sort();
+
+                const dataMap = {};
+                rows.forEach(r => {
+                    const key = r.vencimento_data.slice(0,10);
+                    if (!dataMap[key]) dataMap[key] = {};
+                    if (!dataMap[key][r.canal]) dataMap[key][r.canal] = { repasse: 0, qtd: 0 };
+                    dataMap[key][r.canal].repasse += parseFloat(r.repasse) || 0;
+                    dataMap[key][r.canal].qtd    += parseInt(r.qtd) || 0;
+                });
+
+                const allCanais = [...new Set(rows.map(r => r.canal))].sort();
+                const colunas = _vndBuildColunas(allCanais, _vndGruposData || {});
+
+                const fmtR = v => 'R\u00a0' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const colTotals = {}; const colQtds = {};
+                colunas.forEach(col => { colTotals[col.label] = 0; colQtds[col.label] = 0; });
+
+                let html = `<div class="table-card" style="overflow-x:auto;">
+                    <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);">
+                        <strong>${dates.length}</strong> data${dates.length !== 1 ? 's' : ''} de recebimento a partir de hoje
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead><tr style="background:var(--surface2);">
+                            <th style="padding:10px 14px;text-align:left;font-weight:700;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;left:0;background:var(--surface2);">Vencimento</th>
+                            ${colunas.map(col => {
+                                const isGroup = col.canais.length > 1;
+                                const lbl = col.label.length > 14 ? _vndEscape(col.label.substring(0,13)) + '\u2026' : _vndEscape(col.label);
+                                return `<th style="padding:10px 10px;text-align:right;font-weight:700;white-space:nowrap;border-bottom:1px solid var(--border);" title="${isGroup ? 'Grupo: '+_vndEscape(col.canais.join(', ')) : _vndEscape(col.label)}">${lbl}${isGroup ? ' <span style="font-size:9px;color:var(--accent);">grupo</span>' : ''}</th>`;
+                            }).join('')}
+                            <th style="padding:10px 14px;text-align:right;font-weight:700;border-bottom:1px solid var(--border);background:rgba(0,124,220,0.06);">Total</th>
+                        </tr></thead>
+                        <tbody>`;
+
+                dates.forEach((d, idx) => {
+                    const [ano, mes, dia] = d.split('-').map(Number);
+                    const vencDate = new Date(ano, mes-1, dia);
+                    const diffDias = Math.round((vencDate - hoje) / 86400000);
+                    const label = `${String(dia).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${ano}`;
+                    const bg = idx % 2 === 1 ? 'var(--surface2)' : 'var(--surface)';
+                    const badge = diffDias === 0
+                        ? `<span style="margin-left:5px;font-size:10px;background:#22c55e;color:#fff;padding:1px 7px;border-radius:10px;font-weight:700;">Hoje</span>`
+                        : diffDias <= 3
+                        ? `<span style="margin-left:5px;font-size:10px;background:#f59e0b;color:#fff;padding:1px 7px;border-radius:10px;font-weight:700;">em ${diffDias}d</span>`
+                        : `<span style="margin-left:5px;font-size:10px;color:var(--muted);">+${diffDias}d</span>`;
+                    const rowTotal = colunas.reduce((s, col) =>
+                        s + col.canais.reduce((cs, c) => cs + (dataMap[d]?.[c]?.repasse || 0), 0), 0);
+                    html += `<tr style="border-bottom:1px solid var(--border);background:${bg};">
+                        <td style="padding:10px 14px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:${bg};">${label}${badge}</td>
+                        ${colunas.map(col => {
+                            const repasse = col.canais.reduce((s, c) => s + (dataMap[d]?.[c]?.repasse || 0), 0);
+                            const qtd = col.canais.reduce((s, c) => s + (dataMap[d]?.[c]?.qtd || 0), 0);
+                            colTotals[col.label] += repasse; colQtds[col.label] += qtd;
+                            if (!repasse) return `<td style="padding:10px 10px;text-align:right;color:var(--muted);">\u2013</td>`;
+                            return `<td style="padding:8px 10px;text-align:right;"><div style="font-weight:600;">${fmtR(repasse)}</div><div style="font-size:10px;color:var(--muted);">${qtd} ped.</div></td>`;
+                        }).join('')}
+                        <td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--accent);background:rgba(0,124,220,0.04);">${fmtR(rowTotal)}</td>
+                    </tr>`;
+                });
+
+                const grandTotal = Object.values(colTotals).reduce((a,b) => a+b, 0);
+                html += `<tr style="border-top:2px solid var(--border);background:rgba(0,124,220,0.06);">
+                    <td style="padding:10px 14px;font-weight:700;position:sticky;left:0;background:rgba(0,124,220,0.06);">Total</td>
+                    ${colunas.map(col => `<td style="padding:10px 10px;text-align:right;"><div style="font-weight:700;">${fmtR(colTotals[col.label]||0)}</div><div style="font-size:10px;color:var(--muted);">${colQtds[col.label]||0} ped.</div></td>`).join('')}
+                    <td style="padding:10px 14px;text-align:right;font-weight:800;color:var(--accent);">${fmtR(grandTotal)}</td>
+                </tr></tbody></table></div>`;
+                container.innerHTML = html;
+            }
+
+            async function loadVendasCanais() {
+                const container = document.getElementById('vnd-canais-container');
+                if (!container) return;
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const [rC, rG] = await Promise.all([
+                        fetch(`${API_BASE}/data?module=vendas&action=canais`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(`${API_BASE}/data?module=vendas&action=grupos`, { headers: { 'Authorization': 'Bearer ' + token } })
+                    ]);
+                    if (rC.status === 401 || rG.status === 401) { handleUnauthorized(); return; }
+                    if (!rC.ok) throw new Error('HTTP ' + rC.status);
+                    const [cj, gj] = await Promise.all([rC.json(), rG.json()]);
+                    _vndCanaisData = cj.canais || [];
+                    _vndGruposData = gj.grupos || {};
+                    renderVendasCanais();
+                } catch(e) {
+                    container.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;font-size:13px;">Erro: ${e.message}</div>`;
+                }
+            }
+
+            function renderVendasCanais() {
+                const container = document.getElementById('vnd-canais-container');
+                const canais = _vndCanaisData;
+                if (!canais.length) {
+                    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Nenhum canal encontrado. Importe dados de vendas primeiro.</div>';
+                    return;
+                }
+                const canalParaGrupo = {};
+                Object.entries(_vndGruposData || {}).forEach(([g, cs]) => cs.forEach(c => { canalParaGrupo[c] = g; }));
+                const semGrupo = canais.filter(c => !canalParaGrupo[c.canal]).length;
+                let html = `<div class="table-card" style="max-width:720px;">
+                    <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);">
+                        ${canais.length} canal${canais.length>1?'is':''} · <span style="color:var(--accent);font-weight:600;">${canais.length - semGrupo} agrupado${canais.length - semGrupo !== 1 ? 's' : ''}</span> · ${semGrupo} sem grupo
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead><tr style="background:var(--surface2);">
+                            <th style="padding:10px 16px;text-align:left;font-weight:700;border-bottom:1px solid var(--border);">Canal de Venda</th>
+                            <th style="padding:10px 16px;text-align:left;font-weight:700;border-bottom:1px solid var(--border);">Grupo</th>
+                            <th style="padding:10px 16px;text-align:center;font-weight:700;border-bottom:1px solid var(--border);">Lead Time (dias)</th>
+                            <th style="padding:10px 12px;text-align:center;font-weight:700;border-bottom:1px solid var(--border);width:60px;"></th>
+                        </tr></thead>
+                        <tbody>`;
+                canais.forEach((c, i) => {
+                    const grupo = canalParaGrupo[c.canal];
+                    const bg = grupo ? 'rgba(0,124,220,0.04)' : '';
+                    html += `<tr style="border-bottom:1px solid var(--border);background:${bg};">
+                        <td style="padding:11px 16px;font-weight:600;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="width:8px;height:8px;border-radius:50%;background:${grupo ? 'var(--accent)' : 'var(--border)'};display:inline-block;flex-shrink:0;"></span>
+                                ${_vndEscape(c.canal)}
+                            </div>
+                        </td>
+                        <td style="padding:11px 16px;">
+                            ${grupo
+                                ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,124,220,0.1);border:1px solid rgba(0,124,220,0.25);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;color:var(--accent);">${_vndEscape(grupo)}</span>`
+                                : `<span style="font-size:11px;color:var(--muted);">—</span>`
+                            }
+                        </td>
+                        <td style="padding:11px 16px;text-align:center;">
+                            <input type="number" min="0" max="365" value="${c.lead_time_dias}"
+                                id="vnd-lt-${i}"
+                                style="width:80px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:center;background:var(--surface);color:var(--text);"
+                                onblur="saveVendasLeadTime('${_vndEscape(c.canal)}', this.value, ${i})"
+                                onkeydown="if(event.key==='Enter'){this.blur();}">
+                        </td>
+                        <td style="padding:11px 12px;text-align:center;">
+                            <span id="vnd-lt-status-${i}" style="font-size:11px;color:var(--muted);"></span>
+                        </td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            }
+
+            async function saveVendasLeadTime(canal, dias, idx) {
+                const statusEl = document.getElementById('vnd-lt-status-' + idx);
+                if (statusEl) statusEl.textContent = 'Salvando...';
+                const token = localStorage.getItem('have_token');
+                const v = parseInt(dias);
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=vendas&action=lead_time`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ canal, lead_time_dias: v })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+
+                    const canalParaGrupo = {};
+                    Object.entries(_vndGruposData || {}).forEach(([g, cs]) => cs.forEach(c => { canalParaGrupo[c] = g; }));
+                    const grupo = canalParaGrupo[canal];
+                    if (grupo) {
+                        const grupoCanais = (_vndGruposData[grupo] || []).filter(c => c !== canal);
+                        await Promise.all(grupoCanais.map(outroCanal =>
+                            fetch(`${API_BASE}/data?module=vendas&action=lead_time`, {
+                                method: 'POST',
+                                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ canal: outroCanal, lead_time_dias: v })
+                            }).then(() => {
+                                const j = _vndCanaisData.findIndex(c => c.canal === outroCanal);
+                                if (j !== -1) {
+                                    _vndCanaisData[j].lead_time_dias = v;
+                                    const inp = document.getElementById('vnd-lt-' + j);
+                                    if (inp) inp.value = v;
+                                }
+                            })
+                        ));
+                    }
+
+                    if (statusEl) {
+                        const label = grupo ? `✓ Grupo atualizado` : '✓ Salvo';
+                        statusEl.textContent = label;
+                        statusEl.style.color = '#22c55e';
+                        setTimeout(() => { if (statusEl) { statusEl.textContent = ''; statusEl.style.color = ''; } }, 2500);
+                    }
+                } catch(e) {
+                    if (statusEl) { statusEl.textContent = '✗ Erro'; statusEl.style.color = '#ef4444'; }
+                }
+            }
+
+            async function loadVendasPrevisao() {
+                const container = document.getElementById('vnd-previsao-container');
+                if (!container) return;
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const [rPrev, rCanais, rGrupos] = await Promise.all([
+                        fetch(`${API_BASE}/data?module=vendas&action=previsao`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(`${API_BASE}/data?module=vendas&action=canais`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(`${API_BASE}/data?module=vendas&action=grupos`, { headers: { 'Authorization': 'Bearer ' + token } })
+                    ]);
+                    if (rPrev.status === 401 || rCanais.status === 401 || rGrupos.status === 401) { handleUnauthorized(); return; }
+                    const [prevJson, canaisJson, gruposJson] = await Promise.all([rPrev.json(), rCanais.json(), rGrupos.json()]);
+                    _vndPrevisaoData = prevJson.rows || [];
+                    _vndCanaisData = canaisJson.canais || [];
+                    _vndGruposData = gruposJson.grupos || {};
+                    renderVendasPrevisao();
+                } catch(e) {
+                    container.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;font-size:13px;">Erro: ${e.message}</div>`;
+                }
+            }
+
+            function renderVendasPrevisao() {
+                const container = document.getElementById('vnd-previsao-container');
+                const allCanais = _vndCanaisData.map(c => c.canal);
+                if (!allCanais.length) {
+                    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Nenhum canal encontrado. Importe dados de vendas primeiro.</div>';
+                    return;
+                }
+                const colunas = _vndBuildColunas(allCanais, _vndGruposData || {});
+                const prevMap = {};
+                _vndPrevisaoData.forEach(r => {
+                    const key = `${r.ano}-${String(r.mes).padStart(2,'0')}`;
+                    if (!prevMap[key]) prevMap[key] = {};
+                    prevMap[key][r.canal] = parseFloat(r.valor) || 0;
+                });
+                const monthsToShow = new Set(Object.keys(prevMap));
+                const now = new Date();
+                for (let i = 0; i < 12; i++) {
+                    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                    monthsToShow.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+                }
+                const months = [...monthsToShow].sort().reverse();
+                const MES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                const fmtV = v => (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+                let html = `<div class="table-card" style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead><tr style="background:var(--surface2);">
+                            <th style="padding:10px 14px;text-align:left;font-weight:700;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;left:0;background:var(--surface2);">Período</th>
+                            ${colunas.map(col => {
+                                const isGroup = col.canais.length > 1;
+                                const lbl = col.label.length > 14 ? _vndEscape(col.label.substring(0,13)) + '…' : _vndEscape(col.label);
+                                const title = isGroup ? `Grupo: ${_vndEscape(col.canais.join(', '))}` : _vndEscape(col.label);
+                                return `<th style="padding:10px 10px;text-align:center;font-weight:700;white-space:nowrap;border-bottom:1px solid var(--border);" title="${title}">${lbl}${isGroup ? ' <span style="font-size:9px;color:var(--accent);">grupo</span>' : ''}</th>`;
+                            }).join('')}
+                            <th style="padding:10px 14px;text-align:right;font-weight:700;white-space:nowrap;border-bottom:1px solid var(--border);background:rgba(0,124,220,0.06);">Total Prev.</th>
+                        </tr></thead>
+                        <tbody>`;
+                months.forEach((m, idx) => {
+                    const [ano, mesStr] = m.split('-');
+                    const mes = parseInt(mesStr);
+                    const label = `${MES[mes]}/${ano}`;
+                    const rowData = prevMap[m] || {};
+                    const rowTotal = colunas.reduce((s, col) => s + (rowData[col.label] || 0), 0);
+                    const mDate = new Date(parseInt(ano), mes - 1, 1);
+                    const isFuture = mDate >= new Date(now.getFullYear(), now.getMonth(), 1);
+                    const bg = idx % 2 === 1 ? 'var(--surface2)' : 'var(--surface)';
+                    html += `<tr style="border-bottom:1px solid var(--border);background:${bg};">
+                        <td style="padding:10px 14px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:${bg};">
+                            ${label}${isFuture ? ' <span style="font-size:10px;color:var(--accent);background:rgba(0,124,220,0.1);padding:1px 5px;border-radius:4px;">Prev</span>' : ''}
+                        </td>
+                        ${colunas.map(col => {
+                            const v = rowData[col.label] || 0;
+                            const safeLabel = col.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+                            return `<td style="padding:4px 6px;text-align:center;">
+                                <input type="number" min="0" step="0.01" value="${v > 0 ? fmtV(v) : ''}" placeholder="0,00"
+                                    style="width:100%;min-width:90px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;text-align:right;background:var(--surface);color:var(--text);"
+                                    onchange="saveVendasPrevisaoCell(${ano}, ${mes}, '${safeLabel}', this.value)"
+                                    onfocus="this.style.borderColor='var(--accent)'"
+                                    onblur="this.style.borderColor='var(--border)'">
+                            </td>`;
+                        }).join('')}
+                        <td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--accent);background:rgba(0,124,220,0.04);" id="vnd-prev-total-${m}">
+                            R$&nbsp;${fmtV(rowTotal)}
+                        </td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            }
+
+            function addVendasPrevisaoMes() {
+                const input = prompt('Adicionar período (AAAA-MM):');
+                if (!input || !/^\d{4}-\d{2}$/.test(input.trim())) {
+                    showToast('Formato inválido. Use AAAA-MM (ex: 2026-01)', 'error');
+                    return;
+                }
+                const [ano, mesStr] = input.trim().split('-');
+                const mes = parseInt(mesStr);
+                if (mes < 1 || mes > 12) { showToast('Mês inválido', 'error'); return; }
+                const key = `${ano}-${String(mes).padStart(2,'0')}`;
+                const exists = _vndPrevisaoData.some(r => String(r.ano) === ano && r.mes === mes);
+                if (!exists) {
+                    _vndCanaisData.forEach(c => {
+                        _vndPrevisaoData.push({ ano: parseInt(ano), mes, canal: c.canal, valor: 0 });
+                    });
+                }
+                renderVendasPrevisao();
+            }
+
+            async function saveVendasPrevisaoCell(ano, mes, canal, valor) {
+                const token = localStorage.getItem('have_token');
+                const v = parseFloat(String(valor).replace(',', '.')) || 0;
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=vendas&action=previsao`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ano, mes, canal, valor: v })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const existing = _vndPrevisaoData.find(d => d.ano == ano && d.mes == mes && d.canal === canal);
+                    if (existing) existing.valor = v;
+                    else _vndPrevisaoData.push({ ano, mes, canal, valor: v });
+                    const key = `${ano}-${String(mes).padStart(2,'0')}`;
+                    const totalEl = document.getElementById('vnd-prev-total-' + key);
+                    if (totalEl) {
+                        const colunas = _vndBuildColunas(_vndCanaisData.map(c => c.canal), _vndGruposData || {});
+                        const rowData = {};
+                        _vndPrevisaoData.filter(d => d.ano == ano && d.mes == mes).forEach(d => { rowData[d.canal] = parseFloat(d.valor) || 0; });
+                        const rowTotal = colunas.reduce((s, col) => s + (rowData[col.label] || 0), 0);
+                        totalEl.textContent = 'R\u00a0' + rowTotal.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    }
+                } catch(e) {
+                    showToast('Erro ao salvar previsão: ' + e.message, 'error');
+                }
+            }
+
+            // ══════════════════════════════════════════════
+            // CONFIGURAÇÕES · GRUPOS DE CANAIS
+            // ══════════════════════════════════════════════
+            let _cfgGruposData = {};
+            let _cfgTodosCanais = [];
+
+            async function loadCfgCanais() {
+                const loadEl = document.getElementById('cfg-canais-loading');
+                const bodyEl = document.getElementById('cfg-canais-body');
+                if (!loadEl || !bodyEl) return;
+                loadEl.style.display = '';
+                loadEl.textContent = 'Carregando...';
+                bodyEl.style.display = 'none';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const [rG, rC] = await Promise.all([
+                        fetch(`${API_BASE}/data?module=vendas&action=grupos`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                        fetch(`${API_BASE}/data?module=vendas&action=canais`, { headers: { 'Authorization': 'Bearer ' + token } })
+                    ]);
+                    if (rG.status === 401 || rC.status === 401) { handleUnauthorized(); return; }
+                    const [gj, cj] = await Promise.all([rG.json(), rC.json()]);
+                    _cfgGruposData = gj.grupos || {};
+                    _cfgTodosCanais = (cj.canais || []).map(c => c.canal);
+                    loadEl.style.display = 'none';
+                    bodyEl.style.display = 'flex';
+                    renderCfgCanais();
+                } catch(e) {
+                    loadEl.textContent = 'Erro: ' + e.message;
+                }
+            }
+
+            function renderCfgCanais() {
+                const bodyEl = document.getElementById('cfg-canais-body');
+                if (!bodyEl) return;
+                const nomes = Object.keys(_cfgGruposData).sort();
+                if (!nomes.length) {
+                    bodyEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px;border:1.5px dashed var(--border);border-radius:10px;width:100%;">Nenhum grupo criado. Clique em <strong>+ Novo Grupo</strong> para começar.</div>';
+                    return;
+                }
+                bodyEl.innerHTML = nomes.map(g => {
+                    const canaisDo = _cfgGruposData[g] || [];
+                    const safeG = g.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+                    return `<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--surface2);border-bottom:1.5px solid var(--border);">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block;"></span>
+                                <span style="font-weight:700;font-size:13px;">${_vndEscape(g)}</span>
+                                <span style="font-size:11px;color:var(--muted);background:rgba(0,0,0,0.06);padding:1px 7px;border-radius:10px;">${canaisDo.length} canal${canaisDo.length !== 1 ? 'is' : ''}</span>
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                <button onclick="cfgCanaisRenameGrupo('${safeG}')" style="padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:11px;cursor:pointer;">✏ Renomear</button>
+                                <button onclick="cfgCanaisDeleteGrupo('${safeG}')" style="padding:4px 10px;border:1.5px solid #ef4444;border-radius:6px;background:transparent;color:#ef4444;font-size:11px;cursor:pointer;">✕ Excluir</button>
+                            </div>
+                        </div>
+                        <div style="padding:12px 16px;">
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:28px;">
+                                ${canaisDo.length ? canaisDo.map(c => {
+                                    const safeC = c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+                                    return `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(0,124,220,0.1);border:1px solid rgba(0,124,220,0.25);border-radius:20px;padding:3px 10px;font-size:12px;">
+                                        ${_vndEscape(c)}
+                                        <button onclick="cfgCanaisRemoveCanal('${safeG}','${safeC}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0;" title="Remover">×</button>
+                                    </span>`;
+                                }).join('') : '<span style="font-size:12px;color:var(--muted);">Nenhum canal ainda.</span>'}
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <select id="cfg-add-sel-${_vndEscape(g)}" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:12px;">
+                                    <option value="">Selecionar canal...</option>
+                                    ${_cfgTodosCanais.filter(c => !Object.values(_cfgGruposData).some(arr => arr.includes(c))).map(c => `<option value="${_vndEscape(c)}">${_vndEscape(c)}</option>`).join('')}
+                                </select>
+                                <button onclick="cfgCanaisAddCanal('${safeG}')" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Adicionar</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            function cfgCanaisNovoGrupo() {
+                const nome = prompt('Nome do novo grupo (ex: Mercado Livre):');
+                if (!nome || !nome.trim()) return;
+                const g = nome.trim();
+                if (_cfgGruposData[g] !== undefined) { showToast('Grupo já existe', 'error'); return; }
+                _cfgGruposData[g] = [];
+                renderCfgCanais();
+            }
+
+            async function cfgCanaisAddCanal(grupo) {
+                const selId = 'cfg-add-sel-' + _vndEscape(grupo);
+                const sel = document.getElementById(selId);
+                if (!sel || !sel.value) { showToast('Selecione um canal', 'error'); return; }
+                const canal = sel.value;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=vendas&action=grupos`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ grupo, canal })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    if (!_cfgGruposData[grupo]) _cfgGruposData[grupo] = [];
+                    if (!_cfgGruposData[grupo].includes(canal)) _cfgGruposData[grupo].push(canal);
+                    renderCfgCanais();
+                    showToast('Canal adicionado ao grupo', 'ok');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            async function cfgCanaisRemoveCanal(grupo, canal) {
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=vendas&action=grupos`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ grupo, canal })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    _cfgGruposData[grupo] = (_cfgGruposData[grupo] || []).filter(c => c !== canal);
+                    renderCfgCanais();
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            async function cfgCanaisDeleteGrupo(grupo) {
+                if (!confirm(`Excluir o grupo "${grupo}"?\nOs canais individuais não serão afetados.`)) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=vendas&action=grupos`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ grupo })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    delete _cfgGruposData[grupo];
+                    renderCfgCanais();
+                    showToast('Grupo excluído', 'ok');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            async function cfgCanaisRenameGrupo(grupo) {
+                const novo = prompt(`Novo nome para "${grupo}":`, grupo);
+                if (!novo || !novo.trim() || novo.trim() === grupo) return;
+                const novoNome = novo.trim();
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(`${API_BASE}/data?module=vendas&action=grupos`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'rename', grupo_old: grupo, grupo_new: novoNome })
+                    });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    _cfgGruposData[novoNome] = _cfgGruposData[grupo];
+                    delete _cfgGruposData[grupo];
+                    renderCfgCanais();
+                    showToast('Grupo renomeado', 'ok');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
             }
 
         </script>

@@ -34,16 +34,19 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      const { source, ano, mes } = req.query;
+      const { source, ano, mes, tipo } = req.query;
 
-      // Return unique descriptions from extract not yet in de-para
+      // Return unique descriptions from bank extract not yet mapped (tipo='extrato')
       if (source === 'extract') {
         const query = ano && mes
           ? 'SELECT DISTINCT descricao FROM caixa_extrato WHERE empresa=$1 AND ano=$2 AND mes=$3 ORDER BY descricao'
           : 'SELECT DISTINCT descricao FROM caixa_extrato WHERE empresa=$1 ORDER BY descricao';
         const params = ano && mes ? [company, parseInt(ano), parseInt(mes)] : [company];
         const r = await pool.query(query, params);
-        const dpR = await pool.query('SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1', [company]);
+        const dpR = await pool.query(
+          "SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
+          [company]
+        );
         const mapped = new Set(dpR.rows.map(x => x.palavra_chave.toLowerCase()));
         return res.json({
           descricoes: r.rows.map(x => x.descricao),
@@ -51,24 +54,77 @@ module.exports = async (req, res) => {
         });
       }
 
-      // Return all mappings
+      // Return groups + ungrouped canals for mapping (tipo='vendas')
+      if (source === 'canais') {
+        // All canals from bd_vendas
+        const cR = await pool.query(
+          `SELECT DISTINCT COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"), 'Sem canal') AS canal
+           FROM bd_vendas
+           WHERE "Canal de venda" IS NOT NULL AND TRIM("Canal de venda") != ''`
+        );
+        // Groups from vendas_grupos_canais
+        const gR = await pool.query(
+          `SELECT grupo, canal FROM vendas_grupos_canais WHERE empresa=$1`, [company]
+        );
+        // Build canal→group map
+        const canalToGrupo = {};
+        const grupos = new Set();
+        gR.rows.forEach(({ grupo, canal }) => { canalToGrupo[canal.toLowerCase()] = grupo; grupos.add(grupo); });
+        // Keys = groups + ungrouped canals
+        const keys = new Set();
+        cR.rows.forEach(({ canal }) => {
+          const g = canalToGrupo[canal.toLowerCase()];
+          keys.add(g || canal);
+        });
+        // Already mapped
+        const dpR = await pool.query(
+          `SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='vendas'`, [company]
+        );
+        const mapped = new Set(dpR.rows.map(x => x.palavra_chave.toLowerCase()));
+        const allKeys = [...keys].sort();
+        return res.json({
+          canais: allKeys,
+          nao_mapeados: allKeys.filter(k => !mapped.has(k.toLowerCase()))
+        });
+      }
+
+      // Return unique fornecedores from contas_pagar not yet mapped (tipo='contas_pagar')
+      if (source === 'contas_pagar') {
+        const r = await pool.query(
+          "SELECT DISTINCT fornecedor FROM contas_pagar WHERE fornecedor IS NOT NULL AND fornecedor <> '' ORDER BY fornecedor"
+        );
+        const dpR = await pool.query(
+          "SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='contas_pagar'",
+          [company]
+        );
+        const mapped = new Set(dpR.rows.map(x => x.palavra_chave.toLowerCase()));
+        return res.json({
+          fornecedores: r.rows.map(x => x.fornecedor),
+          nao_classificados: r.rows.map(x => x.fornecedor).filter(f => !mapped.has(f.toLowerCase()))
+        });
+      }
+
+      // Return mappings, optionally filtered by tipo
+      const tipoFilter = tipo ? ' AND tipo=$2' : '';
+      const params = tipo ? [company, tipo] : [company];
       const r = await pool.query(
-        'SELECT id, palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 ORDER BY categoria_nome, palavra_chave',
-        [company]
+        `SELECT id, palavra_chave, categoria_nome, tipo FROM caixa_de_para WHERE empresa=$1${tipoFilter} ORDER BY tipo, categoria_nome, palavra_chave`,
+        params
       );
       return res.json({ mappings: r.rows });
     }
 
     if (req.method === 'POST') {
-      const { palavra_chave, categoria_nome } = req.body;
+      const { palavra_chave, categoria_nome, tipo } = req.body;
       if (!palavra_chave || !categoria_nome)
         return res.status(400).json({ error: 'Informe palavra_chave e categoria_nome' });
+      const tipoVal = (tipo === 'contas_pagar') ? 'contas_pagar' : (tipo === 'vendas') ? 'vendas' : 'extrato';
       const r = await pool.query(
-        `INSERT INTO caixa_de_para (empresa, palavra_chave, categoria_nome)
-         VALUES ($1,$2,$3)
-         ON CONFLICT (empresa, palavra_chave) DO UPDATE SET categoria_nome=EXCLUDED.categoria_nome
-         RETURNING id, palavra_chave, categoria_nome`,
-        [company, palavra_chave.substring(0, 500), categoria_nome.substring(0, 100)]
+        `INSERT INTO caixa_de_para (empresa, palavra_chave, categoria_nome, tipo)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (empresa, palavra_chave, tipo) DO UPDATE SET categoria_nome=EXCLUDED.categoria_nome
+         RETURNING id, palavra_chave, categoria_nome, tipo`,
+        [company, palavra_chave.substring(0, 500), categoria_nome.substring(0, 100), tipoVal]
       );
       return res.json({ ok: true, mapping: r.rows[0] });
     }

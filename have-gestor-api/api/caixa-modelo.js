@@ -9,7 +9,7 @@ function getPool(company) {
   pools[company] = new Pool({
     host: process.env[`${key}_HOST`], port: parseInt(process.env[`${key}_PORT`] || '5432'),
     database: process.env[`${key}_DB`], user: process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`], ssl: { rejectUnauthorized: false }, max: 5,
+    password: process.env[`${key}_PASSWORD`], ssl: { rejectUnauthorized: false }, max: 1,
   });
   return pools[company];
 }
@@ -115,6 +115,8 @@ module.exports = async (req, res) => {
   const pool = getPool(company);
 
   try {
+    await pool.query(`ALTER TABLE pedidos_compra ADD COLUMN IF NOT EXISTS linha_fluxo VARCHAR(200)`);
+
     if (req.method === 'GET') {
       const { ano, mes } = req.query;
 
@@ -130,9 +132,12 @@ module.exports = async (req, res) => {
 
       if (!ano || !mes) return res.json({ categorias });
 
-      // Get de-para mappings
+      const { apenas_futuros } = req.query;
+      const somenteF = apenas_futuros !== 'false'; // default true
+
+      // Get de-para mappings (extrato)
       const dpR = await pool.query(
-        'SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1',
+        "SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
         [company]
       );
       const depara = dpR.rows; // [{palavra_chave, categoria_nome}]
@@ -159,7 +164,146 @@ module.exports = async (req, res) => {
         }
       }
 
-      return res.json({ categorias, valores });
+      // ── PREVISÃO: Contas a Pagar ────────────────────────────────────────
+      // Get contas_pagar de-para mappings
+      const cpDpR = await pool.query(
+        "SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='contas_pagar'",
+        [company]
+      );
+      const cpDepara = cpDpR.rows; // [{palavra_chave, categoria_nome}]
+
+      const valores_previsao = {}; // { categoria_nome: { dia: total_centavos } }
+
+      if (cpDepara.length > 0) {
+        // Build date bounds: mes/ano first and last day
+        const a = parseInt(ano), m = parseInt(mes);
+        const mesStart = `${a}-${String(m).padStart(2,'0')}-01`;
+        const daysInMonth = new Date(a, m, 0).getDate();
+        const mesEnd = `${a}-${String(m).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+        const today = new Date().toISOString().slice(0, 10);
+
+        let cpQuery = `SELECT fornecedor, saldo, data_vencimento
+          FROM contas_pagar
+          WHERE data_vencimento IS NOT NULL
+            AND data_vencimento::date BETWEEN $1::date AND $2::date`;
+        const cpParams = [mesStart, mesEnd];
+
+        if (somenteF) {
+          cpQuery += ` AND data_vencimento::date > $3::date`;
+          cpParams.push(today);
+        }
+
+        const cpR = await pool.query(cpQuery, cpParams);
+
+        for (const cpRow of cpR.rows) {
+          const fornLower = (cpRow.fornecedor || '').toLowerCase();
+          for (const dp of cpDepara) {
+            if (fornLower.includes(dp.palavra_chave.toLowerCase())) {
+              const catNome = dp.categoria_nome;
+              if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
+              const dia = parseInt(new Date(cpRow.data_vencimento).getUTCDate());
+              // saldo is in reais (NUMERIC), convert to centavos negative (it's a payment)
+              const centavos = -Math.round(parseFloat(cpRow.saldo || 0) * 100);
+              valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
+              break; // first matching keyword wins
+            }
+          }
+        }
+      }
+
+      // ── PREVISÃO: Pedidos de Compra ─────────────────────────────────────
+      {
+        const a = parseInt(ano), m = parseInt(mes);
+        const mesStart = `${a}-${String(m).padStart(2,'0')}-01`;
+        const daysInMonth = new Date(a, m, 0).getDate();
+        const mesEnd = `${a}-${String(m).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+        const today = new Date().toISOString().slice(0, 10);
+
+        let pcQuery = `SELECT valor, vencimento, vencimento_ajustado, linha_fluxo
+          FROM pedidos_compra
+          WHERE empresa=$1
+            AND linha_fluxo IS NOT NULL
+            AND COALESCE(vencimento_ajustado, vencimento)::date BETWEEN $2::date AND $3::date`;
+        const pcParams = [company, mesStart, mesEnd];
+
+        if (somenteF) {
+          pcQuery += ` AND COALESCE(vencimento_ajustado, vencimento)::date > $4::date`;
+          pcParams.push(today);
+        }
+
+        const pcR = await pool.query(pcQuery, pcParams);
+        for (const row of pcR.rows) {
+          const catNome = row.linha_fluxo;
+          const effDate = (row.vencimento_ajustado || row.vencimento);
+          const dia = parseInt(new Date(effDate).getUTCDate());
+          const centavos = -Math.round(parseFloat(row.valor || 0) * 100);
+          if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
+          valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
+        }
+      }
+
+      // ── PREVISÃO: Receitas de Vendas (A Receber) ────────────────────────
+      {
+        const a = parseInt(ano), m = parseInt(mes);
+        const mesStart = `${a}-${String(m).padStart(2,'0')}-01`;
+        const daysInMonth = new Date(a, m, 0).getDate();
+        const mesEnd = `${a}-${String(m).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+        const today = new Date().toISOString().slice(0, 10);
+
+        const vdpR = await pool.query(
+          `SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='vendas'`,
+          [company]
+        );
+        const vendasDepara = vdpR.rows;
+
+        if (vendasDepara.length > 0) {
+          // Build canal→group map for resolution
+          const grpR = await pool.query(
+            `SELECT grupo, canal FROM vendas_grupos_canais WHERE empresa=$1`, [company]
+          );
+          const canalToGrupo = {};
+          grpR.rows.forEach(({ grupo, canal }) => { canalToGrupo[canal.toLowerCase()] = grupo; });
+
+          let vQuery = `
+            SELECT
+              (bv."Data"::date + COALESCE(v.lead_time_dias, 3)) AS vencimento,
+              COALESCE(NULLIF(TRIM(bv."Canal Apelido"::text), ''), TRIM(bv."Canal de venda"), 'Sem canal') AS canal,
+              SUM(COALESCE(bv."Repasse Financeiro"::numeric, 0)) AS repasse
+            FROM bd_vendas bv
+            LEFT JOIN vendas_canais_config v
+              ON v.canal = COALESCE(NULLIF(TRIM(bv."Canal Apelido"::text), ''), TRIM(bv."Canal de venda"), 'Sem canal')
+              AND v.empresa = $1
+            WHERE bv."Data" IS NOT NULL
+              AND bv."Status" !~* '(cancel|devol|n[aã]o.?pago)'
+              AND (bv."Data"::date + COALESCE(v.lead_time_dias, 3)) BETWEEN $2::date AND $3::date`;
+          const vParams = [company, mesStart, mesEnd];
+
+          if (somenteF) {
+            vQuery += ` AND (bv."Data"::date + COALESCE(v.lead_time_dias, 3)) > $4::date`;
+            vParams.push(today);
+          }
+
+          vQuery += `
+            GROUP BY 1, COALESCE(NULLIF(TRIM(bv."Canal Apelido"::text), ''), TRIM(bv."Canal de venda"), 'Sem canal')
+            ORDER BY 1`;
+
+          const vR = await pool.query(vQuery, vParams);
+          for (const row of vR.rows) {
+            const canalLower = (row.canal || '').toLowerCase();
+            // Resolve to group name if canal belongs to a group
+            const chave = (canalToGrupo[canalLower] || row.canal).toLowerCase();
+            const dp = vendasDepara.find(d => d.palavra_chave.toLowerCase() === chave);
+            if (!dp) continue;
+            const catNome = dp.categoria_nome;
+            const dia = parseInt(new Date(row.vencimento).getUTCDate());
+            const centavos = Math.round(parseFloat(row.repasse || 0) * 100);
+            if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
+            valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
+          }
+        }
+      }
+
+      return res.json({ categorias, valores, valores_previsao });
     }
 
     if (req.method === 'POST') {

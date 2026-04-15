@@ -1,6 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "api/healthcheck.js": { "maxDuration": 10 }
+    "api/healthcheck.js": { "maxDuration": 10 },
+    "api/pedidos-compra.js": { "maxDuration": 10 }
   }
 }

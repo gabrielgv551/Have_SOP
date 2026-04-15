@@ -344,6 +344,166 @@ module.exports = async (req, res) => {
     } catch(e) { console.error('[CONFIGURACOES]', e.message); return res.status(500).json({ error: e.message }); }
   }
 
+  // Módulo Vendas
+  if (req.query.module === 'vendas') {
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    const { action } = req.query;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendas_canais_config (
+          empresa        VARCHAR(50) NOT NULL,
+          canal          TEXT        NOT NULL,
+          lead_time_dias INTEGER     NOT NULL DEFAULT 3,
+          PRIMARY KEY (empresa, canal)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendas_previsao (
+          empresa       VARCHAR(50)   NOT NULL,
+          ano           INTEGER       NOT NULL,
+          mes           INTEGER       NOT NULL,
+          canal         TEXT          NOT NULL,
+          valor         NUMERIC(18,2) NOT NULL DEFAULT 0,
+          atualizado_em TIMESTAMP     DEFAULT NOW(),
+          PRIMARY KEY (empresa, ano, mes, canal)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendas_grupos_canais (
+          empresa VARCHAR(50) NOT NULL,
+          grupo   TEXT        NOT NULL,
+          canal   TEXT        NOT NULL,
+          PRIMARY KEY (empresa, grupo, canal)
+        )
+      `);
+
+      if (action === 'canais') {
+        const r = await pool.query(`
+          SELECT c.canal, COALESCE(v.lead_time_dias, 3) AS lead_time_dias
+          FROM (
+            SELECT DISTINCT COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal') AS canal
+            FROM bd_vendas
+            WHERE "Canal de venda" IS NOT NULL AND TRIM("Canal de venda") != ''
+          ) c
+          LEFT JOIN vendas_canais_config v ON v.canal = c.canal AND v.empresa = $1
+          ORDER BY c.canal
+        `, [company]);
+        return res.json({ canais: r.rows });
+      }
+
+      if (action === 'lead_time' && req.method === 'POST') {
+        const { canal, lead_time_dias } = req.body || {};
+        if (!canal || lead_time_dias == null) return res.status(400).json({ error: 'canal e lead_time_dias são obrigatórios' });
+        const dias = parseInt(lead_time_dias);
+        if (isNaN(dias) || dias < 0) return res.status(400).json({ error: 'lead_time_dias deve ser inteiro >= 0' });
+        await pool.query(`
+          INSERT INTO vendas_canais_config (empresa, canal, lead_time_dias)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (empresa, canal) DO UPDATE SET lead_time_dias = EXCLUDED.lead_time_dias
+        `, [company, canal, dias]);
+        return res.json({ ok: true });
+      }
+
+      if (action === 'realizadas') {
+        const meses = Math.min(parseInt(req.query.meses) || 3, 36);
+        const params = [company, meses];
+        const r = await pool.query(`
+          SELECT
+            (bv."Data"::date + COALESCE(v.lead_time_dias, 3)) AS vencimento_data,
+            COALESCE(NULLIF(TRIM(bv."Canal Apelido"::text), ''), TRIM(bv."Canal de venda"), 'Sem canal') AS canal,
+            ROUND(SUM(COALESCE(bv."Repasse Financeiro"::numeric, 0)), 2) AS repasse,
+            COUNT(DISTINCT bv."Order ID") AS qtd
+          FROM bd_vendas bv
+          LEFT JOIN vendas_canais_config v
+            ON v.canal = COALESCE(NULLIF(TRIM(bv."Canal Apelido"::text), ''), TRIM(bv."Canal de venda"), 'Sem canal')
+            AND v.empresa = $1
+          WHERE bv."Data"::date >= CURRENT_DATE - ($2 || ' months')::interval
+            AND bv."Status" !~* '(cancel|devol|n[aã]o.?pago)'
+            AND bv."Data" IS NOT NULL
+            AND (bv."Data"::date + COALESCE(v.lead_time_dias, 3)) >= CURRENT_DATE
+          GROUP BY 1, COALESCE(NULLIF(TRIM(bv."Canal Apelido"::text), ''), TRIM(bv."Canal de venda"), 'Sem canal')
+          ORDER BY 1 ASC, repasse DESC
+        `, params);
+        return res.json({ rows: r.rows });
+      }
+
+      if (action === 'previsao' && req.method === 'GET') {
+        const r = await pool.query(`
+          SELECT ano, mes, canal, valor FROM vendas_previsao
+          WHERE empresa = $1
+          ORDER BY ano DESC, mes DESC, canal
+        `, [company]);
+        return res.json({ rows: r.rows });
+      }
+
+      if (action === 'previsao' && req.method === 'POST') {
+        const { ano, mes, canal, valor } = req.body || {};
+        if (!ano || !mes || !canal || valor == null) return res.status(400).json({ error: 'ano, mes, canal e valor são obrigatórios' });
+        await pool.query(`
+          INSERT INTO vendas_previsao (empresa, ano, mes, canal, valor, atualizado_em)
+          VALUES ($1, $2, $3, $4, $5, NOW())
+          ON CONFLICT (empresa, ano, mes, canal) DO UPDATE SET valor = EXCLUDED.valor, atualizado_em = NOW()
+        `, [company, parseInt(ano), parseInt(mes), canal, parseFloat(valor)]);
+        return res.json({ ok: true });
+      }
+
+      if (action === 'grupos') {
+        if (req.method === 'GET') {
+          const r = await pool.query(`
+            SELECT grupo, canal FROM vendas_grupos_canais
+            WHERE empresa = $1
+            ORDER BY grupo, canal
+          `, [company]);
+          const grupos = {};
+          r.rows.forEach(({ grupo, canal }) => {
+            if (!grupos[grupo]) grupos[grupo] = [];
+            grupos[grupo].push(canal);
+          });
+          return res.json({ grupos });
+        }
+        if (req.method === 'POST') {
+          const { grupo, canal, action: subAction, grupo_old, grupo_new } = req.body || {};
+          if (subAction === 'rename') {
+            if (!grupo_old || !grupo_new) return res.status(400).json({ error: 'grupo_old e grupo_new são obrigatórios' });
+            await pool.query(
+              `UPDATE vendas_grupos_canais SET grupo = $1 WHERE empresa = $2 AND grupo = $3`,
+              [grupo_new.trim(), company, grupo_old]
+            );
+            return res.json({ ok: true });
+          }
+          if (!grupo || !canal) return res.status(400).json({ error: 'grupo e canal são obrigatórios' });
+          await pool.query(
+            `INSERT INTO vendas_grupos_canais (empresa, grupo, canal) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+            [company, grupo.trim(), canal.trim()]
+          );
+          return res.json({ ok: true });
+        }
+        if (req.method === 'DELETE') {
+          const { grupo, canal } = req.body || {};
+          if (!grupo) return res.status(400).json({ error: 'grupo é obrigatório' });
+          if (canal) {
+            await pool.query(
+              `DELETE FROM vendas_grupos_canais WHERE empresa = $1 AND grupo = $2 AND canal = $3`,
+              [company, grupo, canal]
+            );
+          } else {
+            await pool.query(
+              `DELETE FROM vendas_grupos_canais WHERE empresa = $1 AND grupo = $2`,
+              [company, grupo]
+            );
+          }
+          return res.json({ ok: true });
+        }
+      }
+
+      return res.status(400).json({ error: 'action inválida' });
+    } catch(e) {
+      console.error('[VENDAS]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // 2. Verificar tabela (whitelist)
   const { tabela } = req.query;
   if (!tabela || !TABELAS_PERMITIDAS.includes(tabela))
