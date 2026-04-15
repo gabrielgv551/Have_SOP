@@ -21,6 +21,7 @@ const TABELAS_PERMITIDAS = [
   'sku_atividade',
   'categoria_vendas',
   'contas_pagar',
+  'forecast_diario',
 ];
 
 // Cache simples de pools por empresa (evita criar nova conexão a cada request)
@@ -102,7 +103,7 @@ module.exports = async (req, res) => {
   if (req.query.module === 'margens') {
     const company = payload.company || 'lanzi';
     const pool = getPool(company);
-    const { ano, mes } = req.query;
+    const { ano, mes, todos_meses } = req.query;
     try {
       if (!ano || !mes) {
         const r = await pool.query(`
@@ -113,6 +114,68 @@ module.exports = async (req, res) => {
           LIMIT 24
         `);
         return res.json({ meses: r.rows });
+      }
+      if (todos_meses === 'true') {
+        const [rMeses, rbMeses, rSkus] = await Promise.all([
+          pool.query(`
+            SELECT
+              "Mes"::int AS mes,
+              SUM("Total Venda") AS receita_bruta,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS receita_liquida,
+              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END) AS qtd_liquida
+            FROM bd_vendas
+            WHERE "Ano"::int = $1
+            GROUP BY "Mes"
+            ORDER BY "Mes"::int
+          `, [parseInt(ano)]),
+          pool.query(`
+            SELECT "Mes"::int AS mes, SUM(tvp) AS receita_bruta_global
+            FROM (
+              SELECT "Mes", "Order ID", MAX("Total Venda Pedido") AS tvp
+              FROM bd_vendas
+              WHERE "Ano"::int = $1
+              GROUP BY "Mes", "Order ID"
+            ) t
+            GROUP BY "Mes"
+            ORDER BY "Mes"::int
+          `, [parseInt(ano)]),
+          pool.query(`
+            SELECT
+              "Sku"                                                                                AS sku,
+              MAX("Nome Produto")                                                                  AS nome_produto,
+              MAX("Categoria")                                                                     AS categoria,
+              SUM("Total Venda")                                                                   AS receita_bruta,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
+              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
+              ROUND(
+                (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
+                  THEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END),0) * 100
+                  ELSE 0 END)::numeric
+              , 1) AS margem_pct
+            FROM bd_vendas
+            WHERE "Ano"::int = $1
+              AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+            GROUP BY "Sku"
+            HAVING SUM("Total Venda") > 0
+            ORDER BY receita_liquida DESC
+          `, [parseInt(ano)])
+        ]);
+        const rbMap = {};
+        rbMeses.rows.forEach(r => { rbMap[r.mes] = parseFloat(r.receita_bruta_global) || 0; });
+        const meses_dre = rMeses.rows.map(r => ({
+          mes: r.mes,
+          receita_bruta_global: rbMap[r.mes] || parseFloat(r.receita_bruta) || 0,
+          receita_liquida:     parseFloat(r.receita_liquida)     || 0,
+          devolucoes:          parseFloat(r.devolucoes)          || 0,
+          margem_contribuicao: parseFloat(r.margem_contribuicao) || 0,
+          qtd_liquida:         parseFloat(r.qtd_liquida)         || 0,
+        }));
+        return res.json({ meses_dre, skus_ano: rSkus.rows });
       }
       const [r, rbRow] = await Promise.all([
         pool.query(`
@@ -500,6 +563,156 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'action inválida' });
     } catch(e) {
       console.error('[VENDAS]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── Módulo Forecast por Canal ──────────────────────────────────────────
+  if (req.query.module === 'forecast-canais') {
+    const company = payload.empresa || payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      // Detectar colunas de forecast_12m
+      const colsR = await pool.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='forecast_12m' ORDER BY ordinal_position`
+      );
+      if (!colsR.rows.length) return res.json({ meses: [], por_sku: [], por_canal: [] });
+
+      const colMap = {};
+      colsR.rows.forEach(c => { colMap[c.column_name.toLowerCase()] = c.column_name; });
+      const skuCol  = colMap['sku']  || colMap[Object.keys(colMap).find(k => k.includes('sku'))];
+      const dataCol = colMap['data'] || colMap[Object.keys(colMap).find(k => k.includes('data'))];
+      const qtdCol  = colMap['prev_qtd'] || colMap['previsao_quantidade']
+                   || colMap[Object.keys(colMap).find(k => k.includes('qtd') || k.includes('quant') || k.includes('prev'))];
+
+      if (!skuCol || !dataCol || !qtdCol) {
+        return res.json({ meses: [], por_sku: [], por_canal: [], warn: 'Colunas nao encontradas em forecast_12m' });
+      }
+
+      // Forecast agrupado por SKU × mês
+      const fcR = await pool.query(`
+        SELECT
+          TRIM("${skuCol}"::text) AS sku,
+          TO_CHAR("${dataCol}"::date, 'YYYY-MM') AS mes,
+          SUM(COALESCE("${qtdCol}"::numeric, 0)) AS prev_qtd
+        FROM forecast_12m
+        WHERE "${skuCol}" IS NOT NULL AND TRIM("${skuCol}"::text) != ''
+        GROUP BY 1, 2
+        ORDER BY 2, 1
+      `);
+
+      // Mix de canais por SKU — últimos 6 meses de bd_vendas
+      const mixR = await pool.query(`
+        SELECT
+          TRIM("Sku"::text) AS sku,
+          COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"), 'Sem canal') AS canal,
+          SUM(COALESCE("Quantidade Vendida"::numeric, 0)) AS qtd
+        FROM bd_vendas
+        WHERE "Data" >= CURRENT_DATE - INTERVAL '6 months'
+          AND "Status" !~* '(cancel|devol|n[aã]o.?pago)'
+          AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+        GROUP BY 1, 2
+      `);
+
+      // Monta canal-mix % por SKU
+      const skuQtd = {};
+      mixR.rows.forEach(({ sku, canal, qtd }) => {
+        if (!skuQtd[sku]) skuQtd[sku] = {};
+        skuQtd[sku][canal] = (skuQtd[sku][canal] || 0) + parseFloat(qtd || 0);
+      });
+      const skuMix = {};
+      Object.entries(skuQtd).forEach(([sku, canais]) => {
+        const total = Object.values(canais).reduce((a, b) => a + b, 0);
+        if (!total) return;
+        skuMix[sku] = {};
+        Object.entries(canais).forEach(([c, q]) => { skuMix[sku][c] = q / total; });
+      });
+
+      // Monta por_sku
+      const skuMesMap = {};
+      fcR.rows.forEach(({ sku, mes, prev_qtd }) => {
+        if (!skuMesMap[sku]) skuMesMap[sku] = {};
+        skuMesMap[sku][mes] = (skuMesMap[sku][mes] || 0) + parseFloat(prev_qtd || 0);
+      });
+      const meses = [...new Set(fcR.rows.map(r => r.mes))].sort();
+      const por_sku = Object.entries(skuMesMap)
+        .map(([sku, mesesData]) => ({ sku, meses: mesesData, total: Object.values(mesesData).reduce((a, b) => a + b, 0) }))
+        .sort((a, b) => b.total - a.total);
+
+      // Monta por_canal usando mix histórico
+      const canalMesMap = {};
+      Object.entries(skuMesMap).forEach(([sku, mesesData]) => {
+        const mix = skuMix[sku];
+        if (!mix || !Object.keys(mix).length) {
+          const c = 'Sem histórico';
+          if (!canalMesMap[c]) canalMesMap[c] = {};
+          Object.entries(mesesData).forEach(([m, q]) => { canalMesMap[c][m] = (canalMesMap[c][m] || 0) + q; });
+          return;
+        }
+        Object.entries(mix).forEach(([canal, pct]) => {
+          if (!canalMesMap[canal]) canalMesMap[canal] = {};
+          Object.entries(mesesData).forEach(([m, q]) => { canalMesMap[canal][m] = (canalMesMap[canal][m] || 0) + q * pct; });
+        });
+      });
+      const por_canal = Object.entries(canalMesMap)
+        .map(([canal, mesesData]) => ({ canal, meses: mesesData, total: Object.values(mesesData).reduce((a, b) => a + b, 0) }))
+        .sort((a, b) => b.total - a.total);
+
+      return res.json({ meses, por_sku, por_canal });
+    } catch(e) {
+      console.error('[FORECAST-CANAIS]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── Módulo Forecast Diário ─────────────────────────────────────────────
+  if (req.query.module === 'forecast-diario') {
+    const company = payload.empresa || payload.company || 'lanzi';
+    const pool = getPool(company);
+    const mes = req.query.mes || '';
+    try {
+      // Lista de meses disponíveis
+      const mesesR = await pool.query(`
+        SELECT DISTINCT TO_CHAR(data::date, 'YYYY-MM') AS mes
+        FROM forecast_diario
+        ORDER BY 1
+      `);
+      const mesesDisp = mesesR.rows.map(r => r.mes);
+      if (!mesesDisp.length) return res.json({ meses: [], por_sku: [], dias: [] });
+
+      const mesSel = mesesDisp.includes(mes) ? mes : mesesDisp[0];
+      const [ano, mo] = mesSel.split('-').map(Number);
+      const nDias = new Date(ano, mo, 0).getDate();
+      const dias = Array.from({ length: nDias }, (_, i) => i + 1);
+
+      const r = await pool.query(`
+        SELECT
+          TRIM(sku::text) AS sku,
+          EXTRACT(DAY FROM data::date)::int AS dia,
+          SUM(quantidade_prevista) AS qtd
+        FROM forecast_diario
+        WHERE TO_CHAR(data::date, 'YYYY-MM') = $1
+          AND sku IS NOT NULL AND TRIM(sku::text) != ''
+        GROUP BY 1, 2
+        ORDER BY 1, 2
+      `, [mesSel]);
+
+      const skuMap = {};
+      r.rows.forEach(({ sku, dia, qtd }) => {
+        if (!skuMap[sku]) skuMap[sku] = {};
+        skuMap[sku][dia] = (skuMap[sku][dia] || 0) + parseFloat(qtd || 0);
+      });
+      const por_sku = Object.entries(skuMap)
+        .map(([sku, diasData]) => ({
+          sku,
+          dias: diasData,
+          total: Object.values(diasData).reduce((a, b) => a + b, 0)
+        }))
+        .sort((a, b) => b.total - a.total);
+
+      return res.json({ meses: mesesDisp, mes: mesSel, dias, por_sku });
+    } catch(e) {
+      console.error('[FORECAST-DIARIO]', e.message);
       return res.status(500).json({ error: e.message });
     }
   }
