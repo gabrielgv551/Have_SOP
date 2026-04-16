@@ -21,6 +21,18 @@ function verifyToken(req, res) {
   catch { res.status(401).json({ error: 'Token invalido' }); return null; }
 }
 
+const BR_FERIADOS = new Set(['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25']);
+function nextBizDay(d) {
+  let dt = (d instanceof Date) ? new Date(d.getTime()) : new Date(String(d).slice(0,10) + 'T12:00:00Z');
+  for (let i = 0; i < 7; i++) {
+    const dow = dt.getUTCDay();
+    const mmdd = String(dt.getUTCMonth()+1).padStart(2,'0') + '-' + String(dt.getUTCDate()).padStart(2,'0');
+    if (dow !== 0 && dow !== 6 && !BR_FERIADOS.has(mmdd)) break;
+    dt.setUTCDate(dt.getUTCDate() + 1);
+  }
+  return dt;
+}
+
 const DEFAULT_CATEGORIAS = [
   { nome: 'SALDO INICIAL DO CAIXA', tipo: 'saldo_ini', parent: null, ordem: 0 },
 
@@ -199,9 +211,11 @@ module.exports = async (req, res) => {
           const fornLower = (cpRow.fornecedor || '').toLowerCase();
           for (const dp of cpDepara) {
             if (fornLower.includes(dp.palavra_chave.toLowerCase())) {
+              const bizD = nextBizDay(cpRow.data_vencimento);
+              if (bizD.getUTCMonth() + 1 !== m) break;
               const catNome = dp.categoria_nome;
               if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
-              const dia = parseInt(new Date(cpRow.data_vencimento).getUTCDate());
+              const dia = bizD.getUTCDate();
               // saldo is in reais (NUMERIC), convert to centavos negative (it's a payment)
               const centavos = -Math.round(parseFloat(cpRow.saldo || 0) * 100);
               valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
@@ -233,9 +247,11 @@ module.exports = async (req, res) => {
 
         const pcR = await pool.query(pcQuery, pcParams);
         for (const row of pcR.rows) {
-          const catNome = row.linha_fluxo;
           const effDate = (row.vencimento_ajustado || row.vencimento);
-          const dia = parseInt(new Date(effDate).getUTCDate());
+          const bizD = nextBizDay(effDate);
+          if (bizD.getUTCMonth() + 1 !== m) continue;
+          const catNome = row.linha_fluxo;
+          const dia = bizD.getUTCDate();
           const centavos = -Math.round(parseFloat(row.valor || 0) * 100);
           if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
           valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
@@ -294,11 +310,89 @@ module.exports = async (req, res) => {
             const chave = (canalToGrupo[canalLower] || row.canal).toLowerCase();
             const dp = vendasDepara.find(d => d.palavra_chave.toLowerCase() === chave);
             if (!dp) continue;
+            const bizD = nextBizDay(row.vencimento);
+            if (bizD.getUTCMonth() + 1 !== m) continue;
             const catNome = dp.categoria_nome;
-            const dia = parseInt(new Date(row.vencimento).getUTCDate());
+            const dia = bizD.getUTCDate();
             const centavos = Math.round(parseFloat(row.repasse || 0) * 100);
             if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
             valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
+          }
+        }
+      }
+
+      // ── PREVISÃO: Receitas de Vendas Futuras (Forecast) ─────────────────
+      // Only for future months (entire month is after today) — avoids double-counting with A Receber
+      {
+        const a = parseInt(ano), m = parseInt(mes);
+        const mesStart = `${a}-${String(m).padStart(2,'0')}-01`;
+        const daysInMonth = new Date(a, m, 0).getDate();
+        const mesEnd = `${a}-${String(m).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+        const today = new Date().toISOString().slice(0, 10);
+
+        if (mesStart > today) {
+          // Re-use the vendas de-para already loaded above
+          const vdpR2 = await pool.query(
+            `SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='vendas'`,
+            [company]
+          );
+          const vendasDepara2 = vdpR2.rows;
+
+          if (vendasDepara2.length > 0) {
+            const grpR2 = await pool.query(
+              `SELECT grupo, canal FROM vendas_grupos_canais WHERE empresa=$1`, [company]
+            );
+            const canalToGrupo2 = {};
+            grpR2.rows.forEach(({ grupo, canal }) => { canalToGrupo2[canal.toLowerCase()] = grupo; });
+
+            // Avg repasse per sku×canal
+            const repR = await pool.query(`
+              SELECT
+                TRIM("Sku"::text) AS sku,
+                COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"), 'Sem canal') AS canal,
+                ROUND(AVG(COALESCE("Repasse Financeiro"::numeric,0) / NULLIF("Quantidade Vendida"::numeric,0))::numeric,4) AS rep_und
+              FROM bd_vendas
+              WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
+                AND "Quantidade Vendida"::numeric > 0
+                AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+              GROUP BY 1, 2
+            `);
+            const repMap = {};
+            repR.rows.forEach(({ sku, canal, rep_und }) => { repMap[sku + '§§' + canal] = parseFloat(rep_und || 0); });
+            const repSkuMap = {};
+            repR.rows.forEach(({ sku, rep_und }) => { if (!repSkuMap[sku]) repSkuMap[sku] = parseFloat(rep_und || 0); });
+
+            // Forecast diário with lead time → receipt date
+            const fcR = await pool.query(`
+              SELECT
+                fd.canal,
+                (fd.data::date + COALESCE(v.lead_time_dias, 3)) AS vencimento,
+                fd.sku,
+                SUM(fd.quantidade_prevista) AS qtd
+              FROM forecast_diario fd
+              LEFT JOIN vendas_canais_config v ON v.canal = fd.canal AND v.empresa = $1
+              WHERE (fd.data::date + COALESCE(v.lead_time_dias, 3)) BETWEEN $2::date AND $3::date
+              GROUP BY fd.canal, (fd.data::date + COALESCE(v.lead_time_dias, 3)), fd.sku
+              ORDER BY (fd.data::date + COALESCE(v.lead_time_dias, 3))
+            `, [company, mesStart, mesEnd]);
+
+            for (const row of fcR.rows) {
+              const qtd = parseFloat(row.qtd || 0);
+              if (!qtd) continue;
+              const rep = repMap[row.sku + '§§' + row.canal] || repSkuMap[row.sku] || 0;
+              if (!rep) continue;
+              const canalLower = (row.canal || '').toLowerCase();
+              const chave = (canalToGrupo2[canalLower] || row.canal).toLowerCase();
+              const dp = vendasDepara2.find(d => d.palavra_chave.toLowerCase() === chave);
+              if (!dp) continue;
+              const bizD = nextBizDay(row.vencimento);
+              if (bizD.getUTCMonth() + 1 !== m) continue;
+              const catNome = dp.categoria_nome;
+              const dia = bizD.getUTCDate();
+              const centavos = Math.round(qtd * rep * 100);
+              if (!valores_previsao[catNome]) valores_previsao[catNome] = {};
+              valores_previsao[catNome][dia] = (valores_previsao[catNome][dia] || 0) + centavos;
+            }
           }
         }
       }

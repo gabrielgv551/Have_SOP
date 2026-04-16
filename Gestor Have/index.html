@@ -1705,6 +1705,10 @@
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao .fcxd-sticky-cat { background:rgba(0,124,220,0.1); color:#007cdc; font-style:italic; }
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao-header td { background:#005faa; color:#fff; font-weight:700; font-size:11px; padding:5px 10px; border-bottom:2px solid #004a88; }
             #panel-caixa-fluxo .fcxd-horizontal tr.fcxd-row-previsao-header .fcxd-sticky-cat { background:#005faa; }
+            #panel-caixa-fluxo .fcxd-day-head.fcxd-day-head--weekend { background:#18222f; color:#4a607a; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-item td.fcxd-col-weekend { background:#f2f4f7; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-total td.fcxd-col-weekend { background:#243650; }
+            #panel-caixa-fluxo .fcxd-table tr.fcxd-row-section td.fcxd-col-weekend { background:#162030; }
             /* Previsão sub-valor dentro da célula */
             .fcxd-prev-sub { display:block; font-size:10px; font-style:italic; color:inherit; opacity:0.65; margin-top:1px; cursor:default; white-space:nowrap; }
             .fcxd-prev-sub:hover { opacity:1; }
@@ -3715,14 +3719,14 @@
                     <div id="dp-tab-content-vendas" style="display:none;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                         <div class="table-card" style="padding:16px;">
                             <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Canais sem mapeamento</div>
-                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Clique em "→ Mapear" para vincular um canal a uma linha de entrada no Fluxo Diário</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Clique em "→ Mapear" para vincular um canal a uma linha de entrada no Fluxo Diário. Aplica-se tanto às vendas realizadas (A Receber) quanto à Previsão de Recebimentos (S&amp;OP).</div>
                             <div id="cx-depara-vnd-nao-class">
                                 <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                             </div>
                         </div>
                         <div class="table-card" style="padding:16px;">
                             <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos · Canais de Venda</div>
-                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Canal → linha de entrada que alimenta a Previsão no Fluxo Diário</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Canal → linha de entrada no Fluxo Diário. Usado para <strong>vendas realizadas</strong> (A Receber) e para <strong>meses futuros</strong> via Forecast S&amp;OP.</div>
                             <div id="cx-depara-vnd-table">
                                 <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                             </div>
@@ -4160,6 +4164,7 @@
                                 <button id="fc-sub-sku" onclick="switchForecastSub('sku')" style="padding:5px 14px;font-size:12px;font-weight:600;border:none;background:var(--accent);color:#fff;cursor:pointer;">Por SKU</button>
                                 <button id="fc-sub-canal" onclick="switchForecastSub('canal')" style="padding:5px 14px;font-size:12px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;">Por Canal</button>
                                 <button id="fc-sub-diario" onclick="switchForecastSub('diario')" style="padding:5px 14px;font-size:12px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;">Abertura Diária</button>
+                                <button id="fc-sub-recebimentos" onclick="switchForecastSub('recebimentos')" style="padding:5px 14px;font-size:12px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;">Prev. Recebimentos</button>
                             </div>
                         </div>
                         <div id="vnd-forecast-container">
@@ -4167,6 +4172,10 @@
                         </div>
                         <!-- Abertura Diária -->
                         <div id="vnd-forecast-diario-container" style="display:none;">
+                            <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                        </div>
+                        <!-- Previsão de Recebimentos -->
+                        <div id="vnd-forecast-recebimentos-container" style="display:none;">
                             <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
                         </div>
                     </div>
@@ -8597,6 +8606,15 @@ if (id === 'dfs-kpis') {
                 return (vp[cat.nome] || {})[dia] || 0;
             }
 
+            const _BR_FERIADOS_FE = new Set(['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25']);
+            function isNonBizDay(ano, mes, dia) {
+                const d = new Date(ano, mes - 1, dia);
+                const dow = d.getDay();
+                if (dow === 0 || dow === 6) return true;
+                const mmdd = String(mes).padStart(2,'0') + '-' + String(dia).padStart(2,'0');
+                return _BR_FERIADOS_FE.has(mmdd);
+            }
+
             function renderCaixaFluxoHorizontal() {
                 if (!_cxAllMonthsData) return;
                 const container = document.getElementById('cx-fluxo-anual');
@@ -8620,7 +8638,8 @@ if (id === 'dfs-kpis') {
                     const daysInMonth = new Date(ano, mes, 0).getDate();
                     if (isExp) {
                         for (let d = 1; d <= daysInMonth; d++) {
-                            headR2 += `<th class="fcxd-num fcxd-day-head">${d}</th>`;
+                            const wkd = isNonBizDay(ano, mes, d);
+                            headR2 += `<th class="fcxd-num fcxd-day-head${wkd ? ' fcxd-day-head--weekend' : ''}">${d}</th>`;
                         }
                     }
                     headR2 += '<th class="fcxd-num fcxd-col-total fcxd-col-total-head fcxd-mes-sep">Total</th>';
@@ -8673,7 +8692,7 @@ if (id === 'dfs-kpis') {
                                 const pv = _getPrevCatVal(cat, d, cats, vp);
                                 const tipDay = `PREVISÃO|${esc(cat.nome)}|${d}/${String(mes).padStart(2,'0')}/${ano}|${fmtReais(pv)}|Dia ${d}`;
                                 const prevHtml = pv ? `<span class="fcxd-prev-sub" data-tip="${tipDay}">${_fmtVInt(pv)}</span>` : '';
-                                row += `<td class="fcxd-num">${realized}${prevHtml}</td>`;
+                                row += `<td class="fcxd-num${isNonBizDay(ano, mes, d) ? ' fcxd-col-weekend' : ''}">${realized}${prevHtml}</td>`;
                             });
                         }
                         row += `<td class="fcxd-num fcxd-col-total fcxd-mes-sep">${(total || !prevTotal) ? _fmtV(total) : ''}${prevHtmlTotal}</td>`;
@@ -10958,7 +10977,7 @@ if (id === 'dfs-kpis') {
 
             function switchForecastSub(sub) {
                 _vndForecastSub = sub;
-                ['sku','canal','diario'].forEach(s => {
+                ['sku','canal','diario','recebimentos'].forEach(s => {
                     const btn = document.getElementById('fc-sub-' + s);
                     if (btn) {
                         btn.style.background = s === sub ? 'var(--accent)' : 'none';
@@ -10967,13 +10986,21 @@ if (id === 'dfs-kpis') {
                 });
                 const cMain   = document.getElementById('vnd-forecast-container');
                 const cDiario = document.getElementById('vnd-forecast-diario-container');
+                const cRec    = document.getElementById('vnd-forecast-recebimentos-container');
                 if (sub === 'diario') {
                     if (cMain)   cMain.style.display   = 'none';
                     if (cDiario) cDiario.style.display = '';
+                    if (cRec)    cRec.style.display    = 'none';
                     loadForecastDiario();
+                } else if (sub === 'recebimentos') {
+                    if (cMain)   cMain.style.display   = 'none';
+                    if (cDiario) cDiario.style.display = 'none';
+                    if (cRec)    cRec.style.display    = '';
+                    loadForecastRecebimentos();
                 } else {
                     if (cMain)   cMain.style.display   = '';
                     if (cDiario) cDiario.style.display = 'none';
+                    if (cRec)    cRec.style.display    = 'none';
                     if (_vndForecastData) renderForecastCanais(_vndForecastData);
                 }
             }
@@ -11054,6 +11081,105 @@ if (id === 'dfs-kpis') {
                     <td style="padding:8px 12px;font-weight:700;position:sticky;left:0;background:rgba(0,124,220,0.06);font-size:11px;">Total</td>
                     ${dias.map(d => `<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:11px;">${fmtN(colTotals[d])}</td>`).join('')}
                     <td style="padding:8px 10px;text-align:right;font-weight:800;color:var(--accent);">${fmtN(grandTotal)}</td>
+                </tr></tbody></table></div>`;
+
+                container.innerHTML = html;
+            }
+
+            let _vndFcRecData = null;
+            let _vndFcRecSub  = 'canal';
+            let _vndFcRecMode = 'rep';
+
+            async function loadForecastRecebimentos() {
+                const container = document.getElementById('vnd-forecast-recebimentos-container');
+                if (!container) return;
+                if (_vndFcRecData) { renderForecastRecebimentos(); return; }
+                container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const res = await fetch(`${API_BASE}/data?module=forecast-recebimentos`, { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (res.status === 401) { handleUnauthorized(); return; }
+                    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || 'HTTP ' + res.status); }
+                    _vndFcRecData = await res.json();
+                    renderForecastRecebimentos();
+                } catch(e) {
+                    container.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;font-size:13px;">Erro: ${esc(e.message)}</div>`;
+                }
+            }
+
+            function switchFcRec(sub, mode) {
+                if (sub  != null) _vndFcRecSub  = sub;
+                if (mode != null) _vndFcRecMode = mode;
+                renderForecastRecebimentos();
+            }
+
+            function renderForecastRecebimentos() {
+                const container = document.getElementById('vnd-forecast-recebimentos-container');
+                if (!container || !_vndFcRecData) return;
+                const { meses, por_canal, por_sku } = _vndFcRecData;
+                if (!meses || !meses.length) {
+                    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Nenhum dado. Verifique se forecast_diario foi gerado e se os lead times estão configurados na aba Canais.</div>';
+                    return;
+                }
+                const MES    = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                const fmtMes = m => { const [y,mo] = m.split('-'); return MES[parseInt(mo)] + '/' + y.slice(2); };
+                const isMoney = _vndFcRecMode !== 'qtd';
+                const fmtV = v => isMoney
+                    ? 'R\u00a0' + (v||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0})
+                    : Math.round(v||0).toLocaleString('pt-BR');
+
+                const rows     = _vndFcRecSub === 'sku' ? por_sku : por_canal;
+                const labelKey = _vndFcRecSub === 'sku' ? 'sku' : 'canal';
+                const valKey   = _vndFcRecMode === 'qtd' ? 'qtd' : _vndFcRecMode === 'fat' ? 'fat' : 'rep';
+                const sortKey  = _vndFcRecMode === 'fat' ? 'total_fat' : 'total_rep';
+
+                const sorted = [...rows].sort((a,b) => (b[sortKey]||0) - (a[sortKey]||0));
+
+                const subBar = `<div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+                        <button onclick="switchFcRec('canal',null)" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:${_vndFcRecSub==='canal'?'var(--accent)':'none'};color:${_vndFcRecSub==='canal'?'#fff':'var(--muted)'};cursor:pointer;">Por Canal</button>
+                        <button onclick="switchFcRec('sku',null)"   style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:${_vndFcRecSub==='sku'?'var(--accent)':'none'};color:${_vndFcRecSub==='sku'?'#fff':'var(--muted)'};cursor:pointer;">Por SKU</button>
+                    </div>
+                    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+                        <button onclick="switchFcRec(null,'rep')" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:${_vndFcRecMode==='rep'?'var(--accent)':'none'};color:${_vndFcRecMode==='rep'?'#fff':'var(--muted)'};cursor:pointer;">Repasse</button>
+                        <button onclick="switchFcRec(null,'fat')" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:${_vndFcRecMode==='fat'?'var(--accent)':'none'};color:${_vndFcRecMode==='fat'?'#fff':'var(--muted)'};cursor:pointer;">Faturamento</button>
+                        <button onclick="switchFcRec(null,'qtd')" style="padding:4px 12px;font-size:11px;font-weight:600;border:none;background:${_vndFcRecMode==='qtd'?'var(--accent)':'none'};color:${_vndFcRecMode==='qtd'?'#fff':'var(--muted)'};cursor:pointer;">Qtd</button>
+                    </div>
+                    <span style="font-size:11px;color:var(--muted);">Data venda + lead time por canal → data de recebimento prevista</span>
+                </div>`;
+
+                let html = subBar + `<div class="table-card" style="overflow-x:auto;max-height:560px;overflow-y:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead><tr style="background:#1c2d4a;color:#fff;position:sticky;top:0;z-index:2;">
+                        <th style="padding:9px 14px;text-align:left;font-weight:700;white-space:nowrap;position:sticky;left:0;background:#1c2d4a;min-width:160px;z-index:3;">${_vndFcRecSub === 'sku' ? 'SKU' : 'Canal'}</th>
+                        ${meses.map(m => `<th style="padding:9px 10px;text-align:right;font-weight:700;white-space:nowrap;">${fmtMes(m)}</th>`).join('')}
+                        <th style="padding:9px 14px;text-align:right;font-weight:700;white-space:nowrap;background:rgba(0,124,220,0.25);">Total</th>
+                    </tr></thead><tbody>`;
+
+                const colTotals = {};
+                meses.forEach(m => { colTotals[m] = 0; });
+                let grandTotal = 0;
+
+                sorted.forEach((row, idx) => {
+                    const bg = idx % 2 === 1 ? '#f8f9fa' : '#fff';
+                    const rowTotal = meses.reduce((s, m) => s + ((row.meses[m]||{})[valKey]||0), 0);
+                    grandTotal += rowTotal;
+                    html += `<tr style="border-bottom:1px solid #e8edf5;background:${bg};">
+                        <td style="padding:7px 14px;font-weight:500;white-space:nowrap;position:sticky;left:0;background:${bg};font-size:12px;">${esc(row[labelKey])}</td>
+                        ${meses.map(m => {
+                            const v = (row.meses[m]||{})[valKey] || 0;
+                            colTotals[m] += v;
+                            return v ? `<td style="padding:7px 10px;text-align:right;color:#323031;">${fmtV(v)}</td>`
+                                     : `<td style="padding:7px 10px;text-align:right;color:#cbd5e1;">\u2014</td>`;
+                        }).join('')}
+                        <td style="padding:7px 14px;text-align:right;font-weight:700;color:var(--accent);background:rgba(0,124,220,0.06);">${fmtV(rowTotal)}</td>
+                    </tr>`;
+                });
+
+                html += `<tr style="border-top:2px solid #1c2d4a;background:rgba(0,124,220,0.06);position:sticky;bottom:0;">
+                    <td style="padding:9px 14px;font-weight:700;position:sticky;left:0;background:rgba(0,124,220,0.06);">Total</td>
+                    ${meses.map(m => `<td style="padding:9px 10px;text-align:right;font-weight:700;">${fmtV(colTotals[m])}</td>`).join('')}
+                    <td style="padding:9px 14px;text-align:right;font-weight:800;color:var(--accent);">${fmtV(grandTotal)}</td>
                 </tr></tbody></table></div>`;
 
                 container.innerHTML = html;

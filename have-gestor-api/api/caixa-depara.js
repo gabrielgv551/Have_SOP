@@ -56,23 +56,27 @@ module.exports = async (req, res) => {
 
       // Return groups + ungrouped canals for mapping (tipo='vendas')
       if (source === 'canais') {
-        // All canals from bd_vendas
+        // Canals from bd_vendas (realized sales)
         const cR = await pool.query(
           `SELECT DISTINCT COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"), 'Sem canal') AS canal
            FROM bd_vendas
            WHERE "Canal de venda" IS NOT NULL AND TRIM("Canal de venda") != ''`
         );
+        // Canals from forecast_diario (future forecast)
+        const fcR = await pool.query(
+          `SELECT DISTINCT TRIM(canal::text) AS canal FROM forecast_diario
+           WHERE canal IS NOT NULL AND TRIM(canal::text) != ''`
+        ).catch(() => ({ rows: [] }));
         // Groups from vendas_grupos_canais
         const gR = await pool.query(
           `SELECT grupo, canal FROM vendas_grupos_canais WHERE empresa=$1`, [company]
         );
         // Build canal→group map
         const canalToGrupo = {};
-        const grupos = new Set();
-        gR.rows.forEach(({ grupo, canal }) => { canalToGrupo[canal.toLowerCase()] = grupo; grupos.add(grupo); });
-        // Keys = groups + ungrouped canals
+        gR.rows.forEach(({ grupo, canal }) => { canalToGrupo[canal.toLowerCase()] = grupo; });
+        // Keys = groups + ungrouped canals (from both realized and forecast)
         const keys = new Set();
-        cR.rows.forEach(({ canal }) => {
+        [...cR.rows, ...fcR.rows].forEach(({ canal }) => {
           const g = canalToGrupo[canal.toLowerCase()];
           keys.add(g || canal);
         });
