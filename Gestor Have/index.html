@@ -8659,17 +8659,13 @@ if (id === 'dfs-kpis') {
                 }
                 if (cat.tipo === 'saldo_fin') {
                     const v2 = new Set(_visited); v2.add(cat.nome);
-                    const ini = categorias.find(c => c.tipo === 'saldo_ini');
-                    const entCat = categorias.find(c => c.nome === 'ENTRADAS');
-                    const saiCat = categorias.find(c => c.nome === 'SAÍDAS');
-                    const entNopCat = categorias.find(c => c.nome === 'ANO ENTRADAS');
-                    const saiNopCat = categorias.find(c => c.nome === 'ANO SAÍDAS');
-                    const saldoIni = ini ? _getCatVal(ini, dia, categorias, valores, v2) : 0;
-                    const ent = entCat ? _getCatVal(entCat, dia, categorias, valores, v2) : 0;
-                    const sai = saiCat ? _getCatVal(saiCat, dia, categorias, valores, v2) : 0;
-                    const entNop = entNopCat ? _getCatVal(entNopCat, dia, categorias, valores, v2) : 0;
-                    const saiNop = saiNopCat ? _getCatVal(saiNopCat, dia, categorias, valores, v2) : 0;
-                    return saldoIni + ent - sai + entNop - saiNop;
+                    const ini    = categorias.find(c => c.tipo === 'saldo_ini');
+                    const aoCat  = categorias.find(c => c.nome === 'ATIVIDADES OPERACIONAIS');
+                    const anoCat = categorias.find(c => c.nome === 'ATIVIDADES NÃO OPERACIONAIS');
+                    const saldoIni = ini    ? _getCatVal(ini,    dia, categorias, valores, v2) : 0;
+                    const ao       = aoCat  ? _getCatVal(aoCat,  dia, categorias, valores, v2) : 0;
+                    const ano      = anoCat ? _getCatVal(anoCat, dia, categorias, valores, v2) : 0;
+                    return saldoIni + ao + ano;
                 }
                 return (valores[cat.nome] || {})[dia] || 0;
             }
@@ -8691,15 +8687,11 @@ if (id === 'dfs-kpis') {
                 }
                 if (cat.tipo === 'saldo_fin') {
                     const v2 = new Set(_visited); v2.add(cat.nome);
-                    const entCat    = categorias.find(c => c.nome === 'ENTRADAS');
-                    const saiCat    = categorias.find(c => c.nome === 'SAÍDAS');
-                    const entNopCat = categorias.find(c => c.nome === 'ANO ENTRADAS');
-                    const saiNopCat = categorias.find(c => c.nome === 'ANO SAÍDAS');
-                    const ent    = entCat    ? _getPrevCatVal(entCat,    dia, categorias, vp, v2) : 0;
-                    const sai    = saiCat    ? _getPrevCatVal(saiCat,    dia, categorias, vp, v2) : 0;
-                    const entNop = entNopCat ? _getPrevCatVal(entNopCat, dia, categorias, vp, v2) : 0;
-                    const saiNop = saiNopCat ? _getPrevCatVal(saiNopCat, dia, categorias, vp, v2) : 0;
-                    return ent - sai + entNop - saiNop;
+                    const aoCat  = categorias.find(c => c.nome === 'ATIVIDADES OPERACIONAIS');
+                    const anoCat = categorias.find(c => c.nome === 'ATIVIDADES NÃO OPERACIONAIS');
+                    const ao  = aoCat  ? _getPrevCatVal(aoCat,  dia, categorias, vp, v2) : 0;
+                    const ano = anoCat ? _getPrevCatVal(anoCat, dia, categorias, vp, v2) : 0;
+                    return ao + ano;
                 }
                 return (vp[cat.nome] || {})[dia] || 0;
             }
