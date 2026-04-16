@@ -22,6 +22,7 @@ const TABELAS_PERMITIDAS = [
   'categoria_vendas',
   'contas_pagar',
   'forecast_diario',
+  'dashboard_filters',
 ];
 
 // Cache simples de pools por empresa (evita criar nova conexão a cada request)
@@ -688,6 +689,100 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── Módulo Previsão de Recebimentos ───────────────────────────────────
+  if (req.query.module === 'forecast-recebimentos') {
+    const company = payload.empresa || payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      // Repasse e preço médio por sku×canal (últimos 12 meses)
+      const precosR = await pool.query(`
+        SELECT
+          TRIM("Sku"::text) AS sku,
+          COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"), 'Sem canal') AS canal,
+          ROUND(AVG(COALESCE("Repasse Financeiro"::numeric, 0) / NULLIF("Quantidade Vendida"::numeric, 0))::numeric, 4) AS rep_und,
+          ROUND(AVG(COALESCE("Total Venda"::numeric, 0)        / NULLIF("Quantidade Vendida"::numeric, 0))::numeric, 4) AS fat_und
+        FROM bd_vendas
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
+          AND "Quantidade Vendida"::numeric > 0
+          AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+          AND "Data" >= CURRENT_DATE - INTERVAL '12 months'
+        GROUP BY 1, 2
+      `);
+      const precos = {};
+      precosR.rows.forEach(({ sku, canal, rep_und, fat_und }) => {
+        precos[sku + '§§' + canal] = { rep: parseFloat(rep_und || 0), fat: parseFloat(fat_und || 0) };
+      });
+      // fallback por sku (média de todos os canais)
+      const precosSkuR = await pool.query(`
+        SELECT
+          TRIM("Sku"::text) AS sku,
+          ROUND(AVG(COALESCE("Repasse Financeiro"::numeric, 0) / NULLIF("Quantidade Vendida"::numeric, 0))::numeric, 4) AS rep_und,
+          ROUND(AVG(COALESCE("Total Venda"::numeric, 0)        / NULLIF("Quantidade Vendida"::numeric, 0))::numeric, 4) AS fat_und
+        FROM bd_vendas
+        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
+          AND "Quantidade Vendida"::numeric > 0
+          AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+        GROUP BY 1
+      `);
+      const precosSku = {};
+      precosSkuR.rows.forEach(({ sku, rep_und, fat_und }) => {
+        precosSku[sku] = { rep: parseFloat(rep_und || 0), fat: parseFloat(fat_und || 0) };
+      });
+
+      // Forecast diário com data de recebimento = data_venda + lead_time
+      const r = await pool.query(`
+        SELECT
+          fd.sku,
+          fd.canal,
+          TO_CHAR((fd.data::date + COALESCE(v.lead_time_dias, 3)), 'YYYY-MM') AS mes_rec,
+          SUM(fd.quantidade_prevista) AS qtd
+        FROM forecast_diario fd
+        LEFT JOIN vendas_canais_config v ON v.canal = fd.canal AND v.empresa = $1
+        WHERE (fd.data::date + COALESCE(v.lead_time_dias, 3)) >= CURRENT_DATE
+        GROUP BY fd.sku, fd.canal, mes_rec
+        ORDER BY mes_rec, fd.canal, fd.sku
+      `, [company]);
+
+      const mesesSet = new Set();
+      const canalMap = {};
+      const skuMap   = {};
+
+      r.rows.forEach(({ sku, canal, mes_rec, qtd }) => {
+        const q = parseFloat(qtd || 0);
+        if (!q) return;
+        mesesSet.add(mes_rec);
+        const p = precos[sku + '§§' + canal] || precosSku[sku] || { rep: 0, fat: 0 };
+        const rep = q * p.rep;
+        const fat = q * p.fat;
+
+        if (!canalMap[canal]) canalMap[canal] = {};
+        if (!canalMap[canal][mes_rec]) canalMap[canal][mes_rec] = { rep: 0, fat: 0, qtd: 0 };
+        canalMap[canal][mes_rec].rep += rep;
+        canalMap[canal][mes_rec].fat += fat;
+        canalMap[canal][mes_rec].qtd += q;
+
+        if (!skuMap[sku]) skuMap[sku] = {};
+        if (!skuMap[sku][mes_rec]) skuMap[sku][mes_rec] = { rep: 0, fat: 0, qtd: 0 };
+        skuMap[sku][mes_rec].rep += rep;
+        skuMap[sku][mes_rec].fat += fat;
+        skuMap[sku][mes_rec].qtd += q;
+      });
+
+      const meses = [...mesesSet].sort();
+      const por_canal = Object.entries(canalMap)
+        .map(([canal, md]) => ({ canal, meses: md, total_rep: Object.values(md).reduce((s,v)=>s+v.rep,0), total_fat: Object.values(md).reduce((s,v)=>s+v.fat,0) }))
+        .sort((a,b) => b.total_rep - a.total_rep);
+      const por_sku = Object.entries(skuMap)
+        .map(([sku, md]) => ({ sku, meses: md, total_rep: Object.values(md).reduce((s,v)=>s+v.rep,0), total_fat: Object.values(md).reduce((s,v)=>s+v.fat,0) }))
+        .sort((a,b) => b.total_rep - a.total_rep);
+
+      return res.json({ meses, por_canal, por_sku });
+    } catch(e) {
+      console.error('[FORECAST-RECEBIMENTOS]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ── Módulo Forecast Diário ─────────────────────────────────────────────
   if (req.query.module === 'forecast-diario') {
     const company = payload.empresa || payload.company || 'lanzi';
@@ -829,33 +924,78 @@ module.exports = async (req, res) => {
       `);
       return res.json(result.rows.map(r => r.sku));
     }
-    if (tabela === 'dashboard_kpis') {
-      result = await pool.query(`
-          WITH lm AS (
-            SELECT DATE_TRUNC('month', MAX("Data"::date)) AS m
-            FROM bd_vendas WHERE "Data" IS NOT NULL
-          ),
-          rb AS (
-            SELECT SUM(tvp) AS receita_bruta
-            FROM (
-              SELECT "Order ID", MAX("Total Venda Pedido") AS tvp
-              FROM bd_vendas
-              WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)
-              GROUP BY "Order ID"
-            ) t
-          )
-          SELECT
-            EXTRACT(YEAR  FROM "Data"::date)  AS ano,
-            EXTRACT(MONTH FROM "Data"::date)  AS mes,
-            (SELECT receita_bruta FROM rb)    AS receita_bruta,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_bruta,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0) ELSE 0 END)  AS custo_total
+    if (tabela === 'dashboard_filters') {
+      const [canalRes, marcaRes, mesesRes] = await Promise.all([
+        pool.query(`
+          SELECT DISTINCT COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text)) AS canal
           FROM bd_vendas
-          WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)
-          GROUP BY 1, 2
-        `);
+          WHERE "Canal de venda" IS NOT NULL AND TRIM("Canal de venda") != ''
+          ORDER BY 1
+        `),
+        pool.query(`
+          SELECT DISTINCT TRIM("Marca") AS marca FROM cadastros_sku
+          WHERE "Marca" IS NOT NULL AND TRIM("Marca") != ''
+          ORDER BY 1
+        `),
+        pool.query(`
+          SELECT DISTINCT "Ano" AS ano, "Mes" AS mes FROM bd_vendas
+          WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL
+          ORDER BY "Ano" DESC, "Mes" DESC
+        `)
+      ]);
+      return res.json({
+        canais: canalRes.rows.map(r => r.canal).filter(Boolean),
+        marcas: marcaRes.rows.map(r => r.marca).filter(Boolean),
+        meses:  mesesRes.rows
+      });
+    }
+    if (tabela === 'dashboard_kpis') {
+      const { mes: mesFiltro, ano: anoFiltro, marca: marcaFiltro, canal: canalFiltro } = req.query;
+      const params = [];
+      const filterClauses = [];
+      if (canalFiltro) {
+        params.push(canalFiltro);
+        filterClauses.push(`COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text)) = $${params.length}`);
+      }
+      if (marcaFiltro) {
+        params.push(marcaFiltro);
+        filterClauses.push(`"Sku" IN (SELECT "Sku Anterior" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
+      }
+      const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
+      let lmSQL;
+      if (mesFiltro && anoFiltro) {
+        params.push(parseInt(anoFiltro));
+        params.push(parseInt(mesFiltro));
+        lmSQL = `SELECT DATE_TRUNC('month', TO_DATE(
+          LPAD($${params.length-1}::text,4,'0') || '-' || LPAD($${params.length}::text,2,'0') || '-01',
+          'YYYY-MM-DD'
+        )) AS m`;
+      } else {
+        lmSQL = `SELECT DATE_TRUNC('month', MAX("Data"::date)) AS m FROM bd_vendas WHERE "Data" IS NOT NULL`;
+      }
+      result = await pool.query(`
+        WITH lm AS (${lmSQL}),
+        rb AS (
+          SELECT SUM(tvp) AS receita_bruta
+          FROM (
+            SELECT "Order ID", MAX("Total Venda Pedido") AS tvp
+            FROM bd_vendas
+            WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)${fWhere}
+            GROUP BY "Order ID"
+          ) t
+        )
+        SELECT
+          EXTRACT(YEAR  FROM "Data"::date) AS ano,
+          EXTRACT(MONTH FROM "Data"::date) AS mes,
+          (SELECT receita_bruta FROM rb) AS receita_bruta,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"                   ELSE 0 END) AS receita_liquida,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"            ELSE 0 END) AS qtd_liquida,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0)  ELSE 0 END) AS margem_bruta,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0)     ELSE 0 END) AS custo_total
+        FROM bd_vendas
+        WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)${fWhere}
+        GROUP BY 1, 2
+      `, params);
       return res.json(result.rows[0] || {});
     }
     if (tabela === 'contas_pagar') {
@@ -868,20 +1008,40 @@ module.exports = async (req, res) => {
       return res.json(result.rows);
     }
     if (tabela === 'monthly_revenue') {
+      const { marca: marcaFiltro, canal: canalFiltro } = req.query;
+      const params = [];
+      const filterClauses = [];
+      if (canalFiltro) {
+        params.push(canalFiltro);
+        filterClauses.push(`COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text)) = $${params.length}`);
+      }
+      if (marcaFiltro) {
+        params.push(marcaFiltro);
+        filterClauses.push(`"Sku" IN (SELECT "Sku Anterior" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
+      }
+      const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
       result = await pool.query(`
-        SELECT "Ano" AS ano, "Mes" AS mes,
-               SUM("Total Venda") AS receita,
-               SUM("Quantidade Vendida") AS qtd,
-               CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
+        SELECT ano, mes,
+               SUM(tvp)  AS receita,
+               SUM(qtd)  AS qtd,
+               CASE WHEN SUM(receita_liq) > 0
                     THEN ROUND((
-                      SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) /
-                      SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) * 100
+                      SUM(margem_liq) / SUM(receita_liq) * 100
                     )::numeric, 2)
                     ELSE NULL END AS mc_pct
-        FROM bd_vendas
-        GROUP BY "Ano", "Mes"
-        ORDER BY "Ano" ASC, "Mes" ASC
-      `);
+        FROM (
+          SELECT "Ano" AS ano, "Mes" AS mes, "Order ID",
+                 MAX("Total Venda Pedido") AS tvp,
+                 SUM("Quantidade Vendida") AS qtd,
+                 SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"                ELSE 0 END) AS receita_liq,
+                 SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_liq
+          FROM bd_vendas
+          WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL${fWhere}
+          GROUP BY "Ano", "Mes", "Order ID"
+        ) t
+        GROUP BY ano, mes
+        ORDER BY ano ASC, mes ASC
+      `, params);
       return res.json(result.rows);
     }
     if (tabela === 'pmv_months') {

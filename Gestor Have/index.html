@@ -2404,6 +2404,30 @@
                     </div>
                 </div><!-- OVERVIEW -->
                 <div class="panel active" id="panel-overview">
+                    <!-- ── FILTER BAR ───────────────────────────────────── -->
+                    <div id="dash-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 16px;background:var(--surface2,#f4f6fb);border-radius:10px;border:1px solid var(--border);">
+                        <span style="font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;letter-spacing:.5px;">FILTROS</span>
+                        <select id="df-ano" onchange="applyDashFilters()" style="padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#fff;color:var(--text);">
+                            <option value="">Todos os anos</option>
+                        </select>
+                        <select id="df-mes" onchange="applyDashFilters()" style="padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#fff;color:var(--text);">
+                            <option value="">Todos os meses</option>
+                            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                            <option value="3">Março</option><option value="4">Abril</option>
+                            <option value="5">Maio</option><option value="6">Junho</option>
+                            <option value="7">Julho</option><option value="8">Agosto</option>
+                            <option value="9">Setembro</option><option value="10">Outubro</option>
+                            <option value="11">Novembro</option><option value="12">Dezembro</option>
+                        </select>
+                        <select id="df-marca" onchange="applyDashFilters()" style="padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#fff;color:var(--text);">
+                            <option value="">Todas as marcas</option>
+                        </select>
+                        <select id="df-canal" onchange="applyDashFilters()" style="padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#fff;color:var(--text);">
+                            <option value="">Todos os canais</option>
+                        </select>
+                        <button onclick="clearDashFilters()" style="padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:none;color:var(--muted);cursor:pointer;white-space:nowrap;">✕ Limpar</button>
+                        <span id="dash-filter-active" style="font-size:11px;color:var(--accent);font-weight:600;display:none;margin-left:4px;">● Filtros ativos</span>
+                    </div>
                     <div class="kpi-grid" id="kpi-grid">
                         <div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div>
                         <div class="kpi-card"><div class="loading-skeleton" style="width:60%;margin-bottom:16px"></div><div class="loading-skeleton" style="width:40%;height:30px;margin-bottom:8px"></div><div class="loading-skeleton" style="width:80%"></div></div>
@@ -6352,11 +6376,12 @@
             // ══════════════════════════════════════════════
             // DB QUERY via API com JWT Token
             // ══════════════════════════════════════════════
-            async function queryDB(tabela) {
+            async function queryDB(tabela, params = {}) {
                 const token = localStorage.getItem('have_token');
                 if (!token) { handleUnauthorized(); throw new Error('Token não disponível.'); }
 
-                const res = await fetch(`${API_BASE}/data?tabela=${tabela}`, {
+                const _qs = new URLSearchParams({ tabela, ...Object.fromEntries(Object.entries(params).filter(([,v]) => v !== '' && v != null)) }).toString();
+                const res = await fetch(`${API_BASE}/data?${_qs}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -6406,6 +6431,129 @@
             }
 
             // ══════════════════════════════════════════════
+            // DASHBOARD FILTERS
+            // ══════════════════════════════════════════════
+            let _ovTotalMargem = 0;
+
+            function getDashFilters() {
+                const v = id => document.getElementById(id)?.value || '';
+                const f = {};
+                const ano = v('df-ano'); const mes = v('df-mes');
+                const marca = v('df-marca'); const canal = v('df-canal');
+                if (ano)   f.ano   = ano;
+                if (mes)   f.mes   = mes;
+                if (marca) f.marca = marca;
+                if (canal) f.canal = canal;
+                return f;
+            }
+
+            function _updateDashFilterIndicator() {
+                const f = getDashFilters();
+                const hasFilter = Object.keys(f).length > 0;
+                const el = document.getElementById('dash-filter-active');
+                if (el) el.style.display = hasFilter ? '' : 'none';
+            }
+
+            async function applyDashFilters() {
+                _updateDashFilterIndicator();
+                try {
+                    const kpiData = await queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}));
+                    _renderDashKpis(kpiData);
+                    const mfFilters = {};
+                    const f = getDashFilters();
+                    if (f.marca) mfFilters.marca = f.marca;
+                    if (f.canal) mfFilters.canal = f.canal;
+                    const raw = await queryDB('monthly_revenue', mfFilters);
+                    _monthlyData = raw.map(r => ({ ano: +r.ano, mes: +r.mes, receita: +r.receita || 0, qtd: +r.qtd || 0, mc_pct: r.mc_pct != null ? +r.mc_pct : null }));
+                    filterMonthlyChart();
+                } catch(e) { console.error('applyDashFilters', e); }
+            }
+
+            function clearDashFilters() {
+                ['df-ano','df-mes','df-marca','df-canal'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+                applyDashFilters();
+            }
+
+            async function loadDashFilters() {
+                try {
+                    const d = await queryDB('dashboard_filters');
+                    const anos = [...new Set((d.meses || []).map(r => String(r.ano)))].sort((a,b) => b-a);
+                    const anoSel = document.getElementById('df-ano');
+                    if (anoSel) {
+                        anoSel.innerHTML = '<option value="">Todos os anos</option>' +
+                            anos.map(a => `<option value="${a}">${a}</option>`).join('');
+                    }
+                    const marcaSel = document.getElementById('df-marca');
+                    if (marcaSel) {
+                        marcaSel.innerHTML = '<option value="">Todas as marcas</option>' +
+                            (d.marcas || []).map(m => `<option value="${m}">${m}</option>`).join('');
+                    }
+                    const canalSel = document.getElementById('df-canal');
+                    if (canalSel) {
+                        canalSel.innerHTML = '<option value="">Todos os canais</option>' +
+                            (d.canais || []).map(c => `<option value="${c}">${c}</option>`).join('');
+                    }
+                } catch(e) { console.error('loadDashFilters', e); }
+            }
+
+            function _renderDashKpis(kpiData) {
+                const MESES_OV = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                const rob    = +kpiData.receita_bruta   || 0;
+                const rl     = +kpiData.receita_liquida || 0;
+                const qtd    = +kpiData.qtd_liquida     || 0;
+                const mbRaw  = kpiData.margem_bruta != null ? +kpiData.margem_bruta : null;
+                const mb     = mbRaw !== null ? mbRaw : _ovTotalMargem;
+                const ticket = qtd > 0 ? rl / qtd : 0;
+                const ct     = kpiData.custo_total != null ? +kpiData.custo_total : null;
+                const mbPct  = rl > 0 ? (mb / rl * 100) : 0;
+                const mesSub = kpiData.mes ? `${MESES_OV[+kpiData.mes]}/${kpiData.ano}` : '–';
+                const f = getDashFilters();
+                const filterTag = [f.marca, f.canal].filter(Boolean).join(' · ');
+                const subTag = filterTag ? ` · ${filterTag}` : '';
+                const fBR = v => v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+                const fKPI = v => Math.abs(v) >= 1e6 ? 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'M'
+                                : Math.abs(v) >= 1e3 ? 'R$ '+(v/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K'
+                                : 'R$ '+fBR(v);
+                document.getElementById('kpi-grid').innerHTML = `
+                    <div class="kpi-card">
+                        <div class="kpi-icon">R$</div>
+                        <div class="kpi-label">Receita Bruta</div>
+                        <div class="kpi-value" style="color:var(--accent)">${rob ? fKPI(rob) : '–'}</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · todas as vendas</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">=</div>
+                        <div class="kpi-label">Receita Líquida</div>
+                        <div class="kpi-value">${rl ? fKPI(rl) : '–'}</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · excl. cancelamentos</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">▲</div>
+                        <div class="kpi-label">Margem Bruta</div>
+                        <div class="kpi-value" style="color:${mb >= 0 ? '#059669' : 'var(--red)'}">${mb ? fKPI(mb) : '–'}</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · Margem Contribuição</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">%</div>
+                        <div class="kpi-label">Margem %</div>
+                        <div class="kpi-value" style="color:${mbPct >= 0 ? '#059669' : 'var(--red)'}">${rl > 0 ? fBR(mbPct)+'%' : '–'}</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · MC / Rec. Líquida</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">№</div>
+                        <div class="kpi-label">Ticket Médio</div>
+                        <div class="kpi-value">${ticket ? fKPI(ticket) : '–'}</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · ${qtd.toLocaleString('pt-BR')} un.</div>
+                    </div>
+                    ${ct != null ? `<div class="kpi-card">
+                        <div class="kpi-icon">⚙</div>
+                        <div class="kpi-label">Custo Total Prod.</div>
+                        <div class="kpi-value" style="color:#e67e22">${fKPI(ct)}</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · excl. cancelamentos</div>
+                    </div>` : ''}`;
+            }
+
+            // ══════════════════════════════════════════════
             // DATA LOADING
             // ══════════════════════════════════════════════
             async function loadAllData() {
@@ -6413,6 +6561,7 @@
 
                 try {
                     await Promise.all([loadOverview(),
+                    loadDashFilters(),
                     loadCategoriasOverview(),
                     loadMonthlyChart(),
                     loadCurvaAbc(),
@@ -6575,7 +6724,7 @@
                     const [abcRaw, ppRaw, kpiData] = await Promise.all([
                         queryDB('curva_abc'),
                         queryDB('ponto_pedido'),
-                        queryDB('dashboard_kpis').catch(() => ({}))
+                        queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}))
                     ]);
 
                     // Filter deactivated SKUs from overview calculations
@@ -6619,59 +6768,8 @@
                     document.getElementById('badge-ruptura').textContent = countAlerta;
                     const _bs = document.getElementById('badge-semana'); if (_bs) _bs.textContent = countAlerta;
 
-                    const MESES_OV = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-                    const rob    = +kpiData.receita_bruta   || 0;
-                    const rl     = +kpiData.receita_liquida || 0;
-                    const qtd    = +kpiData.qtd_liquida     || 0;
-                    const mbRaw  = kpiData.margem_bruta != null ? +kpiData.margem_bruta : null;
-                    const mb     = mbRaw !== null ? mbRaw : totalMargem;
-                    const ticket = qtd > 0 ? rl / qtd : 0;
-                    const ct     = kpiData.custo_total != null ? +kpiData.custo_total : null;
-                    const mbPct  = rl > 0 ? (mb / rl * 100) : 0;
-                    const mesSub = kpiData.mes ? `${MESES_OV[+kpiData.mes]}/${kpiData.ano}` : '–';
-                    const fBR = v => v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-                    const fKPI = v => Math.abs(v) >= 1e6 ? 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'M'
-                                   : Math.abs(v) >= 1e3 ? 'R$ '+(v/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K'
-                                   : 'R$ '+fBR(v);
-
-                    // ── 5 KPI Cards ──────────────────────────────────────
-                    document.getElementById('kpi-grid').innerHTML = `
-                        <div class="kpi-card">
-                            <div class="kpi-icon">R$</div>
-                            <div class="kpi-label">Receita Bruta</div>
-                            <div class="kpi-value" style="color:var(--accent)">${rob ? fKPI(rob) : '–'}</div>
-                            <div class="kpi-sub">${mesSub} · todas as vendas</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon">=</div>
-                            <div class="kpi-label">Receita Líquida</div>
-                            <div class="kpi-value">${rl ? fKPI(rl) : '–'}</div>
-                            <div class="kpi-sub">${mesSub} · excl. cancelamentos</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon">▲</div>
-                            <div class="kpi-label">Margem Bruta</div>
-                            <div class="kpi-value" style="color:${mb >= 0 ? '#059669' : 'var(--red)'}">${mb ? fKPI(mb) : '–'}</div>
-                            <div class="kpi-sub">${mesSub} · Margem Contribuição</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon">%</div>
-                            <div class="kpi-label">Margem %</div>
-                            <div class="kpi-value" style="color:${mbPct >= 0 ? '#059669' : 'var(--red)'}">${rl > 0 ? fBR(mbPct)+'%' : '–'}</div>
-                            <div class="kpi-sub">${mesSub} · MC / Rec. Líquida</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon">№</div>
-                            <div class="kpi-label">Ticket Médio</div>
-                            <div class="kpi-value">${ticket ? fKPI(ticket) : '–'}</div>
-                            <div class="kpi-sub">${mesSub} · ${qtd.toLocaleString('pt-BR')} un.</div>
-                        </div>
-                        ${ct != null ? `<div class="kpi-card">
-                            <div class="kpi-icon">⚙</div>
-                            <div class="kpi-label">Custo Total Prod.</div>
-                            <div class="kpi-value" style="color:#e67e22">${fKPI(ct)}</div>
-                            <div class="kpi-sub">${mesSub} · excl. cancelamentos</div>
-                        </div>` : ''}`;
+                    _ovTotalMargem = totalMargem;
+                    _renderDashKpis(kpiData);
 
                     // ── Margem por Curva ABC (horizontal bar chart) ───────
                     const sortedByMarg = [...abcData].sort((a, b) => b.marg - a.marg);
