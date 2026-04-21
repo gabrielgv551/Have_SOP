@@ -536,36 +536,140 @@ Outliers (transações > 2x a média), saldo negativo, burn acelerado.
   },
 };
 
-// ─── CALL CLAUDE ─────────────────────────────────────────────────────────────
+// ─── ORCHESTRATOR PROMPTS ────────────────────────────────────────────────────
+
+const ORCHESTRATOR_ROUTING_PROMPT = `Você é um roteador de agentes de análise. Dado uma pergunta do gestor, retorne um JSON com os agentes a acionar.
+
+Agentes disponíveis:
+- sop: Cobertura de dias, rupturas iminentes, ponto de pedido, reposição urgente
+- estoque: Portfólio, giro, tendências, aceleração/desaceleração, descontinuação de SKUs
+- financeiro: DRE, balanço patrimonial, liquidez, endividamento, indicadores contábeis
+- vendas: Performance comercial, crescimento MoM, mix de canal, margem por SKU
+- caixa: Fluxo de caixa, burn rate, posição de caixa, entradas e saídas bancárias
+
+Regras:
+- Selecione SOMENTE os agentes necessários para responder a pergunta
+- Para análises completas de saúde do negócio, selecione todos
+- Retorne APENAS JSON válido, sem markdown, sem explicação extra
+
+Formato de resposta obrigatório:
+{"agents": ["sop", "caixa"], "rationale": "Explicação em 1 frase de por que esses agentes foram selecionados"}`;
+
+const ORCHESTRATOR_SYNTHESIS_PROMPT = `Você é o Diretor Executivo integrado da {companyName}, acumulando as funções de CFO, S&OP Director, Controller e Head de Vendas.
+
+Você recebe dados pré-calculados de MÚLTIPLOS módulos do negócio simultaneamente.
+Sua missão é produzir uma análise CROSS-MÓDULO — identificar conexões, causalidades e riscos que NENHUM analista isolado enxergaria.
+
+Regras obrigatórias:
+- SEMPRE cruzar dados de módulos diferentes em pelo menos uma seção
+- Cite números reais dos dados. Proibido generalizar sem referência a valores concretos
+- Identifique causalidades: ex. "A ruptura do SKU X está comprimindo a margem do canal Y"
+- Priorize decisões por impacto financeiro estimado em R$
+- Responda em português brasileiro
+
+Formato obrigatório da resposta:
+
+## 🔍 Diagnóstico Integrado
+O que os dados revelam quando lidos EM CONJUNTO. Cruzamentos entre módulos. 3–5 achados principais com valores.
+
+## ⚠️ Riscos Cross-Módulo
+Riscos que só aparecem ao combinar os módulos — ex: "ruptura + caixa baixo = impossível repor". Calcule impacto em R$.
+
+## 📊 Situação por Módulo
+Resumo executivo de cada módulo ativado (2–3 linhas cada, apenas os mais críticos).
+
+## 🎯 Decisões Prioritárias — Próximos 30 dias
+No máximo 5 ações, ordenadas por impacto financeiro estimado. Formato: Ação | Módulo | Impacto R$ | Urgência`;
+
+// ─── CALL LLM (síntese principal — Anthropic Claude) ────────────────────────
 
 async function callLLM({ systemPrompt, userMessage, companyName }) {
-  if (!process.env.OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY não está configurada. Obtenha gratuitamente em: https://openrouter.ai/keys');
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY não está configurada. Obtenha em: https://console.anthropic.com/settings/keys');
   }
   const maxLen = 40000;
   const msg = userMessage.length > maxLen ? userMessage.slice(0, maxLen) + '\n[dados truncados]' : userMessage;
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://have-gestor-frontend.vercel.app',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-pro-exp-03-25:free',
+      model: 'claude-sonnet-4-5',
       max_tokens: 8000,
+      system: systemPrompt.replace('{companyName}', companyName),
       messages: [
-        { role: 'system', content: systemPrompt.replace('{companyName}', companyName) },
         { role: 'user', content: msg },
       ],
     }),
   });
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`OpenRouter API error ${response.status}: ${err}`);
+    const errText = await response.text();
+    throw new Error(`Anthropic API error ${response.status}: ${errText}`);
   }
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.content[0].text;
+}
+
+// ─── CALL FLASH (roteamento leve — Anthropic Claude Haiku) ─────────────────
+
+async function callFlash(question) {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY não configurada');
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 300,
+      system: ORCHESTRATOR_ROUTING_PROMPT,
+      messages: [
+        { role: 'user', content: question },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error(`Flash routing error ${response.status}`);
+  const data = await response.json();
+  const raw = (data.content[0].text || '').trim();
+  try {
+    const clean = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch {
+    console.warn('[callFlash] parse failed, activating all agents:', raw);
+    return { agents: Object.keys(AGENTS), rationale: 'Fallback: todos os agentes ativados' };
+  }
+}
+
+// ─── ORCHESTRATOR ─────────────────────────────────────────────────────────────
+
+async function runOrchestrator({ pool, companyName, question, agentKeys }) {
+  const keys = (agentKeys || []).filter(k => AGENTS[k]);
+  if (!keys.length) throw new Error('Nenhum agente válido selecionado');
+
+  const dataResults = await Promise.allSettled(keys.map(k => AGENTS[k].fetchData(pool)));
+  const combinedData = {};
+  keys.forEach((k, i) => {
+    if (dataResults[i].status === 'fulfilled') combinedData[k] = dataResults[i].value;
+    else { console.error(`[orchestrator] fetchData ${k}:`, dataResults[i].reason?.message); combinedData[k] = { erro: dataResults[i].reason?.message }; }
+  });
+
+  const moduloDescriptions = keys.map(k => `### Módulo: ${AGENTS[k].label}\n${JSON.stringify(combinedData[k], null, 2)}`).join('\n\n');
+  const userMsg = question
+    ? `Pergunta do gestor: ${question}\n\nDados dos módulos ativados:\n${moduloDescriptions}`
+    : `Análise completa de saúde do negócio — todos os módulos ativos.\n\nDados:\n${moduloDescriptions}`;
+
+  const analysis = await callLLM({
+    systemPrompt: ORCHESTRATOR_SYNTHESIS_PROMPT,
+    userMessage: userMsg,
+    companyName,
+  });
+
+  return { analysis, agents_activated: keys, data_summary: combinedData };
 }
 
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
@@ -603,6 +707,17 @@ module.exports = async (req, res) => {
       );
     }
 
+    // Orquestrador: ativa todos os agentes em paralelo
+    if (agentKey === 'orchestrator') {
+      try {
+        const result = await runOrchestrator({ pool, companyName, question: null, agentKeys: Object.keys(AGENTS) });
+        return res.json({ agent: 'orchestrator', ...result });
+      } catch (e) {
+        console.error('[AGENTS GET] orchestrator:', e.message);
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     const agent = AGENTS[agentKey];
     if (!agent) return res.status(400).json({ error: `Agente '${agentKey}' não encontrado` });
 
@@ -620,10 +735,23 @@ module.exports = async (req, res) => {
     }
   }
 
-  // POST /api/agents → chat com agente
+  // POST /api/agents → chat com agente OU orquestrador
   if (req.method === 'POST') {
     const { agent: agentKey, message, contextData } = req.body || {};
     if (!agentKey || !message) return res.status(400).json({ error: 'agent e message são obrigatórios' });
+
+    // Orquestrador: roteamento via Flash + síntese via Pro
+    if (agentKey === 'orchestrator') {
+      try {
+        const routing = await callFlash(message);
+        console.log('[orchestrator] roteamento:', routing);
+        const result = await runOrchestrator({ pool, companyName, question: message, agentKeys: routing.agents });
+        return res.json({ agent: 'orchestrator', routing_rationale: routing.rationale, ...result });
+      } catch (e) {
+        console.error('[AGENTS POST] orchestrator:', e.message);
+        return res.status(500).json({ error: e.message });
+      }
+    }
 
     const agent = AGENTS[agentKey];
     if (!agent) return res.status(400).json({ error: `Agente '${agentKey}' não encontrado` });
