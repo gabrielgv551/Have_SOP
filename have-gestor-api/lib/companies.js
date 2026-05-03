@@ -12,6 +12,15 @@ module.exports = {
       have:   process.env.LANZI_PASS_HAVE,
     }
   },
+  marcon: {
+    name: "Marcon",
+    dbEnvKey: "MARCON",
+    users: {
+      admin:  process.env.MARCON_PASS_ADMIN,
+      gestor: process.env.MARCON_PASS_GESTOR,
+      have:   process.env.MARCON_PASS_HAVE,
+    }
+  },
   // Para adicionar nova empresa, basta copiar o bloco acima e
   // adicionar as variáveis de ambiente correspondentes no Vercel.
   // empresa2: {
