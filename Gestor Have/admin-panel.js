@@ -40,22 +40,35 @@ function renderAdminTable() {
     const tbody = document.getElementById('admin-usuarios-tbody');
     if (!tbody) return;
 
+    const MODULE_LABELS = { caixa: 'Caixa', dfs: 'DFS', sopc: 'S&OP', margens: 'Margens', ia: 'IA' };
+
     if (adminUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Nenhum usuário encontrado</div></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Nenhum usuário encontrado</div></div></td></tr>`;
         return;
     }
 
-    tbody.innerHTML = adminUsers.map(u => `<tr>
+    tbody.innerHTML = adminUsers.map(u => {
+        const perms = Array.isArray(u.nav_permissoes) ? u.nav_permissoes : null;
+        const modulosHtml = u.perfil === 'admin'
+            ? '<span style="color:var(--accent);font-size:11px;font-weight:600;">Todos (admin)</span>'
+            : perms === null
+                ? '<span style="color:var(--muted);font-size:11px;">Todos</span>'
+                : perms.length === 0
+                    ? '<span style="color:var(--red);font-size:11px;">Nenhum</span>'
+                    : perms.map(p => `<span class="mod-badge">${MODULE_LABELS[p] || p}</span>`).join(' ');
+        return `<tr>
         <td><strong>${esc(u.nome)}</strong></td>
         <td><code>${esc(u.usuario)}</code></td>
         <td><span class="badge-role badge-${u.perfil}">${u.perfil}</span></td>
+        <td>${modulosHtml}</td>
         <td>${u.ativo ? '<span style="color:var(--green)">✓ Ativo</span>' : '<span style="color:var(--muted)">Inativo</span>'}</td>
         <td><small>${new Date(u.criado_em).toLocaleDateString('pt-BR')}</small></td>
         <td>
             <button class="btn-small btn-edit" onclick="openEditUsuario(${u.id})">✎</button>
             <button class="btn-small btn-delete" onclick="openDeleteConfirm(${u.id}, '${esc(u.usuario)}')" ${!u.ativo ? 'disabled' : ''}>🗑</button>
         </td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
 }
 
 /**
@@ -73,6 +86,10 @@ function openCreateUsuario() {
     document.getElementById('admin-form-empresa').value = currentCompany;
     document.getElementById('admin-form-senha-row').style.display = 'block';
     document.getElementById('admin-form-senha-confirm-row').style.display = 'block';
+    ['caixa','dfs','sopc','margens','ia'].forEach(s => {
+        const cb = document.getElementById('perm-' + s);
+        if (cb) cb.checked = false;
+    });
     document.getElementById('admin-modal').style.display = 'flex';
 }
 
@@ -96,6 +113,11 @@ function openEditUsuario(userId) {
     document.getElementById('admin-form-senha-row').style.display = 'block';
     document.getElementById('admin-form-senha-confirm-row').style.display = 'block';
     document.getElementById('admin-form-ativo-row').style.display = 'block';
+    const existingPerms = Array.isArray(user.nav_permissoes) ? user.nav_permissoes : [];
+    ['caixa','dfs','sopc','margens','ia'].forEach(s => {
+        const cb = document.getElementById('perm-' + s);
+        if (cb) cb.checked = existingPerms.includes(s);
+    });
     document.getElementById('admin-modal').style.display = 'flex';
 }
 
@@ -164,12 +186,17 @@ async function submitAdminForm() {
             'Authorization': `Bearer ${token}`
         };
 
-        if (adminFormMode === 'create') {
+        const nav_permissoes = ['caixa','dfs','sopc','margens','ia'].filter(s => {
+        const cb = document.getElementById('perm-' + s);
+        return cb && cb.checked;
+    });
+
+    if (adminFormMode === 'create') {
             // Create
             const res = await fetch(`${API_BASE}/admin/usuarios`, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ nome, usuario, password, perfil, empresa })
+                body: JSON.stringify({ nome, usuario, password, perfil, empresa, nav_permissoes })
             });
 
             if (!res.ok) {
@@ -182,7 +209,7 @@ async function submitAdminForm() {
             await loadAdminUsuarios();
         } else {
             // Edit
-            const updates = { nome, perfil };
+            const updates = { nome, perfil, nav_permissoes };
             if (ativo !== undefined) updates.ativo = ativo;
             if (password) updates.senha_hash = true; // Flag to indicate password change
 
@@ -251,6 +278,19 @@ async function deleteAdminUsuario(userId) {
 const adminStyles = `
 /* visibility controlled by parent #group-admin */
 
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    color: var(--muted, #999);
+    text-align: center;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-size: 15px; font-weight: 500; }
+
+
 .badge-role {
     padding: 4px 8px;
     border-radius: 6px;
@@ -262,6 +302,17 @@ const adminStyles = `
 .badge-admin { background: var(--accent); color: #fff; }
 .badge-gestor { background: var(--orange); color: #fff; }
 .badge-have { background: var(--accent2); color: #fff; }
+
+.mod-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(0,124,220,0.12);
+    color: var(--accent);
+    margin: 1px;
+}
 
 .btn-small {
     padding: 6px 10px;
