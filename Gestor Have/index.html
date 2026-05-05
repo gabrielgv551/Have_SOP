@@ -15901,6 +15901,9 @@ if (id === 'dfs-kpis') {
       let _intCfg = {};
       let _intCurrent = null;
 
+      const ML_LOGO_IMG   = '<img src="/logo%20mercado%20livre.png" style="width:38px;height:38px;object-fit:contain" alt="ML">';
+      const TINY_LOGO_IMG  = '<div style="width:38px;height:38px;background:#e91e8c;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;line-height:1.1;text-align:center">olist<br>tiny</div>';
+
       const INT_CATALOG = {
         marketplaces: [],
         erps: [],
@@ -15934,16 +15937,26 @@ if (id === 'dfs-kpis') {
         mpG.innerHTML = INT_CATALOG.marketplaces.map(renderCard).join('');
         const mpBadge = document.getElementById('int-mp-badge');
         if(mpBadge) mpBadge.textContent = `${INT_CATALOG.marketplaces.length}/99 Marketplaces criados`;
-        // Esconde seções vazias
-        ['int-erp-section','int-other-section'].forEach(id=>{
-          const el = document.getElementById(id);
-          if(el) el.style.display='none';
-        });
+        // ERPs
+        const erpG = document.getElementById('int-erp-grid');
+        if(erpG) erpG.innerHTML = INT_CATALOG.erps.map(renderCard).join('');
+        const erpBadge = document.getElementById('int-erp-badge');
+        if(erpBadge) erpBadge.textContent = `${INT_CATALOG.erps.length}/99 ERPs criados`;
+        const erpSec = document.getElementById('int-erp-section');
+        if(erpSec) erpSec.style.display = '';
+        // Esconde outras se vazio
+        const otherSec = document.getElementById('int-other-section');
+        if(otherSec) otherSec.style.display = INT_CATALOG.outras.length ? '' : 'none';
       }
 
       async function intLoadCfg(){
         const token = localStorage.getItem('have_token');
         if(!token) return;
+        // Carrega config pública (client IDs OAuth)
+        try{
+          const pc = await fetch(`${API_BASE}/data?module=public-config`);
+          if(pc.ok){ const pcData = await pc.json(); if(pcData.tiny_client_id) window._TINY_CLIENT_ID = pcData.tiny_client_id; }
+        }catch(e){}
         try{
           const r = await fetch(`${API_BASE}/data?module=configuracoes`,{headers:{'Authorization':'Bearer '+token}});
           if(r.ok){
@@ -15956,7 +15969,17 @@ if (id === 'dfs-kpis') {
                 const id = chave.replace(/_token$/, '');
                 if(!INT_CATALOG.marketplaces.find(i=>i.id===id)){
                   const nick = d[chave+'_nick'] || id.replace(/^ml_/, '');
-                  INT_CATALOG.marketplaces.push({ id, label:'Mercado Livre - '+nick, logo:'🟡', type:'oauth_ml', chave });
+                  INT_CATALOG.marketplaces.push({ id, label:'Mercado Livre - '+nick, logo:ML_LOGO_IMG, type:'oauth_ml', chave });
+                }
+              });
+            // Reconstrói catálogo Tiny ERP a partir das chaves do banco
+            Object.keys(d)
+              .filter(k => k.endsWith('_token') && !k.includes('_token_') && k.startsWith('tiny_'))
+              .forEach(chave => {
+                const id = chave.replace(/_token$/, '');
+                if(!INT_CATALOG.erps.find(i=>i.id===id)){
+                  const nick = id.replace(/^tiny_/, '').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+                  INT_CATALOG.erps.push({ id, label:'Tiny ERP - '+nick, logo:TINY_LOGO_IMG, type:'token', chave });
                 }
               });
           }
@@ -15967,7 +15990,7 @@ if (id === 'dfs-kpis') {
       window.intOpenEdit = function(id){
         _intCurrent = findInt(id);
         if(!_intCurrent) return;
-        document.getElementById('int-modal-logo').textContent  = _intCurrent.logo;
+        document.getElementById('int-modal-logo').innerHTML  = _intCurrent.logo;
         document.getElementById('int-modal-title').textContent = _intCurrent.label;
         document.getElementById('int-modal-sub').textContent   = 'Configure as credenciais de acesso';
         const body   = document.getElementById('int-modal-body');
@@ -15981,10 +16004,28 @@ if (id === 'dfs-kpis') {
                <button class="btn-oauth-ml" onclick="intConnectML('${_intCurrent.id}')">🛒 Conectar ao Mercado Livre</button>`;
           footer.innerHTML = `<button class="btn-int-cancel" onclick="intCloseModalDirect()">Fechar</button>`;
         } else if(_intCurrent.type==='token'){
+          const modsAtivos = (_intCfg[_intCurrent.id+'_modulos'] || 'vendas,estoque,pedidos').split(',');
           body.innerHTML = `<div style="margin-bottom:14px">
             <label class="int-form-lbl">Token de Acesso</label>
-            <input class="int-form-input" type="password" id="int-f-token" placeholder="Cole o token aqui">
+            <input class="int-form-input" type="password" id="int-f-token" placeholder="Deixe em branco para manter">
             <div class="int-hint">Encontre o token nas configurações da plataforma.</div>
+          </div>
+          <div style="margin-bottom:4px">
+            <label class="int-form-lbl">O que deseja sincronizar?</label>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="int-f-mod-vendas" ${modsAtivos.includes('vendas')?'checked':''} style="width:15px;height:15px;accent-color:var(--accent)">
+                <span>&#128722; <b>Vendas</b> <span style="color:var(--muted);font-size:11px">(pedidos de venda, receita, canal)</span></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="int-f-mod-estoque" ${modsAtivos.includes('estoque')?'checked':''} style="width:15px;height:15px;accent-color:var(--accent)">
+                <span>&#128230; <b>Estoque</b> <span style="color:var(--muted);font-size:11px">(posição atual por SKU)</span></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="int-f-mod-pedidos" ${modsAtivos.includes('pedidos')?'checked':''} style="width:15px;height:15px;accent-color:var(--accent)">
+                <span>&#128230; <b>Pedidos em aberto</b> <span style="color:var(--muted);font-size:11px">(compras pendentes de recebimento)</span></span>
+              </label>
+            </div>
           </div>`;
           footer.innerHTML = `<button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
             <button class="btn-int-save" onclick="intSaveToken()">Salvar</button>`;
@@ -16008,22 +16049,78 @@ if (id === 'dfs-kpis') {
       window.intCloseModal = function(e){ if(e.target===document.getElementById('int-modal-overlay')) intCloseModalDirect(); };
       window.intCloseModalDirect = function(){ document.getElementById('int-modal-overlay').classList.remove('open'); _intCurrent=null; };
       window.intOpenAdd = function(type){
-        if(type!=='marketplace') return;
-        document.getElementById('int-modal-logo').textContent  = '🟡';
-        document.getElementById('int-modal-title').textContent = 'Adicionar Mercado Livre';
-        document.getElementById('int-modal-sub').textContent   = 'Selecione a conta para conectar';
         const body   = document.getElementById('int-modal-body');
         const footer = document.getElementById('int-modal-footer');
-        body.innerHTML = `
-          <div style="margin-bottom:14px">
-            <label class="int-form-lbl">Nome da conta (ex: Marcon, Lanzi)</label>
-            <input class="int-form-input" type="text" id="int-f-newlabel" placeholder="Ex: Minha Loja">
-            <div class="int-hint">Será usada como identificador desta conexão.</div>
-          </div>`;
-        footer.innerHTML = `
-          <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
-          <button class="btn-int-save" onclick="intAddML()">Conectar →</button>`;
+        if(type==='marketplace'){
+          document.getElementById('int-modal-logo').innerHTML  = ML_LOGO_IMG;
+          document.getElementById('int-modal-title').textContent = 'Adicionar Mercado Livre';
+          document.getElementById('int-modal-sub').textContent   = 'Selecione a conta para conectar';
+          body.innerHTML = `
+            <div style="margin-bottom:14px">
+              <label class="int-form-lbl">Nome da conta (ex: Marcon, Lanzi)</label>
+              <input class="int-form-input" type="text" id="int-f-newlabel" placeholder="Ex: Minha Loja">
+              <div class="int-hint">Será usada como identificador desta conexão.</div>
+            </div>`;
+          footer.innerHTML = `
+            <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
+            <button class="btn-int-save" onclick="intAddML()">Conectar →</button>`;
+        } else if(type==='erp'){
+          document.getElementById('int-modal-logo').innerHTML  = TINY_LOGO_IMG;
+          document.getElementById('int-modal-title').textContent = 'Adicionar Tiny ERP';
+          document.getElementById('int-modal-sub').textContent   = 'Conecte sua conta do Tiny ERP';
+          body.innerHTML = `
+            <div style="margin-bottom:14px">
+              <label class="int-form-lbl">Nome da conta (ex: Matriz, Filial)</label>
+              <input class="int-form-input" type="text" id="int-f-erp-label" placeholder="Ex: Matriz">
+              <div class="int-hint">Identificador desta conexão.</div>
+            </div>
+            <div style="margin-bottom:4px">
+              <label class="int-form-lbl">O que deseja sincronizar?</label>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" id="int-f-mod-vendas" checked style="width:15px;height:15px;accent-color:var(--accent)">
+                  <span>&#128722; <b>Vendas</b> <span style="color:var(--muted);font-size:11px">(pedidos, receita, canal, custo SKU)</span></span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" id="int-f-mod-estoque" checked style="width:15px;height:15px;accent-color:var(--accent)">
+                  <span>&#128230; <b>Estoque</b> <span style="color:var(--muted);font-size:11px">(posição atual por SKU)</span></span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" id="int-f-mod-pedidos" checked style="width:15px;height:15px;accent-color:var(--accent)">
+                  <span>&#128230; <b>Pedidos em aberto</b> <span style="color:var(--muted);font-size:11px">(compras pendentes de recebimento)</span></span>
+                </label>
+              </div>
+            </div>`;
+          footer.innerHTML = `
+            <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
+            <button class="btn-int-save" onclick="intAddERP()">Conectar ao Tiny →</button>`;
+        }
         document.getElementById('int-modal-overlay').classList.add('open');
+      };
+
+      window.intAddERP = function(){
+        const label = document.getElementById('int-f-erp-label').value.trim();
+        if(!label){ alert('Informe o nome da conta.'); return; }
+        const mods = [];
+        if(document.getElementById('int-f-mod-vendas')?.checked)  mods.push('vendas');
+        if(document.getElementById('int-f-mod-estoque')?.checked) mods.push('estoque');
+        if(document.getElementById('int-f-mod-pedidos')?.checked) mods.push('pedidos');
+        if(!mods.length){ alert('Selecione ao menos um módulo.'); return; }
+        const id = 'tiny_'+label.toLowerCase().replace(/\s+/g,'_');
+        // Salva estado para o callback recuperar
+        window._tinyPendingAccountId = id;
+        window._tinyPendingModules   = mods.join(',');
+        intCloseModalDirect();
+        // Adiciona card temporário
+        if(!INT_CATALOG.erps.find(i=>i.id===id)){
+          INT_CATALOG.erps.push({ id, label:'Tiny ERP - '+label, logo:TINY_LOGO_IMG, type:'token', chave: id+'_token' });
+          intRender();
+        }
+        // Abre janela OAuth Tiny
+        const TINY_CLIENT_ID = (window._TINY_CLIENT_ID || '');
+        const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/tiny-callback');
+        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${TINY_CLIENT_ID}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access&state=${id}`;
+        window.open(authUrl, '_blank', 'width=620,height=720');
       };
 
       function _mlBuildAuthUrl(id) {
@@ -16038,7 +16135,7 @@ if (id === 'dfs-kpis') {
         const chave = id+'_token';
         // Adiciona temporariamente ao catálogo
         if(!INT_CATALOG.marketplaces.find(i=>i.id===id)){
-          INT_CATALOG.marketplaces.push({ id, label:'Mercado Livre - '+label, logo:'🟡', type:'oauth_ml', chave });
+          INT_CATALOG.marketplaces.push({ id, label:'Mercado Livre - '+label, logo:ML_LOGO_IMG, type:'oauth_ml', chave });
         }
         intCloseModalDirect();
         intRender();
@@ -16048,8 +16145,15 @@ if (id === 'dfs-kpis') {
 
       window.intSaveToken = async function(){
         const val = document.getElementById('int-f-token').value.trim();
-        if(!val){ alert('Informe o token.'); return; }
-        await intSaveCfg({[_intCurrent.chave]: val});
+        const cfg = {};
+        if(val) cfg[_intCurrent.chave] = val;
+        const mods = [];
+        if(document.getElementById('int-f-mod-vendas')?.checked)  mods.push('vendas');
+        if(document.getElementById('int-f-mod-estoque')?.checked) mods.push('estoque');
+        if(document.getElementById('int-f-mod-pedidos')?.checked) mods.push('pedidos');
+        if(mods.length) cfg[_intCurrent.id+'_modulos'] = mods.join(',');
+        if(!Object.keys(cfg).length){ intCloseModalDirect(); return; }
+        await intSaveCfg(cfg);
       };
 
       window.intSaveEmailSenha = async function(){
