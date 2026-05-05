@@ -437,14 +437,8 @@ window.showPanel = function(id) {
     }
 };
 
-// Load admin data on page load if user is admin (after JWT is decoded)
-document.addEventListener('DOMContentLoaded', async function() {
-    // Wait a bit for JWT to be decoded in startDashboard
-    setTimeout(() => {
-        const adminNav = document.getElementById('admin-nav');
-        if (adminNav && adminNav.style.display === 'flex') {
-            // User is admin, preload data
-            loadAdminUsuarios();
-        }
-    }, 1000);
-});
+// If admin panel is already active when this script loads (e.g. user navigated early),
+// trigger the load now since DOMContentLoaded has already fired.
+if (document.getElementById('panel-admin-usuarios')?.classList.contains('active')) {
+    loadAdminUsuarios();
+}

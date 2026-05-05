@@ -9154,6 +9154,7 @@ if (id === 'dfs-kpis') {
                 if (id === 'margens-dre') { loadMargensMeses(); }
                 if (id === 'agentes') { renderAgentCards(); }
                 if (id === 'configuracoes') { loadConfiguracoes(); }
+                if (id === 'admin-usuarios' && typeof loadAdminUsuarios === 'function') { loadAdminUsuarios(); }
                 if (window.innerWidth < 900) closeSidebar();
             }
 
@@ -15834,10 +15835,7 @@ if (id === 'dfs-kpis') {
       let _intCurrent = null;
 
       const INT_CATALOG = {
-        marketplaces: [
-          { id:'ml_marcon', label:'Mercado Livre - Marcon', logo:'🟡', type:'oauth_ml', chave:'ml_marcon_token' },
-          { id:'ml_lanzi',  label:'Mercado Livre - Lanzi',  logo:'🟡', type:'oauth_ml', chave:'ml_lanzi_token'  },
-        ],
+        marketplaces: [],
         erps: [],
         outras: [],
       };

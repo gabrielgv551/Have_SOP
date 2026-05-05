@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/ml-callback", "destination": "/ml-callback.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
