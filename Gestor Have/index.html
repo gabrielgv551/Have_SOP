@@ -198,42 +198,6 @@
                 font-weight: 500;
             }
 
-            .company-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                margin-bottom: 24px;
-            }
-
-            .company-btn {
-                padding: 14px 16px;
-                background: var(--surface2);
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                cursor: pointer;
-                transition: all 0.2s;
-                text-align: left;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            .company-btn:hover {
-                border-color: rgba(0, 136, 255, 0.40);
-                background: rgba(0, 136, 255, 0.08);
-            }
-
-            .company-btn.selected {
-                border-color: var(--accent);
-                background: rgba(0, 136, 255, 0.12);
-                box-shadow: 0 0 0 1px var(--accent) inset;
-            }
-
-            .company-btn.disabled {
-                opacity: 0.35;
-                cursor: not-allowed;
-            }
-
             .company-dot {
                 width: 8px;
                 height: 8px;
@@ -251,6 +215,82 @@
                 font-size: 10px;
                 color: var(--muted);
             }
+
+            .company-select-wrapper {
+                position: relative;
+                margin-bottom: 24px;
+            }
+
+            .company-select-trigger {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 16px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s;
+                user-select: none;
+            }
+
+            .company-select-trigger:hover {
+                border-color: rgba(0, 136, 255, 0.40);
+                background: rgba(0, 136, 255, 0.08);
+            }
+
+            .company-select-wrapper.open .company-select-trigger {
+                border-color: var(--accent);
+                background: rgba(0, 136, 255, 0.08);
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+
+            .company-select-info { flex: 1; }
+
+            .company-chevron {
+                color: var(--muted);
+                transition: transform 0.2s;
+            }
+
+            .company-select-wrapper.open .company-chevron {
+                transform: rotate(180deg);
+            }
+
+            .company-dropdown {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--surface);
+                border: 1px solid var(--accent);
+                border-top: none;
+                border-radius: 0 0 12px 12px;
+                overflow: hidden;
+                z-index: 100;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+            }
+
+            .company-select-wrapper.open .company-dropdown { display: block; }
+
+            .company-dropdown-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 16px;
+                cursor: pointer;
+                transition: background 0.15s;
+                border-top: 1px solid var(--border);
+            }
+
+            .company-dropdown-item:first-child { border-top: none; }
+
+            .company-dropdown-item:hover { background: rgba(0,136,255,0.08); }
+
+            .company-dropdown-item.selected { background: rgba(0,136,255,0.06); }
+
+            .company-dropdown-check { margin-left: auto; color: var(--accent); }
 
             .coming-badge {
                 font-size: 9px;
@@ -1362,9 +1402,7 @@
                     padding: 32px 24px;
                 }
 
-                .company-grid {
-                    grid-template-columns: 1fr;
-                }
+                .company-select-wrapper { margin-bottom: 20px; }
             }
 
             /* Chart mini */
@@ -2445,21 +2483,16 @@
                 <div class="login-title">Bem-vindo de volta</div>
                 <div class="login-subtitle">Selecione sua empresa e entre no painel</div>
                 <div class="company-label">Empresa</div>
-                <div class="company-grid" id="company-grid">
-                    <div class="company-btn selected" data-company="lanzi" onclick="selectCompany(this)">
-                        <div class="company-dot" style="background:var(--accent)"></div>
-                        <div>
-                            <div class="company-btn-name">Lanzi</div>
-                            <div class="company-btn-tag">S&OP · PostgreSQL</div>
+                <div class="company-select-wrapper" id="company-select-wrapper">
+                    <div class="company-select-trigger" onclick="toggleCompanyDropdown()">
+                        <div class="company-dot" id="company-dot-trigger" style="background:var(--accent)"></div>
+                        <div class="company-select-info">
+                            <div class="company-btn-name" id="company-select-name">Lanzi</div>
+                            <div class="company-btn-tag" id="company-select-tag">S&amp;OP · PostgreSQL</div>
                         </div>
+                        <svg class="company-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
-                    <div class="company-btn" data-company="marcon" onclick="selectCompany(this)">
-                        <div class="company-dot" style="background:#e85d2f"></div>
-                        <div>
-                            <div class="company-btn-name">Marcon</div>
-                            <div class="company-btn-tag">S&OP · PostgreSQL</div>
-                        </div>
-                    </div>
+                    <div class="company-dropdown" id="company-dropdown"></div>
                 </div>
                 <div class="form-group"><label>Usuário</label><input type="text" id="username" placeholder="seu usuário"
                         value=""></div>
@@ -6400,12 +6433,46 @@
                 weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
             });
 
-            function selectCompany(el) {
-                if (el.classList.contains('disabled')) return;
-                document.querySelectorAll('.company-btn').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                currentCompany = el.dataset.company;
+            const COMPANIES = [
+                { key: 'lanzi',  name: 'Lanzi',  tag: 'S&OP · PostgreSQL', color: 'var(--accent)' },
+                { key: 'marcon', name: 'Marcon', tag: 'S&OP · PostgreSQL', color: '#e85d2f' },
+            ];
+
+            function renderCompanyDropdown() {
+                const dropdown = document.getElementById('company-dropdown');
+                if (!dropdown) return;
+                const checkSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="company-dropdown-check"><polyline points="20 6 9 17 4 12"/></svg>';
+                dropdown.innerHTML = COMPANIES.map(c => `
+                    <div class="company-dropdown-item ${c.key === currentCompany ? 'selected' : ''}" onclick="selectCompanyFromDropdown('${c.key}')">
+                        <div class="company-dot" style="background:${c.color}"></div>
+                        <div>
+                            <div class="company-btn-name">${c.name}</div>
+                            <div class="company-btn-tag">${c.tag}</div>
+                        </div>
+                        ${c.key === currentCompany ? checkSvg : ''}
+                    </div>`).join('');
             }
+
+            function toggleCompanyDropdown() {
+                const wrapper = document.getElementById('company-select-wrapper');
+                wrapper.classList.toggle('open');
+                if (wrapper.classList.contains('open')) renderCompanyDropdown();
+            }
+
+            function selectCompanyFromDropdown(key) {
+                const c = COMPANIES.find(x => x.key === key);
+                if (!c) return;
+                currentCompany = key;
+                document.getElementById('company-dot-trigger').style.background = c.color;
+                document.getElementById('company-select-name').textContent = c.name;
+                document.getElementById('company-select-tag').textContent = c.tag;
+                document.getElementById('company-select-wrapper').classList.remove('open');
+            }
+
+            document.addEventListener('click', function(e) {
+                const w = document.getElementById('company-select-wrapper');
+                if (w && !w.contains(e.target)) w.classList.remove('open');
+            });
 
             // ══════════════════════════════════════════════
             // AUTH
