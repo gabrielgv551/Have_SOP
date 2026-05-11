@@ -881,10 +881,25 @@ module.exports = async (req, res) => {
         return { status: r.status, body, wwwAuth };
       }
 
+      // Contagem de registros no banco
+      let dbCounts = {};
+      try {
+        const safeName = account.replace(/[^a-z0-9_]/gi,'_').toLowerCase();
+        const [cp, ce] = await Promise.all([
+          pool.query(`SELECT COUNT(*) AS total, MIN(data_pedido) AS mais_antigo, MAX(data_pedido) AS mais_recente FROM bd_pedidos_tiny_${safeName}`).catch(()=>null),
+          pool.query(`SELECT COUNT(*) AS total FROM bd_estoque_tiny_${safeName}`).catch(()=>null),
+        ]);
+        dbCounts = {
+          pedidos: cp?.rows[0] || null,
+          estoque: ce?.rows[0] || null,
+        };
+      } catch {}
+
       return res.json({
         token_roles_count: tokenClaims?.roles?.['tiny-api']?.length || 0,
         token_email_verified: tokenClaims?.email_verified,
         refresh: refreshResult,
+        db: dbCounts,
         endpoints: {
           pedidos:  await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
           produtos: await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
