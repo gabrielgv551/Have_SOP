@@ -834,9 +834,17 @@ module.exports = async (req, res) => {
         let body; try { body = JSON.parse(text); } catch { body = text.substring(0, 300); }
         return { status: r.status, body };
       }
+      // Decodifica JWT para inspecionar scope/audience (sem validar assinatura)
+      let tokenClaims = null;
+      try {
+        const parts = accessToken.split('.');
+        if (parts.length === 3) tokenClaims = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+      } catch {}
+
       return res.json({
         token_exp_original: cfg[account + '_exp'],
         refresh: refreshResult,
+        token_claims: tokenClaims ? { scope: tokenClaims.scope, aud: tokenClaims.aud, azp: tokenClaims.azp, exp: tokenClaims.exp } : 'not-jwt',
         pedidos:  await tinyFetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=3`),
         produtos: await tinyFetch(`${TINY_API}/produtos?pagina=1&limite=3`),
       });
