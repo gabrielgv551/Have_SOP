@@ -901,10 +901,14 @@ module.exports = async (req, res) => {
         refresh: refreshResult,
         db: dbCounts,
         endpoints: {
-          pedidos:       await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
+          pedidos:        await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
           pedido_detalhe: req.query.pedido_id ? await tinyFetchFull(`${TINY_API}/pedidos/${req.query.pedido_id}`) : '(passe ?pedido_id=xxx)',
-          produtos:      await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
-          estoque:       await tinyFetchFull(`${TINY_API}/estoque/posicao?pagina=1&limite=1`),
+          margem_v1:      await tinyFetchFull(`${TINY_API}/pedidos/${req.query.pedido_id || ''}/margem-contribuicao`),
+          margem_v2:      await tinyFetchFull(`${TINY_API}/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
+          margem_v3:      await tinyFetchFull(`${TINY_API}/relatorios/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
+          margem_v4:      await tinyFetchFull(`${TINY_API}/margem_contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
+          produtos:       await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
+          estoque:        await tinyFetchFull(`${TINY_API}/estoque/posicao?pagina=1&limite=1`),
         },
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
