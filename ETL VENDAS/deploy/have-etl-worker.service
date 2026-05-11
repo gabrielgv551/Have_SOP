@@ -1,0 +1,20 @@
+[Unit]
+Description=Have ETL Worker (Flask API)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/have-etl
+ExecStart=/opt/have-etl/venv/bin/gunicorn worker:app -b 0.0.0.0:5050 --workers 1 --threads 4 --timeout 600
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/have-etl/.env
+
+# Logs
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=have-etl-worker
+
+[Install]
+WantedBy=multi-user.target

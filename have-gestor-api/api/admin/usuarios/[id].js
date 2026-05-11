@@ -49,7 +49,7 @@ async function handleUpdateUsuario(req, res, id) {
   if (!payload) return;
 
   try {
-    const { nome, perfil, ativo } = req.body;
+    const { nome, perfil, ativo, nav_permissoes } = req.body;
 
     if (!id) {
       return res.status(400).json({ error: 'User ID required' });
@@ -63,6 +63,7 @@ async function handleUpdateUsuario(req, res, id) {
     if (nome !== undefined) updates.nome = nome;
     if (perfil !== undefined) updates.perfil = perfil;
     if (ativo !== undefined) updates.ativo = ativo;
+    if (nav_permissoes !== undefined) updates.nav_permissoes = Array.isArray(nav_permissoes) ? nav_permissoes : null;
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'Nenhum campo para atualizar' });

@@ -40,6 +40,10 @@ module.exports = async (req, res) => {
   if (!payload) return;
 
   const company = payload.company || 'lanzi';
+  const companyKey = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
+  if (!process.env[`${companyKey}_HOST`]) {
+    return res.status(503).json({ error: 'Banco de dados não configurado para esta empresa.' });
+  }
   const pool = getPool(company);
 
   try {

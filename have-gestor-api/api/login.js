@@ -44,26 +44,31 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 1. TENTATIVA VIA BANCO DE DADOS
-    const pool = getPool(company);
-    const result = await pool.query('SELECT * FROM usuarios WHERE LOWER(usuario) = $1 AND ativo = TRUE', [usuarioInput]);
-    const dbUser = result.rows[0];
+    // 1. TENTATIVA VIA BANCO DE DADOS (só se o HOST estiver configurado)
+    const companyKey = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
+    const dbHost = process.env[`${companyKey}_HOST`];
 
-    if (dbUser) {
-      const isPasswordValid = await bcrypt.compare(password, dbUser.senha_hash);
-      if (isPasswordValid) {
-        const token = jwt.sign(
-          { userId: dbUser.id, email: dbUser.email, user: dbUser.usuario, role: dbUser.perfil, company: company },
-          process.env.JWT_SECRET,
-          { expiresIn: '8h' }
-        );
-        return res.status(200).json({ 
-          token, 
-          userName: dbUser.nome, 
-          user: dbUser.usuario, 
-          userRole: dbUser.perfil, 
-          companyName: company.charAt(0).toUpperCase() + company.slice(1) 
-        });
+    if (dbHost) {
+      const pool = getPool(company);
+      const result = await pool.query('SELECT * FROM usuarios WHERE LOWER(usuario) = $1 AND ativo = TRUE', [usuarioInput]);
+      const dbUser = result.rows[0];
+
+      if (dbUser) {
+        const isPasswordValid = await bcrypt.compare(password, dbUser.senha_hash);
+        if (isPasswordValid) {
+          const token = jwt.sign(
+            { userId: dbUser.id, email: dbUser.email, user: dbUser.usuario, role: dbUser.perfil, company: company, nav_permissoes: dbUser.nav_permissoes || null },
+            process.env.JWT_SECRET,
+            { expiresIn: '8h' }
+          );
+          return res.status(200).json({ 
+            token, 
+            userName: dbUser.nome, 
+            user: dbUser.usuario, 
+            userRole: dbUser.perfil, 
+            companyName: company.charAt(0).toUpperCase() + company.slice(1) 
+          });
+        }
       }
     }
 

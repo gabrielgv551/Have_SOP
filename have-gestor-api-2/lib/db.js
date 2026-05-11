@@ -6,12 +6,13 @@ const pools = {};
 function getPool(company) {
   if (pools[company]) return pools[company];
   const key = companies[company].dbEnvKey;
+  const e = k => (process.env[`${key}_${k}`] || '').trim();
   pools[company] = new Pool({
-    host:     process.env[`${key}_HOST`],
-    port:     parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`],
-    user:     process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`],
+    host:     e('HOST'),
+    port:     parseInt(e('PORT') || '5432'),
+    database: e('DB'),
+    user:     e('USER'),
+    password: e('PASSWORD'),
     ssl:      { rejectUnauthorized: false },
     max:      5,
   });

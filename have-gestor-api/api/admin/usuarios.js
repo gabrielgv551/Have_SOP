@@ -66,7 +66,7 @@ async function handleCreateUsuario(req, res) {
   if (!payload) return;
 
   try {
-    const { nome, usuario: rawUsuario, password, perfil, empresa } = req.body;
+    const { nome, usuario: rawUsuario, password, perfil, empresa, nav_permissoes } = req.body;
     const usuario = (rawUsuario || '').toLowerCase().trim();
 
     // Validation
@@ -103,7 +103,8 @@ async function handleCreateUsuario(req, res) {
       usuario,
       senha_hash: senhaHash,
       perfil,
-      empresa: empresa || payload.company
+      empresa: empresa || payload.company,
+      nav_permissoes: Array.isArray(nav_permissoes) ? nav_permissoes : null
     });
 
     console.log(`[ADMIN] User '${usuario}' created by ${payload.user}`);

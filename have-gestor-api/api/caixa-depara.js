@@ -39,19 +39,48 @@ module.exports = async (req, res) => {
       // Return unique descriptions from bank extract not yet mapped (tipo='extrato')
       if (source === 'extract') {
         const query = ano && mes
-          ? 'SELECT DISTINCT descricao FROM caixa_extrato WHERE empresa=$1 AND ano=$2 AND mes=$3 ORDER BY descricao'
-          : 'SELECT DISTINCT descricao FROM caixa_extrato WHERE empresa=$1 ORDER BY descricao';
+          ? 'SELECT DISTINCT descricao, razao_social FROM caixa_extrato WHERE empresa=$1 AND ano=$2 AND mes=$3 ORDER BY descricao'
+          : 'SELECT DISTINCT descricao, razao_social FROM caixa_extrato WHERE empresa=$1 ORDER BY descricao';
         const params = ano && mes ? [company, parseInt(ano), parseInt(mes)] : [company];
         const r = await pool.query(query, params);
         const dpR = await pool.query(
-          "SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
+          "SELECT palavra_chave, razao_social FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
           [company]
         );
-        const mapped = new Set(dpR.rows.map(x => x.palavra_chave.toLowerCase()));
-        return res.json({
-          descricoes: r.rows.map(x => x.descricao),
-          nao_classificadas: r.rows.map(x => x.descricao).filter(d => !mapped.has(d.toLowerCase()))
-        });
+        const rules = dpR.rows;
+
+        // Helper: extract RS from description if not stored (data imported before migration 026)
+        const extractRS = (row) => {
+          if (row.razao_social) return row.razao_social;
+          const parts = (row.descricao || '').split(' \u00b7 ');
+          return parts.length > 1 ? parts.slice(1).join(' \u00b7 ').trim() : null;
+        };
+
+        // Group rows by effective razao_social (primary) or descricao (fallback)
+        const groupMap = new Map();
+        for (const row of r.rows) {
+          const rs = extractRS(row);
+          const key = rs ? `__RS__${rs}` : `__D__${row.descricao}`;
+          if (!groupMap.has(key)) {
+            groupMap.set(key, { razao_social: rs, descricoes: [] });
+          }
+          groupMap.get(key).descricoes.push(row.descricao);
+        }
+        const groups = [...groupMap.values()];
+
+        const isGroupClassified = (g) => {
+          const rsLower = (g.razao_social || '').toLowerCase();
+          return rules.some(dp => {
+            if (dp.razao_social) {
+              return rsLower && rsLower.includes(dp.razao_social.toLowerCase());
+            }
+            return dp.palavra_chave && g.descricoes.some(d =>
+              d.toLowerCase().includes(dp.palavra_chave.toLowerCase()));
+          });
+        };
+
+        const naoClassificadas = groups.filter(g => !isGroupClassified(g));
+        return res.json({ nao_classificadas: naoClassificadas });
       }
 
       // Return groups + ungrouped canals for mapping (tipo='vendas')
@@ -92,13 +121,14 @@ module.exports = async (req, res) => {
         });
       }
 
-      // Return unique fornecedores from contas_pagar not yet mapped (tipo='contas_pagar')
-      if (source === 'contas_pagar') {
+      // Return unique fornecedores from pedidos_compra not yet mapped (tipo='pedidos_compra')
+      if (source === 'pedidos_compra') {
         const r = await pool.query(
-          "SELECT DISTINCT fornecedor FROM contas_pagar WHERE fornecedor IS NOT NULL AND fornecedor <> '' ORDER BY fornecedor"
+          "SELECT DISTINCT fornecedor FROM pedidos_compra WHERE empresa=$1 AND fornecedor IS NOT NULL AND fornecedor <> '' ORDER BY fornecedor",
+          [company]
         );
         const dpR = await pool.query(
-          "SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='contas_pagar'",
+          "SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='pedidos_compra'",
           [company]
         );
         const mapped = new Set(dpR.rows.map(x => x.palavra_chave.toLowerCase()));
@@ -108,27 +138,52 @@ module.exports = async (req, res) => {
         });
       }
 
+      // Return unique fornecedores from contas_pagar not yet mapped (tipo='contas_pagar')
+      if (source === 'contas_pagar') {
+        const r = await pool.query(
+          "SELECT DISTINCT TRIM(fornecedor) AS fornecedor FROM contas_pagar WHERE fornecedor IS NOT NULL AND fornecedor <> '' ORDER BY 1"
+        );
+        const dpR = await pool.query(
+          "SELECT palavra_chave FROM caixa_de_para WHERE empresa=$1 AND tipo='contas_pagar'",
+          [company]
+        );
+        const rules = dpR.rows.map(x => (x.palavra_chave || '').trim().toLowerCase()).filter(Boolean);
+        const isClassified = (f) => {
+          const fl = f.trim().toLowerCase();
+          return rules.some(pk => fl.includes(pk) || pk.includes(fl));
+        };
+        const fornecedores = r.rows.map(x => x.fornecedor);
+        return res.json({
+          fornecedores,
+          nao_classificados: fornecedores.filter(f => !isClassified(f))
+        });
+      }
+
       // Return mappings, optionally filtered by tipo
       const tipoFilter = tipo ? ' AND tipo=$2' : '';
       const params = tipo ? [company, tipo] : [company];
       const r = await pool.query(
-        `SELECT id, palavra_chave, categoria_nome, tipo FROM caixa_de_para WHERE empresa=$1${tipoFilter} ORDER BY tipo, categoria_nome, palavra_chave`,
+        `SELECT id, palavra_chave, razao_social, categoria_nome, tipo FROM caixa_de_para WHERE empresa=$1${tipoFilter} ORDER BY tipo, categoria_nome, palavra_chave`,
         params
       );
       return res.json({ mappings: r.rows });
     }
 
     if (req.method === 'POST') {
-      const { palavra_chave, categoria_nome, tipo } = req.body;
-      if (!palavra_chave || !categoria_nome)
-        return res.status(400).json({ error: 'Informe palavra_chave e categoria_nome' });
-      const tipoVal = (tipo === 'contas_pagar') ? 'contas_pagar' : (tipo === 'vendas') ? 'vendas' : 'extrato';
+      const { palavra_chave, razao_social, categoria_nome, tipo } = req.body;
+      const pkVal = palavra_chave ? String(palavra_chave).trim().substring(0, 500) : null;
+      const rsVal = razao_social ? String(razao_social).trim().substring(0, 300) : null;
+      if ((!pkVal && !rsVal) || !categoria_nome)
+        return res.status(400).json({ error: 'Informe palavra_chave ou razao_social, e categoria_nome' });
+      const tipoVal = (tipo === 'contas_pagar') ? 'contas_pagar' : (tipo === 'vendas') ? 'vendas' : (tipo === 'pedidos_compra') ? 'pedidos_compra' : 'extrato';
       const r = await pool.query(
-        `INSERT INTO caixa_de_para (empresa, palavra_chave, categoria_nome, tipo)
-         VALUES ($1,$2,$3,$4)
-         ON CONFLICT (empresa, palavra_chave, tipo) DO UPDATE SET categoria_nome=EXCLUDED.categoria_nome
-         RETURNING id, palavra_chave, categoria_nome, tipo`,
-        [company, palavra_chave.substring(0, 500), categoria_nome.substring(0, 100), tipoVal]
+        `INSERT INTO caixa_de_para (empresa, palavra_chave, razao_social, categoria_nome, tipo)
+         VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (empresa, tipo, COALESCE(razao_social,''), COALESCE(palavra_chave,'')) DO UPDATE
+           SET categoria_nome=EXCLUDED.categoria_nome, razao_social=EXCLUDED.razao_social,
+               palavra_chave=EXCLUDED.palavra_chave
+         RETURNING id, palavra_chave, razao_social, categoria_nome, tipo`,
+        [company, pkVal, rsVal, categoria_nome.substring(0, 100), tipoVal]
       );
       return res.json({ ok: true, mapping: r.rows[0] });
     }

@@ -370,28 +370,49 @@ Os agentes calculam campos enriquecidos antes de enviar ao modelo:
 
 ---
 
-## ARQUITETURA ALVO (multi-agente com orquestrador)
+## ARQUITETURA DO ORQUESTRADOR (implementado em api/agents.js)
 
-### Agentes Temáticos (dados brutos)
-| Agente | Tabelas principais |
+### Fluxo de execução
+
+```
+Pergunta do usuário (POST /api/agents {agent:"orchestrator", message:"..."})
+        ↓
+  [Gemini Flash — gemini-2.0-flash-exp:free]
+  callFlash(question) → { agents: ["sop","caixa"], rationale: "..." }
+        ↓ (paralelo via Promise.allSettled)
+  fetchData(sop) | fetchData(caixa) | ...
+        ↓
+  [Gemini 2.5 Pro — gemini-2.5-pro-exp-03-25:free]
+  ORCHESTRATOR_SYNTHESIS_PROMPT + dados combinados → análise cross-módulo
+        ↓
+  { agent, analysis, agents_activated, routing_rationale, data_summary }
+```
+
+**Análise Completa** (GET /api/agents?agent=orchestrator):
+- Ativa todos os 5 agentes em paralelo sem etapa de roteamento
+
+### Endpoints do Orquestrador
+
+| Método | URL | Comportamento |
+|---|---|---|
+| `GET` | `/api/agents?agent=orchestrator` | Ativa todos os agentes, síntese completa |
+| `POST` | `/api/agents` body: `{agent:"orchestrator", message:"..."}` | Flash roteia → agentes selecionados → síntese Pro |
+
+### Funções principais (api/agents.js)
+
+| Função | Descrição |
 |---|---|
-| DRE | `dfs_balanco`, `dfs_estrutura` |
-| Balanço Patrimonial | `dfs_balanco`, `dfs_estrutura` |
-| S&OP | `ponto_pedido`, `estoque_seguranca`, `curva_abc`, `bd_vendas`, `full_1`, `full_2` |
-| Estoque | `ponto_pedido`, `estoque_seguranca`, `curva_abc`, `full_1`, `full_2`, `estoque_consolidado` |
+| `callFlash(question)` | Roteamento leve — modelo Flash retorna JSON com agentes a acionar |
+| `runOrchestrator({pool, companyName, question, agentKeys})` | Busca dados em paralelo + síntese Pro |
+| `ORCHESTRATOR_ROUTING_PROMPT` | System prompt do Flash — roteador de agentes |
+| `ORCHESTRATOR_SYNTHESIS_PROMPT` | System prompt do Pro — análise cross-módulo profunda |
 
-### Agentes Analíticos (síntese)
-| Agente | Tabelas principais |
-|---|---|
-| Compras | `semana_pedidos`, `ppr_sku`, `ponto_pedido` |
-| Fluxo de Caixa | `caixa_extrato`, `dfs_fluxo_caixa_diario`, `caixa_categorias`, `caixa_de_para` |
-| KPIs | `bd_vendas`, `dfs_balanco`, `caixa_extrato` |
-| Alertas | Todas as tabelas — roda em background |
+### Exemplos de perguntas cross-módulo
 
-### Orquestrador
-- Recebe pergunta em linguagem natural
-- Decide quais agentes acionar (1 a N em paralelo)
-- Consolida as respostas em uma análise unificada
+- `"Tenho dinheiro pra repor o estoque crítico?"` → rota `[sop, financeiro, caixa]`
+- `"Os SKUs em ruptura são os mais rentáveis?"` → rota `[sop, vendas, estoque]`
+- `"O burn rate está sendo alimentado por encalhe?"` → rota `[estoque, caixa, financeiro]`
+- `"Saúde geral do negócio"` → rota todos os 5 agentes
 
 ---
 

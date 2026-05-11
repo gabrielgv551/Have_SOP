@@ -30,6 +30,32 @@ async function safeQuery(pool, sql, params = []) {
   }
 }
 
+// ─── S&OP PARAMS (lê sopc_config, cache 5 min por empresa) ───────────────────
+
+const sopcParamsCache = {};
+async function getSopcParams(pool, company) {
+  const now = Date.now();
+  if (sopcParamsCache[company] && now - sopcParamsCache[company].ts < 5 * 60 * 1000) {
+    return sopcParamsCache[company].data;
+  }
+  const rows = await safeQuery(pool,
+    `SELECT chave, valor FROM sopc_config WHERE empresa = $1 AND modulo = 'reposicao'`,
+    [company]
+  );
+  const cfg = Object.fromEntries(rows.map(r => [r.chave, Number(r.valor)]));
+  const data = {
+    meta_a:              cfg.meta_dias_a             ?? 20,
+    meta_b:              cfg.meta_dias_b             ?? 15,
+    meta_c:              cfg.meta_dias_c             ?? 10,
+    alerta_ruptura_dias: cfg.alerta_ruptura_dias     ?? 7,
+    alerta_abaixo_meta:  cfg.alerta_abaixo_meta_dias ?? 15,
+    encalhe_dias:        cfg.encalhe_dias            ?? 90,
+    lead_time:           cfg.lead_time_dias          ?? 15,
+  };
+  sopcParamsCache[company] = { data, ts: now };
+  return data;
+}
+
 // ─── ESTOQUE TOOLS DEFINITIONS ───────────────────────────────────────────────
 
 const ESTOQUE_TOOLS = [
@@ -202,6 +228,121 @@ const FINANCEIRO_TOOLS = [
   },
 ];
 
+// ─── SOPC TOOLS DEFINITIONS ──────────────────────────────────────────────────
+
+const SOPC_TOOLS = [
+  {
+    name: 'sopc_portfolio_saude',
+    description: 'Saúde do portfólio completo (base bd_vendas + ponto_pedido). Por SKU: dias_cobertura, tendencia_pct, receita_media_mensal real (média 3m), status. Limite 200 SKUs por receita.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limite: { type: 'number', description: 'Máximo de SKUs (padrão 200)' },
+        status_filtro: { type: 'string', description: 'Filtrar por status: RUPTURA, RUPTURA_IMINENTE, ABAIXO_META_30D, RISCO_ENCALHE, OK, SEM_ESTOQUE_CADASTRADO' },
+      },
+    },
+  },
+  {
+    name: 'sopc_rupturas_impacto',
+    description: 'Foca SKUs com dias_cobertura < 15 ou estoque = 0 que venderam nos últimos 3m. Retorna receita_em_risco_30d, qtd_repor e custo_reposicao por SKU. Ordenado por curva ABC + receita.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'sopc_reposicao_priorizada',
+    description: 'Plano de compras S&OP com metas configuradas por empresa (lidas do sopc_config). Retorna qtd_comprar, custo_R$, data_limite_pedido e urgencia (CRITICO/URGENTE/PROGRAMADO) por SKU, subtotais e total de investimento. Os parâmetros dias_meta_a/b/c são opcionais — se omitidos, usa a config da empresa.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        dias_meta_a: { type: 'number', description: 'Sobrescreve meta curva A da config da empresa' },
+        dias_meta_b: { type: 'number', description: 'Sobrescreve meta curva B da config da empresa' },
+        dias_meta_c: { type: 'number', description: 'Sobrescreve meta curva C da config da empresa' },
+      },
+    },
+  },
+  {
+    name: 'sopc_diagnostico_base',
+    description: 'Diagnóstico de qualidade dos dados: SKUs em cadastros_sku, bd_vendas, ponto_pedido. Mostra quantos SKUs vendem sem ponto_pedido cadastrado e vice-versa. Resolve "94% sem dados".',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'sopc_encalhe_risco',
+    description: 'SKUs com dias_cobertura > 120 e tendência < -15%. Capital imobilizado em R$ por SKU. Classificação: ENCALHE_CRITICO | ENCALHE_ATENCAO | MONITORAR.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'sopc_analise_completa',
+    description: 'Executa sopc_portfolio_saude + sopc_rupturas_impacto + sopc_reposicao_priorizada + sopc_diagnostico_base + sopc_encalhe_risco em paralelo. Use para análise geral S&OP.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        dias_meta_a: { type: 'number' },
+        dias_meta_b: { type: 'number' },
+        dias_meta_c: { type: 'number' },
+      },
+    },
+  },
+];
+
+// ─── VENDAS TOOLS DEFINITIONS ────────────────────────────────────────────────
+
+const VENDAS_TOOLS = [
+  {
+    name: 'vendas_kpi_periodo',
+    description: 'KPIs do período: receita, qtd, margem bruta, ticket médio, variação MoM e YoY. Input opcional — sem parâmetros usa mês mais recente.',
+    input_schema: { type: 'object', properties: {
+      ano: { type: 'number' }, mes: { type: 'number' },
+    }},
+  },
+  {
+    name: 'vendas_diagnostico_queda',
+    description: 'Quando há queda MoM, decompõe a causa: efeito volume, efeito ticket, efeito mix, canal responsável, categoria responsável, SKUs que sumiram vs apareceram.',
+    input_schema: { type: 'object', properties: {
+      ano: { type: 'number' }, mes: { type: 'number' },
+    }},
+  },
+  {
+    name: 'vendas_margem_real_por_canal',
+    description: 'Margem real após comissão estimada por canal (ML≈16%, Shopee≈12%, Amazon≈15%). Mostra status LUCRATIVO/MARGINAL/PREJUIZO por canal e por SKU×canal.',
+    input_schema: { type: 'object', properties: {
+      meses: { type: 'number', description: 'Janela de análise em meses (padrão 3)' },
+    }},
+  },
+  {
+    name: 'vendas_canibalismo_portfolio',
+    description: 'Detecta pares de SKUs que competem entre si: mesma categoria + faixa de preço ±20%. Retorna índice de canibalismo 0-100% e meses de inversão.',
+    input_schema: { type: 'object', properties: {
+      meses: { type: 'number', description: 'Histórico em meses (padrão 6)' },
+    }},
+  },
+  {
+    name: 'vendas_sazonalidade_historica',
+    description: 'Índice de sazonalidade por mês (histórico completo). Compara mês atual vs índice esperado — separa sazonalidade normal de queda estrutural.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'vendas_cohort_skus',
+    description: 'Compara portfólio ativo entre dois períodos. Mostra SKUs perdidos, ganhos e saldo de receita. Padrão: mês atual vs mesmo mês ano anterior.',
+    input_schema: { type: 'object', properties: {
+      periodo_base_ano: { type: 'number' }, periodo_base_mes: { type: 'number' },
+      periodo_atual_ano: { type: 'number' }, periodo_atual_mes: { type: 'number' },
+    }},
+  },
+  {
+    name: 'vendas_concentracao_risco',
+    description: 'Concentração de portfólio: top 5/10 SKUs %, índice Herfindahl, canal mais dependente, cenário de ruptura do top 3 em R$.',
+    input_schema: { type: 'object', properties: {
+      meses: { type: 'number', description: 'Janela em meses (padrão 3)' },
+    }},
+  },
+  {
+    name: 'vendas_analise_completa',
+    description: 'Executa vendas_kpi_periodo + vendas_sazonalidade_historica + vendas_cohort_skus + vendas_concentracao_risco em paralelo. Use para análise geral de vendas.',
+    input_schema: { type: 'object', properties: {
+      ano: { type: 'number' }, mes: { type: 'number' },
+    }},
+  },
+];
+
 // ─── AGENTS DEFINITION ───────────────────────────────────────────────────────
 
 const AGENTS = {
@@ -210,109 +351,32 @@ const AGENTS = {
     label: 'S&OP',
     icon: '📦',
     description: 'Cobertura de dias, rupturas iminentes e reposição urgente',
-    systemPrompt: `Você é analista S&OP sênior da {companyName}, e-commerce B2C.
-Você recebe dados JÁ PRÉ-CALCULADOS: dias_cobertura, status de cada SKU e tendência de venda.
-Regras do negócio:
-- SKUs curva A são críticos — ruptura zero tolerância
-- Lead time médio de fornecedores: 15 dias
-- Meta de cobertura mínima: 30 dias
-- Todo alerta deve vir acompanhado de impacto financeiro estimado (R$)
-Seja CIRÚRGICO: cite SKUs, números e valores reais dos dados. Proibido generalizar.
-Responda em português brasileiro.`,
-    autoPrompt: `Faça este raciocínio antes de escrever:
-1. Quais SKUs têm dias_cobertura < 15? Esses vão romper antes do próximo pedido chegar.
-2. Quais SKUs têm dias_cobertura entre 15-30? Reposição urgente mas não crítica.
-3. Existe algum SKU com estoque alto E tendência negativa (risco de encalhe)?
-4. Qual o impacto financeiro estimado das rupturas iminentes? (use receita_media_mensal/30 * dias_sem_estoque)
+    tools: SOPC_TOOLS,
+    toolExecutor: 'sop',
+    systemPrompt: `Analista S&OP sênior da {companyName}. Use as tools para buscar dados reais.
 
-Escreva a análise neste formato exato:
+Regras:
+- Base do portfólio é bd_vendas, não ponto_pedido
+- Metas de cobertura configuradas para esta empresa: Curva A = {meta_a}d | Curva B = {meta_b}d | Curva C = {meta_c}d
+- Lead time padrão: {lead_time} dias
+- Toda reposição recomendada: SKU + qtd + R$ + data limite
+- Separar SKUs acelerando COM estoque de acelerando EM RISCO de ruptura
+- Receita em risco = receita_media_mensal real do bd_vendas
+- Responder em português, citar SKUs e valores reais
 
-## 🚨 Rupturas Iminentes (dias_cobertura < 15)
-Tabela: SKU | Estoque | Dias Restantes | Receita em Risco/mês | Ação
-Se nenhum: confirme explicitamente que não há rupturas iminentes.
-
-## ⚠️ Reposição Urgente (15–30 dias de cobertura)
-Liste SKUs com quantidade sugerida de compra para atingir 45 dias de cobertura.
-
-## 📦 Curva ABC — Saúde por Segmento
-Mostre quantos SKUs de cada curva estão OK vs em risco. Destaque anomalias.
-
-## ⚠️ Risco de Encalhe
-SKUs com dias_cobertura > 120 e tendência negativa. Calcule custo de capital imobilizado.
-
-## 📊 Decisões para Hoje
-3 ações concretas priorizadas por impacto financeiro, com valores estimados em R$.`,
-    async fetchData(pool) {
-      const [sopc, vendas12m, abcDist, esRisco] = await Promise.all([
-        safeQuery(pool, `SELECT sku, alerta, estoque_atual::numeric AS estoque, ponto_pedido::numeric AS pp FROM ponto_pedido ORDER BY alerta DESC NULLS LAST LIMIT 150`),
-        safeQuery(pool, `
-          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas)
-          SELECT "Sku" AS sku,
-            MAX("Categoria") AS categoria,
-            ROUND(SUM(CASE WHEN "Data"::date >= (SELECT d FROM max_d) - INTERVAL '1 month'  THEN "Quantidade Vendida"::numeric ELSE 0 END), 0) AS qtd_1m,
-            ROUND(SUM(CASE WHEN "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months' THEN "Quantidade Vendida"::numeric ELSE 0 END) / 3.0, 1) AS media_mensal_3m,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END) / 12.0, 2) AS receita_media_mensal,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto"::numeric, 0) ELSE 0 END) / 12.0, 2) AS margem_media_mensal,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total"::numeric, 0) ELSE 0 END) / 12.0, 2) AS custo_medio_mensal
-          FROM bd_vendas
-          WHERE "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
-            AND "Data"::date >= (SELECT d FROM max_d) - INTERVAL '12 months'
-          GROUP BY "Sku"
-        `),
-        safeQuery(pool, `SELECT "Curva" AS curva, COUNT(*) AS qtd FROM curva_abc WHERE "Ano"=(SELECT MAX("Ano") FROM curva_abc) GROUP BY "Curva" ORDER BY "Curva"`),
-        safeQuery(pool, `SELECT sku, media_mensal::numeric AS media_mensal FROM estoque_seguranca WHERE sku IS NOT NULL LIMIT 50`),
-      ]);
-
-      const vendasMap = {};
-      vendas12m.forEach(v => { vendasMap[String(v.sku || '').trim().toUpperCase()] = v; });
-      const esMap = {};
-      esRisco.forEach(e => { esMap[String(e.sku || '').trim().toUpperCase()] = e; });
-
-      const enriquecidos = sopc.map(s => {
-        const key = String(s.sku || '').trim().toUpperCase();
-        const v = vendasMap[key] || {};
-        const es = esMap[key] || {};
-        const mediaDaily = (parseFloat(v.media_mensal_3m) || 0) / 30;
-        const estoque = parseFloat(s.estoque) || 0;
-        const diasCobertura = mediaDaily > 0 ? Math.round(estoque / mediaDaily) : null;
-        const qtd1m = parseFloat(v.qtd_1m) || 0;
-        const media3m = parseFloat(v.media_mensal_3m) || 0;
-        const tendenciaPct = media3m > 0 ? Math.round((qtd1m - media3m) / media3m * 100) : null;
-        let status;
-        if (diasCobertura === null) status = 'SEM_DADOS_VENDA';
-        else if (diasCobertura <= 0)  status = 'RUPTURA';
-        else if (diasCobertura < 15)  status = 'RUPTURA_IMINENTE';
-        else if (diasCobertura < 30)  status = 'ABAIXO_META_30D';
-        else if (diasCobertura > 120 && tendenciaPct !== null && tendenciaPct < -15) status = 'RISCO_ENCALHE';
-        else status = 'OK';
-        return {
-          sku: s.sku,
-          estoque,
-          ponto_pedido: parseFloat(s.pp) || 0,
-          dias_cobertura: diasCobertura,
-          status,
-          tendencia_pct: tendenciaPct !== null ? `${tendenciaPct > 0 ? '+' : ''}${tendenciaPct}%` : 'sem dados',
-          receita_media_mensal: parseFloat(v.receita_media_mensal) || 0,
-          margem_media_mensal: parseFloat(v.margem_media_mensal) || 0,
-          estoque_seguranca: parseFloat(es.media_mensal) || null,
-        };
-      });
-
-      const porStatus = {};
-      enriquecidos.forEach(s => { porStatus[s.status] = (porStatus[s.status] || 0) + 1; });
-      const criticos = enriquecidos
-        .filter(s => ['RUPTURA', 'RUPTURA_IMINENTE', 'ABAIXO_META_30D'].includes(s.status))
-        .sort((a, b) => (a.dias_cobertura ?? 9999) - (b.dias_cobertura ?? 9999));
-      const encalhes = enriquecidos.filter(s => s.status === 'RISCO_ENCALHE');
-
-      return {
-        total_skus: enriquecidos.length,
-        resumo_por_status: porStatus,
-        distribuicao_abc: abcDist,
-        skus_criticos: criticos.slice(0, 35),
-        risco_encalhe: encalhes.slice(0, 10),
-      };
-    },
+Formato da resposta:
+## 🚨 Rupturas (dias < {alerta_ruptura_dias}): tabela SKU|Estoque|Dias|Receita Risco/mês|Tendência|Ação
+## ⚠️ Reposição Urgente ({alerta_ruptura_dias}-{alerta_abaixo_meta} dias): SKU + qtd sugerida + prazo
+## 📦 Saúde ABC: quantos SKUs de cada curva por status
+## ⚠️ Risco Encalhe: SKUs > {encalhe_dias} dias + capital imobilizado R$
+## � Plano de Compras: tabela SKU|Curva|Qtd|R$|Data|Urgência + total vs caixa
+## 🔍 Qualidade dos Dados: resultado do diagnostico_base
+## ⚡ 3 Prioridades: ação + impacto R$ + prazo`,
+    autoPrompt: `Chame as tools nesta ordem:
+1. sopc_analise_completa (roda tudo em paralelo)
+2. Se houver SKUs curva A em ruptura, chame sopc_rupturas_impacto para detalhar
+3. Produza a análise completa conforme o systemPrompt`,
+    async fetchData() { return {}; },
   },
 
   estoque: {
@@ -390,131 +454,33 @@ Ação | Impacto estimado em R$ | Urgência`,
     label: 'Vendas',
     icon: '📈',
     description: 'Performance, crescimento, concentração e margem por SKU',
+    tools: VENDAS_TOOLS,
+    toolExecutor: 'vendas',
     systemPrompt: `Você é analista comercial sênior da {companyName}, e-commerce B2C.
-Os dados incluem crescimento mês a mês calculado, margem por SKU e concentração de Pareto.
-Foco: identificar o que está crescendo, o que está caindo, concentração de risco e oportunidades de mix.
-Cite crescimentos e quedas com % reais. Calcule concentração (top 10 SKUs = X% da receita).
-Responda em português brasileiro.`,
-    autoPrompt: `Raciocínio antes de escrever:
-1. Qual a tendência dos últimos 3 meses? Calcule CAGR simplificado: (mês_atual / mês_3_atrás - 1) * 100
-2. Os top 10 SKUs concentram quanto % da receita total? Isso é saudável?
-3. Quais SKUs têm margem acima da média? Estão sendo priorizados?
-4. Há meses com queda abrupta? O que pode explicar (sazonalidade, cancelamentos)?
+Use as tools para buscar dados reais — nunca invente números.
 
-Escreva neste formato:
+Regras:
+- "Margem Produto" no bd_vendas é margem BRUTA (sem comissão de canal)
+- Use vendas_margem_real_por_canal para mostrar margem real após taxas do marketplace
+- Para quedas MoM > 10%: sempre chame vendas_diagnostico_queda para identificar causa raiz
+- Separe sazonalidade de queda estrutural usando vendas_sazonalidade_historica
+- Cite SKUs e canais com valores reais (R$ e %)
+- Responda em português brasileiro
 
-## 📊 KPIs do Mês Atual
-Receita líquida | Qtd vendida | Margem total | Ticket médio
-Variação vs mês anterior e vs mesmo mês ano anterior (se disponível)
-
-## 📈 Tendência — Últimos 12 Meses
-Tabela: Mês | Receita | Variação MoM% | Qtd
-Destaque os 3 melhores e 3 piores meses. Identifique padrão sazonal se houver.
-
-## 🏆 Top 20 SKUs (últimos 3 meses)
-Tabela: SKU | Receita | Qtd | % do Total | Margem média
-Calcule: os top 5 SKUs respondem por X% da receita — isso é concentração normal ou risco?
-
-## 🔻 SKUs em Queda
-SKUs que estavam no top do mês anterior mas caíram mais de 20%. Identificar causa.
-
-## 💡 Oportunidades
-3 recomendações concretas para aumentar receita ou margem, com potencial estimado em R$.`,
-    async fetchData(pool) {
-      const [mensal, topSkus, kpiAtual, skusTendencia, categorias, canais] = await Promise.all([
-        safeQuery(pool, `
-          SELECT "Ano" AS ano, "Mes" AS mes,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END), 2) AS receita,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"::numeric ELSE 0 END), 0) AS qtd,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto"::numeric, 0) ELSE 0 END), 2) AS margem
-          FROM bd_vendas GROUP BY "Ano", "Mes" ORDER BY "Ano" DESC, "Mes" DESC LIMIT 14
-        `),
-        safeQuery(pool, `
-          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
-          total AS (SELECT SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END) AS t FROM bd_vendas WHERE "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months')
-          SELECT "Sku" AS sku,
-            MAX("Nome Produto") AS nome_produto,
-            MAX("Categoria") AS categoria,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END), 2) AS receita_3m,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"::numeric ELSE 0 END), 0) AS qtd_3m,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto"::numeric, 0) ELSE 0 END), 2) AS margem_3m,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END) / (SELECT t FROM total) * 100, 1) AS pct_receita_total
-          FROM bd_vendas
-          WHERE "Sku" IS NOT NULL AND "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
-          GROUP BY "Sku" ORDER BY receita_3m DESC LIMIT 25
-        `),
-        safeQuery(pool, `
-          SELECT "Ano" AS ano, "Mes" AS mes,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END), 2) AS receita,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"::numeric ELSE 0 END), 0) AS qtd,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto"::numeric, 0) ELSE 0 END), 2) AS margem,
-            COUNT(DISTINCT "Sku") AS skus_ativos
-          FROM bd_vendas
-          WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas)
-            AND "Mes" = (SELECT MAX("Mes") FROM bd_vendas WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas))
-          GROUP BY "Ano", "Mes"
-        `),
-        safeQuery(pool, `
-          WITH m1 AS (
-            SELECT "Sku" AS sku, SUM("Total Venda"::numeric) AS rec
-            FROM bd_vendas WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
-              AND "Ano"=(SELECT MAX("Ano") FROM bd_vendas)
-              AND "Mes"=(SELECT MAX("Mes") FROM bd_vendas WHERE "Ano"=(SELECT MAX("Ano") FROM bd_vendas))
-            GROUP BY "Sku"
-          ),
-          m2 AS (
-            SELECT "Sku" AS sku, SUM("Total Venda"::numeric) AS rec
-            FROM bd_vendas WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
-              AND "Ano"=(SELECT MAX("Ano") FROM bd_vendas)
-              AND "Mes"=(SELECT MAX("Mes") FROM bd_vendas WHERE "Ano"=(SELECT MAX("Ano") FROM bd_vendas)) - 1
-            GROUP BY "Sku"
-          )
-          SELECT m1.sku, ROUND(m1.rec,2) AS receita_atual, ROUND(m2.rec,2) AS receita_anterior,
-            ROUND((m1.rec - m2.rec) / NULLIF(m2.rec, 0) * 100, 1) AS variacao_pct
-          FROM m1 LEFT JOIN m2 ON m1.sku = m2.sku
-          WHERE m2.rec IS NOT NULL ORDER BY variacao_pct ASC LIMIT 15
-        `),
-        safeQuery(pool, `
-          SELECT "Categoria" AS categoria,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END), 2) AS receita,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto"::numeric, 0) ELSE 0 END), 2) AS margem,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"::numeric ELSE 0 END) AS qtd,
-            COUNT(DISTINCT "Sku") AS skus
-          FROM bd_vendas
-          WHERE "Categoria" IS NOT NULL AND TRIM("Categoria"::text) != ''
-            AND "Ano" = (SELECT MAX("Ano") FROM bd_vendas)
-            AND "Mes" = (SELECT MAX("Mes") FROM bd_vendas WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas))
-          GROUP BY "Categoria" ORDER BY receita DESC LIMIT 20
-        `),
-        safeQuery(pool, `
-          SELECT COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text), 'Sem canal') AS canal,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"::numeric ELSE 0 END), 2) AS receita,
-            ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto"::numeric, 0) ELSE 0 END), 2) AS margem,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"::numeric ELSE 0 END) AS qtd
-          FROM bd_vendas
-          WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
-            AND "Ano" = (SELECT MAX("Ano") FROM bd_vendas)
-            AND "Mes" = (SELECT MAX("Mes") FROM bd_vendas WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas))
-          GROUP BY COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text), 'Sem canal')
-          ORDER BY receita DESC
-        `),
-      ]);
-
-      const receitaAtual = parseFloat(kpiAtual[0]?.receita) || 0;
-      const receitaMesAnt = parseFloat(mensal[1]?.receita) || 0;
-      const variacaoMoM = receitaMesAnt > 0 ? ((receitaAtual - receitaMesAnt) / receitaMesAnt * 100).toFixed(1) + '%' : 'N/A';
-      const margemPct = receitaAtual > 0 ? ((parseFloat(kpiAtual[0]?.margem)||0) / receitaAtual * 100).toFixed(1) + '%' : 'N/A';
-      const ticketMedio = (parseFloat(kpiAtual[0]?.qtd)||0) > 0 ? (receitaAtual / parseFloat(kpiAtual[0].qtd)).toFixed(2) : 'N/A';
-
-      return {
-        kpi_mes_atual: { ...kpiAtual[0], variacao_mom: variacaoMoM, margem_pct: margemPct, ticket_medio: ticketMedio },
-        historico_14m: mensal,
-        top_skus_3m: topSkus,
-        skus_maior_queda: skusTendencia.slice(0, 10),
-        breakdown_categorias: categorias,
-        breakdown_canais: canais,
-      };
-    },
+Formato da resposta:
+## 📊 KPIs do Mês: receita | qtd | margem bruta | ticket | variação MoM e YoY
+## 📈 Sazonalidade: índice histórico do mês atual vs esperado — é normal ou estrutural?
+## 🔍 Diagnóstico de Queda: se MoM < -10%, decomposição volume/ticket/mix/canal/categoria
+## 💰 Margem Real por Canal: tabela canal | receita | margem bruta% | comissão% | margem líquida% | status
+## 🔄 Cohort de Portfólio: SKUs perdidos vs ganhos vs mesmo mês ano anterior
+## ⚠️ Concentração de Risco: Herfindahl + top 5% + cenário ruptura top 3
+## ⚡ 3 Prioridades: ação + impacto R$ + prazo`,
+    autoPrompt: `Chame as tools nesta ordem:
+1. vendas_analise_completa (kpi + sazonalidade + cohort + concentração em paralelo)
+2. Se variacao_mom_pct < -10: chame vendas_diagnostico_queda para causa raiz
+3. Chame vendas_margem_real_por_canal (meses:3) para margem após comissão
+4. Se top_5_pct_receita > 40: destacar risco de concentração
+5. Produza análise completa conforme o systemPrompt`,
   },
 
   caixa: {
@@ -525,6 +491,8 @@ SKUs que estavam no top do mês anterior mas caíram mais de 20%. Identificar ca
 Os dados incluem entradas/saídas pré-calculadas, saldo líquido e as maiores transações do mês.
 Foco: posição real de caixa, burn rate, anomalias e capacidade de pagamento.
 Calcule projeção de dias de caixa disponível com base no burn rate médio.
+Se o campo fonte_dados for 'dfs_fluxo_caixa_diario', informe que os dados vêm do sistema contábil (não do extrato bancário).
+Se o campo fonte_dados for 'sem_dados', informe claramente que nenhuma fonte de dados está disponível e oriente a configurar a integração bancária ou importar o extrato.
 Responda em português brasileiro.`,
     autoPrompt: `Raciocínio antes de escrever:
 1. Qual o burn rate mensal? (média das saídas dos últimos meses)
@@ -552,15 +520,18 @@ Outliers (transações > 2x a média), saldo negativo, burn acelerado.
 
 ## 📋 Recomendações
 3 ações concretas para melhorar a posição de caixa nos próximos 30 dias.`,
-    async fetchData(pool) {
+    async fetchData(pool, company) {
+      // ── Tenta caixa_extrato (extrato bancário Pluggy) ────────────────────
       const [extratoAtual, historico] = await Promise.all([
         safeQuery(pool, `
           SELECT dia, descricao, valor::numeric AS valor
           FROM caixa_extrato
-          WHERE ano = (SELECT MAX(ano) FROM caixa_extrato)
-            AND mes = (SELECT MAX(mes) FROM caixa_extrato WHERE ano = (SELECT MAX(ano) FROM caixa_extrato))
+          WHERE empresa = $1
+            AND ano = (SELECT MAX(ano) FROM caixa_extrato WHERE empresa = $1)
+            AND mes = (SELECT MAX(mes) FROM caixa_extrato WHERE empresa = $1
+                       AND ano = (SELECT MAX(ano) FROM caixa_extrato WHERE empresa = $1))
           ORDER BY ABS(valor::numeric) DESC LIMIT 80
-        `),
+        `, [company]),
         safeQuery(pool, `
           SELECT ano, mes,
             ROUND(SUM(CASE WHEN valor::numeric > 0 THEN valor::numeric ELSE 0 END) / 100.0, 2) AS entradas,
@@ -568,35 +539,91 @@ Outliers (transações > 2x a média), saldo negativo, burn acelerado.
             ROUND(SUM(valor::numeric) / 100.0, 2) AS saldo_livre,
             COUNT(*) AS lancamentos
           FROM caixa_extrato
+          WHERE empresa = $1
           GROUP BY ano, mes ORDER BY ano DESC, mes DESC LIMIT 6
-        `),
+        `, [company]),
       ]);
 
-      const entradas = extratoAtual.filter(r => (parseFloat(r.valor)||0) > 0);
-      const saidas   = extratoAtual.filter(r => (parseFloat(r.valor)||0) < 0);
-      const totE = entradas.reduce((s,r) => s + (parseFloat(r.valor)||0), 0);
-      const totS = saidas.reduce((s,r)   => s + (parseFloat(r.valor)||0), 0);
-      const saldo = totE + totS;
+      const temExtrato = historico.length > 0;
 
-      const burnRateMedio = historico.length > 1
-        ? (historico.slice(0, 3).reduce((s,r) => s + (parseFloat(r.saidas)||0), 0) / Math.min(3, historico.length)).toFixed(2)
-        : (Math.abs(totS) / 100).toFixed(2);
-      const diasCaixa = parseFloat(burnRateMedio) > 0 ? Math.round((saldo / 100) / (parseFloat(burnRateMedio) / 30)) : null;
-      const variacaoMoM = historico[1]?.saldo_livre != null
-        ? ((parseFloat(historico[0]?.saldo_livre||0) - parseFloat(historico[1]?.saldo_livre||0))).toFixed(2)
+      if (temExtrato) {
+        const entradas = extratoAtual.filter(r => (parseFloat(r.valor)||0) > 0);
+        const saidas   = extratoAtual.filter(r => (parseFloat(r.valor)||0) < 0);
+        const totE = entradas.reduce((s,r) => s + (parseFloat(r.valor)||0), 0);
+        const totS = saidas.reduce((s,r)   => s + (parseFloat(r.valor)||0), 0);
+        const saldo = totE + totS;
+
+        const burnRateMedio = historico.length >= 1
+          ? (historico.slice(0, 3).reduce((s,r) => s + (parseFloat(r.saidas)||0), 0) / Math.min(3, historico.length)).toFixed(2)
+          : '0.00';
+        const diasCaixa = parseFloat(burnRateMedio) > 0 ? Math.round((saldo / 100) / (parseFloat(burnRateMedio) / 30)) : null;
+        const variacaoMoM = historico[1]?.saldo_livre != null
+          ? (parseFloat(historico[0]?.saldo_livre||0) - parseFloat(historico[1]?.saldo_livre||0)).toFixed(2)
+          : null;
+
+        return {
+          fonte_dados: 'caixa_extrato',
+          periodo: `${historico[0].mes}/${historico[0].ano}`,
+          saldo_liquido_R$: (saldo / 100).toFixed(2),
+          total_entradas_R$: (totE / 100).toFixed(2),
+          total_saidas_R$: (Math.abs(totS) / 100).toFixed(2),
+          burn_rate_medio_R$: burnRateMedio,
+          dias_caixa_estimados: diasCaixa,
+          variacao_saldo_vs_mes_anterior_R$: variacaoMoM,
+          maiores_entradas: entradas.sort((a,b) => b.valor-a.valor).map(r => ({...r, valor_R$: (r.valor/100).toFixed(2)})).slice(0, 8),
+          maiores_saidas: saidas.sort((a,b) => a.valor-b.valor).map(r => ({...r, valor_R$: (Math.abs(r.valor)/100).toFixed(2)})).slice(0, 8),
+          historico_6m: historico,
+        };
+      }
+
+      // ── Fallback: dfs_fluxo_caixa_diario (sistema contábil) ─────────────
+      const dfsHist = await safeQuery(pool, `
+        SELECT ano, mes,
+          ROUND(SUM(CASE WHEN valor > 0 THEN valor ELSE 0 END) / 100.0, 2) AS entradas,
+          ROUND(ABS(SUM(CASE WHEN valor < 0 THEN valor ELSE 0 END)) / 100.0, 2) AS saidas,
+          ROUND(SUM(valor) / 100.0, 2) AS saldo_livre,
+          COUNT(*) AS lancamentos
+        FROM dfs_fluxo_caixa_diario
+        WHERE empresa = $1
+        GROUP BY ano, mes ORDER BY ano DESC, mes DESC LIMIT 6
+      `, [company]);
+
+      if (dfsHist.length === 0) {
+        return {
+          fonte_dados: 'sem_dados',
+          periodo: 'N/A',
+          saldo_liquido_R$: '0.00',
+          total_entradas_R$: '0.00',
+          total_saidas_R$: '0.00',
+          burn_rate_medio_R$: '0.00',
+          dias_caixa_estimados: null,
+          variacao_saldo_vs_mes_anterior_R$: null,
+          maiores_entradas: [],
+          maiores_saidas: [],
+          historico_6m: [],
+        };
+      }
+
+      const dfsBurnRate = +(dfsHist.slice(0, 3).reduce((s,r) => s + (parseFloat(r.saidas)||0), 0) / Math.min(3, dfsHist.length)).toFixed(2);
+      const dfsSaldo   = parseFloat(dfsHist[0]?.saldo_livre) || 0;
+      const dfsDias    = dfsBurnRate > 0 ? Math.round(dfsSaldo / (dfsBurnRate / 30)) : null;
+      const dfsVariacao = dfsHist[1]?.saldo_livre != null
+        ? (parseFloat(dfsHist[0]?.saldo_livre||0) - parseFloat(dfsHist[1]?.saldo_livre||0)).toFixed(2)
         : null;
 
       return {
-        periodo: historico[0] ? `${historico[0].mes}/${historico[0].ano}` : 'N/A',
-        saldo_liquido_R$: (saldo / 100).toFixed(2),
-        total_entradas_R$: (totE / 100).toFixed(2),
-        total_saidas_R$: (Math.abs(totS) / 100).toFixed(2),
-        burn_rate_medio_R$: burnRateMedio,
-        dias_caixa_estimados: diasCaixa,
-        variacao_saldo_vs_mes_anterior_R$: variacaoMoM,
-        maiores_entradas: entradas.sort((a,b) => b.valor-a.valor).map(r => ({...r, valor_R$: (r.valor/100).toFixed(2)})).slice(0, 8),
-        maiores_saidas: saidas.sort((a,b) => a.valor-b.valor).map(r => ({...r, valor_R$: (Math.abs(r.valor)/100).toFixed(2)})).slice(0, 8),
-        historico_6m: historico,
+        fonte_dados: 'dfs_fluxo_caixa_diario',
+        periodo: `${dfsHist[0].mes}/${dfsHist[0].ano}`,
+        saldo_liquido_R$: dfsSaldo.toFixed(2),
+        total_entradas_R$: parseFloat(dfsHist[0]?.entradas||0).toFixed(2),
+        total_saidas_R$: parseFloat(dfsHist[0]?.saidas||0).toFixed(2),
+        burn_rate_medio_R$: dfsBurnRate.toFixed(2),
+        dias_caixa_estimados: dfsDias,
+        variacao_saldo_vs_mes_anterior_R$: dfsVariacao,
+        maiores_entradas: [],
+        maiores_saidas: [],
+        historico_6m: dfsHist,
+        aviso: 'Dados do sistema contábil (dfs_fluxo_caixa_diario). Para análise detalhada por transação, configure a integração bancária via Pluggy ou importe o extrato bancário.',
       };
     },
   },
@@ -823,8 +850,11 @@ async function executeEstoqueTool(toolName, input, pool, company) {
           GROUP BY v."Sku"
         ),
         pp AS (
-          SELECT UPPER(TRIM(sku::text)) AS sku_k, estoque_atual::numeric AS estoque
-          FROM ponto_pedido WHERE sku IS NOT NULL
+          SELECT UPPER(TRIM("SKU"::text)) AS sku_k,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
         ),
         abc AS (
           SELECT UPPER(TRIM(COALESCE("Sku"::text, ''))) AS sku_k,
@@ -896,8 +926,12 @@ async function executeEstoqueTool(toolName, input, pool, company) {
             AND "Status" !~* '(cancel|devol|n[aã]o.?pago)'
         ),
         estoques AS (
-          SELECT UPPER(TRIM(sku::text)) AS sku, estoque_atual::numeric AS estoque
-          FROM ponto_pedido WHERE sku IS NOT NULL AND estoque_atual::numeric > 0
+          SELECT UPPER(TRIM("SKU"::text)) AS sku,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
+          HAVING SUM("Estoque Base"::numeric) > 0
         ),
         custo AS (
           SELECT UPPER(TRIM("Sku"::text)) AS sku,
@@ -936,8 +970,11 @@ async function executeEstoqueTool(toolName, input, pool, company) {
           HAVING SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"::numeric ELSE 0 END) > 0
         ),
         pp AS (
-          SELECT UPPER(TRIM(sku::text)) AS sku_k, estoque_atual::numeric AS estoque
-          FROM ponto_pedido WHERE sku IS NOT NULL
+          SELECT UPPER(TRIM("SKU"::text)) AS sku_k,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
         )
         SELECT v.sku, v.nome,
           ROUND(v.media_3m, 1) AS media_mensal,
@@ -1015,8 +1052,13 @@ async function executeEstoqueTool(toolName, input, pool, company) {
             WHERE "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
             GROUP BY "Sku"
           )
-          SELECT ROUND(SUM(GREATEST(0, m.media_3m * 2 - COALESCE(pp.estoque_atual::numeric, 0)) * COALESCE(m.custo_unit, 0)), 2) AS custo_reposicao_criticos_R$
+          SELECT ROUND(SUM(GREATEST(0, m.media_3m * 2 - COALESCE(ec.estoque, 0)) * COALESCE(m.custo_unit, 0)), 2) AS custo_reposicao_criticos_R$
           FROM ponto_pedido pp
+          LEFT JOIN (
+            SELECT UPPER(TRIM("SKU"::text)) AS sku_k, SUM("Estoque Base"::numeric) AS estoque
+            FROM estoque_consolidado WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+            GROUP BY UPPER(TRIM("SKU"::text))
+          ) ec ON UPPER(TRIM(pp.sku::text)) = ec.sku_k
           LEFT JOIN media m ON UPPER(TRIM(pp.sku::text)) = UPPER(TRIM(m.sku))
           WHERE pp.alerta IN ('CRÍTICO', 'ATENÇÃO')`),
       ]);
@@ -1153,7 +1195,7 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       ]);
 
       const balMap = {};
-      balRows.forEach(r => { balMap[String(r.conta || '').trim()] = parseFloat(r.saldo) || 0; });
+      balRows.forEach(r => { balMap[String(r.conta || '').trim()] = (parseFloat(r.saldo) || 0) / 100; });
 
       const secTotals = resolveBalancoTotals(structure, mappings, balMap);
 
@@ -1164,10 +1206,10 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       const pl         = secTotals['pl-body']?.total || 0;
       const ativoTotal = ativoCirc + ativoNCirc;
       const passTotal  = passCirc + passNCirc;
-      const plCalc     = ativoTotal - passTotal;
+      const plCalc     = ativoTotal - Math.abs(passTotal);
 
-      const liquidezCorr = passCirc > 0 ? +(ativoCirc / passCirc).toFixed(2) : null;
-      const endividamento = ativoTotal > 0 ? +((passTotal / ativoTotal) * 100).toFixed(1) : null;
+      const liquidezCorr = passCirc !== 0 ? +(ativoCirc / Math.abs(passCirc)).toFixed(2) : null;
+      const endividamento = ativoTotal > 0 ? +((Math.abs(passTotal) / ativoTotal) * 100).toFixed(1) : null;
 
       return {
         periodo: { ano: periodo[0]?.ano, mes: periodo[0]?.mes },
@@ -1215,23 +1257,29 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       const balByContaMes = {};
       balRows.forEach(r => {
         const k = `${r.conta}:${r.mes}`;
-        balByContaMes[k] = { saldo: parseFloat(r.saldo) || 0, debito: parseFloat(r.debito) || 0, credito: parseFloat(r.credito) || 0 };
+        balByContaMes[k] = { saldo: (parseFloat(r.saldo) || 0) / 100, debito: (parseFloat(r.debito) || 0) / 100, credito: (parseFloat(r.credito) || 0) / 100 };
       });
 
-      const dreBodyIdToLabel = {
-        'dre-rob-body': 'Receita Bruta', 'dre-ded-body': 'Deduções', 'dre-cpe-body': 'CMV/CPV',
-        'dre-lbr-body': 'Lucro Bruto', 'dre-dop-body': 'Despesas Operacionais',
-        'dre-ebt-body': 'EBITDA', 'dre-daf-body': 'Resultado Financeiro',
-        'dre-lai-body': 'Resultado Antes do IR', 'dre-imp-body': 'IR/CSLL',
-        'dre-liq-body': 'Lucro Líquido',
-      };
+      // Build section list dynamically from whatever sections are configured in dre_structure
+      const dreBodyIdToLabel = {};
+      Object.keys(dreStruct).filter(k => !k.startsWith('_')).forEach(k => {
+        dreBodyIdToLabel[k] = k;
+      });
 
       const mesIds = [...new Set(balRows.map(r => r.mes))];
       const secResults = {};
 
-      Object.keys(dreBodyIdToLabel).forEach(secId => {
+      // Also iterate mappings directly for sections that have __direct__ keys (no row in dre_structure)
+      const allSecIds = new Set([
+        ...Object.keys(dreBodyIdToLabel),
+        ...Object.keys(dreMappings).map(k => k.split(':')[0]),
+      ]);
+
+      allSecIds.forEach(secId => {
         const rows = dreStruct[secId] || [];
         let secTotal = 0;
+
+        // Rows defined in dre_structure
         rows.forEach(row => {
           const key = `${secId}:${row.code}`;
           const contas = dreMappings[key];
@@ -1248,18 +1296,49 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
             });
           });
         });
-        secResults[secId] = { label: dreBodyIdToLabel[secId], valor: +secTotal.toFixed(2) };
+
+        // __direct__ mapping (section mapped directly to account(s), no row structure)
+        const directKey = `${secId}:__direct__`;
+        if (dreMappings[directKey]) {
+          const contas = dreMappings[directKey];
+          const contasList = Array.isArray(contas) ? contas : [contas];
+          contasList.forEach(conta => {
+            mesIds.forEach(m => {
+              const entry = balByContaMes[`${conta}:${m}`];
+              if (!entry) return;
+              const mode = calcMode[m] || 'saldo';
+              const raw = mode === 'saldo' ? entry.saldo : entry.debito - entry.credito;
+              const sign = signs[secId] !== undefined ? Number(signs[secId]) : -1;
+              secTotal += sign * raw;
+            });
+          });
+        }
+
+        secResults[secId] = { label: dreBodyIdToLabel[secId] || secId, valor: +secTotal.toFixed(2) };
       });
 
-      const receitaBruta   = secResults['dre-rob-body']?.valor || 0;
-      const deducoes       = secResults['dre-ded-body']?.valor || 0;
+      // Alias-aware lookup: tries primary then fallback IDs
+      const getVal = (...ids) => {
+        for (const id of ids) {
+          if (secResults[id] && secResults[id].valor !== 0) return secResults[id].valor;
+        }
+        return 0;
+      };
+
+      const receitaBruta   = getVal('dre-rob-body');
+      const deducoes       = getVal('dre-deducoes-body', 'dre-ded-body');
       const receitaLiquida = receitaBruta + deducoes;
-      const cmv            = secResults['dre-cpe-body']?.valor || 0;
+      const cmv            = getVal('dre-cmv-body', 'dre-cpe-body');
       const lucroB         = receitaLiquida + cmv;
-      const despOp         = secResults['dre-dop-body']?.valor || 0;
+      const despOp         = getVal('dre-desp-fixas-body', 'dre-dop-body')
+                           + getVal('dre-outros-custos-body');
       const ebitda         = lucroB + despOp;
-      const resFinanceiro  = secResults['dre-daf-body']?.valor || 0;
-      const lucroLiq       = secResults['dre-liq-body']?.valor || 0;
+      const resFinanceiro  = getVal('dre-fin-body', 'dre-daf-body');
+      const ircsll         = getVal('dre-ircsll-body', 'dre-imp-body');
+      const creditos       = getVal('dre-creditos-body');
+      // lucro_liquido: use explicit section if configured, else sum all sections
+      const lucroLiqCalc   = +Object.values(secResults).reduce((s, r) => s + (r.valor || 0), 0).toFixed(2);
+      const lucroLiq       = secResults['dre-liq-body']?.valor || lucroLiqCalc;
 
       const pct = v => receitaLiquida !== 0 ? +((v / receitaLiquida) * 100).toFixed(1) : null;
 
@@ -1328,11 +1407,11 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       const ebt = dreData.ebitda || 0;
       const ll  = dreData.lucro_liquido || 0;
 
-      const liqCorr = pc > 0 ? +(ac / pc).toFixed(2) : null;
+      const liqCorr = pc !== 0 ? +(ac / Math.abs(pc)).toFixed(2) : null;
       const roe     = pl > 0 ? +((ll / pl) * 100).toFixed(1) : null;
       const roa     = at > 0 ? +((ll / at) * 100).toFixed(1) : null;
-      const endiv   = at > 0 ? +((pt / at) * 100).toFixed(1) : null;
-      const giroAt  = at > 0 && rl !== 0 ? +(rl / at).toFixed(2) : null;
+      const endiv   = at > 0 ? +((Math.abs(pt) / at) * 100).toFixed(1) : null;
+      const giroAt  = at > 0 && rl !== 0 ? +((rl * 12) / at).toFixed(2) : null;
       const margEbt = rl !== 0 ? +((ebt / rl) * 100).toFixed(1) : null;
 
       function bench(val, good, warn, dir = 'asc') {
@@ -1367,7 +1446,7 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       const results = await Promise.all(periodos.map(async p => {
         const balRows = await safeQuery(pool, `SELECT conta, saldo_atual::numeric AS saldo FROM dfs_balanco WHERE empresa=$1 AND ano=$2 AND mes=$3`, [company, p.ano, p.mes]);
         const balMap = {};
-        balRows.forEach(r => { balMap[String(r.conta || '').trim()] = parseFloat(r.saldo) || 0; });
+        balRows.forEach(r => { balMap[String(r.conta || '').trim()] = (parseFloat(r.saldo) || 0) / 100; });
         const secTotals = resolveBalancoTotals(structure, mappings, balMap);
         const ativoTotal  = (secTotals['ativo-circulante-body']?.total || 0) + (secTotals['ativo-nao-circulante-body']?.total || 0);
         const passTotal   = (secTotals['passivo-circulante-body']?.total || 0) + (secTotals['passivo-nao-circulante-body']?.total || 0);
@@ -1401,9 +1480,9 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       ]);
 
       const atualMap = {};
-      atualRows.forEach(r => { atualMap[String(r.conta || '').trim()] = { saldo: parseFloat(r.saldo) || 0, nome: r.nome }; });
+      atualRows.forEach(r => { atualMap[String(r.conta || '').trim()] = { saldo: (parseFloat(r.saldo) || 0) / 100, nome: r.nome }; });
       const anteriorMap = {};
-      anteriorRows.forEach(r => { anteriorMap[String(r.conta || '').trim()] = parseFloat(r.saldo) || 0; });
+      anteriorRows.forEach(r => { anteriorMap[String(r.conta || '').trim()] = (parseFloat(r.saldo) || 0) / 100; });
 
       const secTotals = resolveBalancoTotals(structure, mappings, Object.fromEntries(Object.entries(atualMap).map(([k, v]) => [k, v.saldo])));
       const ativoTotal = (secTotals['ativo-circulante-body']?.total || 0) + (secTotals['ativo-nao-circulante-body']?.total || 0);
@@ -1413,12 +1492,12 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
       const alertas = [];
 
       if (ativoTotal > 0 && passTotal === 0) alertas.push({ gravidade: 'critico', tipo: 'PASSIVO_ZERO', descricao: `Passivo total = R$ 0 com Ativo de R$ ${ativoTotal.toFixed(2)}. Mapeamento incompleto ou dados ausentes.` });
-      if (ativoTotal - passTotal < 0) alertas.push({ gravidade: 'critico', tipo: 'PL_NEGATIVO', descricao: `PL calculado negativo: R$ ${(ativoTotal - passTotal).toFixed(2)}. Passivo supera Ativo.` });
+      if (ativoTotal - Math.abs(passTotal) < 0) alertas.push({ gravidade: 'critico', tipo: 'PL_NEGATIVO', descricao: `PL calculado negativo: R$ ${(ativoTotal - Math.abs(passTotal)).toFixed(2)}. Passivo supera Ativo.` });
       if (acTotal < 0) alertas.push({ gravidade: 'critico', tipo: 'AC_NEGATIVO', descricao: `Ativo Circulante negativo: R$ ${acTotal.toFixed(2)}.` });
 
       atualRows.forEach(r => {
         const conta = String(r.conta || '').trim();
-        const saldo = parseFloat(r.saldo) || 0;
+        const saldo = (parseFloat(r.saldo) || 0) / 100;
         const anterior = anteriorMap[conta];
         if (anterior !== undefined && anterior !== 0) {
           const varPct = Math.abs((saldo - anterior) / Math.abs(anterior) * 100);
@@ -1470,6 +1549,8 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
 
 const TOOL_RESULT_MAX_CHARS = 1500;
 const TOOL_RESULT_MAX_CHARS_LARGE = 5000;
+const TOOL_RESULT_MAX_CHARS_SOPC = 25000;
+const TOOL_RESULT_MAX_CHARS_SOPC_ITEM = 10000;
 
 async function anthropicRequest(body) {
   const maxRetries = 3;
@@ -1534,7 +1615,12 @@ async function callLLMWithTools({ systemPrompt, userMessage, tools, executeTool,
         }
         let content = JSON.stringify(result);
         const LARGE_TOOLS = ['analise_completa', 'analise_completa_financeiro'];
-        const maxChars = LARGE_TOOLS.includes(tu.name) ? TOOL_RESULT_MAX_CHARS_LARGE : TOOL_RESULT_MAX_CHARS;
+        const SOPC_MEGA_TOOLS = ['sopc_analise_completa'];
+        const SOPC_ITEM_TOOLS = ['sopc_portfolio_saude', 'sopc_rupturas_impacto', 'sopc_reposicao_priorizada', 'sopc_encalhe_risco'];
+        const maxChars = SOPC_MEGA_TOOLS.includes(tu.name) ? TOOL_RESULT_MAX_CHARS_SOPC
+          : SOPC_ITEM_TOOLS.includes(tu.name) ? TOOL_RESULT_MAX_CHARS_SOPC_ITEM
+          : LARGE_TOOLS.includes(tu.name) ? TOOL_RESULT_MAX_CHARS_LARGE
+          : TOOL_RESULT_MAX_CHARS;
         if (content.length > maxChars) {
           content = content.slice(0, maxChars) + '... [truncado para economizar tokens]';
         }
@@ -1554,11 +1640,11 @@ async function callLLMWithTools({ systemPrompt, userMessage, tools, executeTool,
 
 // ─── ORCHESTRATOR ─────────────────────────────────────────────────────────────
 
-async function runOrchestrator({ pool, companyName, question, agentKeys }) {
+async function runOrchestrator({ pool, company, companyName, question, agentKeys }) {
   const keys = (agentKeys || []).filter(k => AGENTS[k]);
   if (!keys.length) throw new Error('Nenhum agente válido selecionado');
 
-  const dataResults = await Promise.allSettled(keys.map(k => AGENTS[k].fetchData(pool)));
+  const dataResults = await Promise.allSettled(keys.map(k => AGENTS[k].fetchData(pool, company)));
   const combinedData = {};
   keys.forEach((k, i) => {
     if (dataResults[i].status === 'fulfilled') combinedData[k] = dataResults[i].value;
@@ -1579,12 +1665,824 @@ async function runOrchestrator({ pool, companyName, question, agentKeys }) {
   return { analysis, agents_activated: keys, data_summary: combinedData };
 }
 
+// ─── TOOL EXECUTOR — SOP ─────────────────────────────────────────────────────
+
+async function executeSopcTool(toolName, input, pool, company) {
+  const STATUS_FILTER_SQL = `"Status" !~* '(cancel|devol|n[aã]o.?pago)'`;
+  const p = await getSopcParams(pool, company);
+
+  switch (toolName) {
+
+    case 'sopc_portfolio_saude': {
+      const lim = Math.min(input.limite || 200, 500);
+      const rows = await safeQuery(pool, `
+        WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+        base AS (
+          SELECT v."Sku" AS sku,
+            MAX(v."Nome Produto") AS nome,
+            MAX(v."Categoria") AS categoria,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '1 month'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END), 0) AS qtd_1m,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) / 3.0, 1) AS media_3m,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '6 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) / 6.0, 1) AS media_6m,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Total Venda"::numeric ELSE 0 END) / 3.0, 2) AS receita_media_mensal,
+            ROUND(
+              SUM(CASE WHEN ${STATUS_FILTER_SQL} THEN COALESCE(v."Margem Produto"::numeric, 0) ELSE 0 END) /
+              NULLIF(SUM(CASE WHEN ${STATUS_FILTER_SQL} THEN v."Total Venda"::numeric ELSE 0 END), 0) * 100, 1
+            ) AS margem_pct
+          FROM bd_vendas v
+          WHERE v."Sku" IS NOT NULL AND TRIM(v."Sku"::text) != ''
+            AND v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '12 months'
+          GROUP BY v."Sku"
+        ),
+        pp AS (
+          SELECT UPPER(TRIM("SKU"::text)) AS sku_k,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
+        ),
+        pp_abc AS (
+          SELECT UPPER(TRIM(sku::text)) AS sku_k, abc_cruzada
+          FROM ponto_pedido WHERE sku IS NOT NULL
+        )
+        SELECT b.sku, b.nome, b.categoria,
+          b.qtd_1m, b.media_3m, b.media_6m,
+          b.receita_media_mensal, b.margem_pct,
+          CASE WHEN p.sku_k IS NOT NULL THEN COALESCE(p.estoque, 0) ELSE NULL END AS estoque_atual,
+          COALESCE(pa.abc_cruzada, '?') AS curva_abc,
+          CASE WHEN b.media_3m > 0 AND p.sku_k IS NOT NULL
+            THEN ROUND(COALESCE(p.estoque, 0) / (b.media_3m / 30.0), 0)
+            ELSE NULL END AS dias_cobertura,
+          CASE WHEN b.media_3m > 0
+            THEN ROUND((b.qtd_1m - b.media_3m) / b.media_3m * 100, 1)
+            ELSE NULL END AS tendencia_pct,
+          CASE
+            WHEN p.sku_k IS NULL THEN 'SEM_ESTOQUE_CADASTRADO'
+            WHEN COALESCE(p.estoque, 0) <= 0 THEN 'RUPTURA'
+            WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_ruptura_dias} THEN 'RUPTURA_IMINENTE'
+            WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_abaixo_meta} THEN 'ABAIXO_META'
+            WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) > ${p.encalhe_dias}
+              AND b.qtd_1m < b.media_3m * 0.85 THEN 'RISCO_ENCALHE'
+            ELSE 'OK'
+          END AS status
+        FROM base b
+        LEFT JOIN pp p ON UPPER(TRIM(b.sku)) = p.sku_k
+        LEFT JOIN pp_abc pa ON UPPER(TRIM(b.sku)) = pa.sku_k
+        ORDER BY b.receita_media_mensal DESC
+        LIMIT ${lim}
+      `);
+
+      const statusFiltro = input.status_filtro;
+      const filtered = statusFiltro ? rows.filter(r => r.status === statusFiltro) : rows;
+      const resumo = {};
+      rows.forEach(r => { resumo[r.status] = (resumo[r.status] || 0) + 1; });
+      return { total_skus: rows.length, resumo_por_status: resumo, skus: filtered };
+    }
+
+    case 'sopc_rupturas_impacto': {
+      const rows = await safeQuery(pool, `
+        WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+        base AS (
+          SELECT v."Sku" AS sku,
+            MAX(v."Nome Produto") AS nome,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) / 3.0, 1) AS media_3m,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Total Venda"::numeric ELSE 0 END) / 3.0, 2) AS receita_media_mensal,
+            AVG(CASE WHEN ${STATUS_FILTER_SQL} AND v."Quantidade Vendida"::numeric > 0
+              THEN v."Custo Total"::numeric / NULLIF(v."Quantidade Vendida"::numeric, 0) ELSE NULL END) AS custo_unit
+          FROM bd_vendas v
+          WHERE v."Sku" IS NOT NULL AND TRIM(v."Sku"::text) != ''
+            AND v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+          GROUP BY v."Sku"
+          HAVING SUM(CASE WHEN ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) > 0
+        ),
+        pp AS (
+          SELECT UPPER(TRIM("SKU"::text)) AS sku_k,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
+        ),
+        pp_abc AS (
+          SELECT UPPER(TRIM(sku::text)) AS sku_k, abc_cruzada
+          FROM ponto_pedido WHERE sku IS NOT NULL
+        )
+        SELECT b.sku, b.nome,
+          COALESCE(pa.abc_cruzada, '?') AS curva_abc,
+          COALESCE(p.estoque, 0) AS estoque_atual,
+          CASE WHEN b.media_3m > 0
+            THEN ROUND(COALESCE(p.estoque, 0) / (b.media_3m / 30.0), 0)
+            ELSE 0 END AS dias_cobertura,
+          b.receita_media_mensal,
+          CASE WHEN b.media_3m > 0
+            THEN ROUND(b.receita_media_mensal * (COALESCE(p.estoque, 0) / (b.media_3m / 30.0)) / 30.0, 2)
+            ELSE b.receita_media_mensal END AS receita_em_risco_30d,
+          GREATEST(0, ROUND(b.media_3m / 30.0 * ${p.meta_a} - COALESCE(p.estoque, 0), 0)) AS qtd_repor,
+          ROUND(GREATEST(0, b.media_3m / 30.0 * ${p.meta_a} - COALESCE(p.estoque, 0)) * COALESCE(b.custo_unit, 0), 2) AS custo_reposicao,
+          CASE WHEN b.media_3m > 0
+            THEN ROUND((SELECT SUM(CASE WHEN vv."Data"::date >= (SELECT d FROM max_d) - INTERVAL '1 month'
+              AND ${STATUS_FILTER_SQL} THEN vv."Quantidade Vendida"::numeric ELSE 0 END)
+              FROM bd_vendas vv WHERE vv."Sku" = v2."Sku") - b.media_3m) / b.media_3m * 100, 1)
+            ELSE NULL END AS tendencia_pct
+        FROM base b
+        LEFT JOIN pp p ON UPPER(TRIM(b.sku)) = p.sku_k
+        LEFT JOIN pp_abc pa ON UPPER(TRIM(b.sku)) = pa.sku_k
+        CROSS JOIN LATERAL (SELECT b.sku AS dummy_sku) v2(sku)
+        WHERE (COALESCE(p.estoque, 0) = 0 OR (b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_ruptura_dias}))
+        ORDER BY pa.abc_cruzada ASC NULLS LAST, b.receita_media_mensal DESC
+        LIMIT 50
+      `);
+      const total_risco = rows.reduce((s, r) => s + (parseFloat(r.receita_em_risco_30d) || 0), 0);
+      const total_reposicao = rows.reduce((s, r) => s + (parseFloat(r.custo_reposicao) || 0), 0);
+      return {
+        total_skus_em_risco: rows.length,
+        receita_total_em_risco_R$: total_risco.toFixed(2),
+        custo_total_reposicao_R$: total_reposicao.toFixed(2),
+        skus: rows,
+      };
+    }
+
+    case 'sopc_reposicao_priorizada': {
+      const diasA = input.dias_meta_a || p.meta_a;
+      const diasB = input.dias_meta_b || p.meta_b;
+      const diasC = input.dias_meta_c || p.meta_c;
+      const rows = await safeQuery(pool, `
+        WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+        base AS (
+          SELECT v."Sku" AS sku,
+            MAX(v."Nome Produto") AS nome,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) / 3.0, 1) AS media_3m,
+            AVG(CASE WHEN ${STATUS_FILTER_SQL} AND v."Quantidade Vendida"::numeric > 0
+              THEN v."Custo Total"::numeric / NULLIF(v."Quantidade Vendida"::numeric, 0) ELSE NULL END) AS custo_unit
+          FROM bd_vendas v
+          WHERE v."Sku" IS NOT NULL AND TRIM(v."Sku"::text) != ''
+            AND v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '12 months'
+          GROUP BY v."Sku"
+          HAVING SUM(CASE WHEN ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) > 0
+        ),
+        pp AS (
+          SELECT UPPER(TRIM("SKU"::text)) AS sku_k,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
+        ),
+        pp_abc AS (
+          SELECT UPPER(TRIM(sku::text)) AS sku_k, abc_cruzada
+          FROM ponto_pedido WHERE sku IS NOT NULL
+        )
+        SELECT b.sku, b.nome,
+          COALESCE(pa.abc_cruzada, 'C') AS curva_abc,
+          ROUND(b.media_3m, 1) AS media_mensal,
+          COALESCE(p.estoque, 0) AS estoque_atual,
+          CASE WHEN b.media_3m > 0
+            THEN ROUND(COALESCE(p.estoque, 0) / (b.media_3m / 30.0), 0)
+            ELSE NULL END AS dias_cobertura_atual,
+          CASE COALESCE(pa.abc_cruzada, 'C')
+            WHEN 'A' THEN ${diasA}
+            WHEN 'B' THEN ${diasB}
+            ELSE ${diasC}
+          END AS dias_meta,
+          GREATEST(0, ROUND(b.media_3m / 30.0 *
+            CASE COALESCE(pa.abc_cruzada, 'C') WHEN 'A' THEN ${diasA} WHEN 'B' THEN ${diasB} ELSE ${diasC} END
+            - COALESCE(p.estoque, 0), 0)) AS qtd_comprar,
+          ROUND(
+            GREATEST(0, b.media_3m / 30.0 *
+              CASE COALESCE(pa.abc_cruzada, 'C') WHEN 'A' THEN ${diasA} WHEN 'B' THEN ${diasB} ELSE ${diasC} END
+              - COALESCE(p.estoque, 0)) * COALESCE(b.custo_unit, 0), 2
+          ) AS custo_R$,
+          (CURRENT_DATE + INTERVAL '15 days')::date AS data_limite_pedido,
+          CASE
+            WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_ruptura_dias} THEN 'CRITICO'
+            WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_abaixo_meta} THEN 'URGENTE'
+            ELSE 'PROGRAMADO'
+          END AS urgencia
+        FROM base b
+        LEFT JOIN pp p ON UPPER(TRIM(b.sku)) = p.sku_k
+        LEFT JOIN pp_abc pa ON UPPER(TRIM(b.sku)) = pa.sku_k
+        WHERE b.media_3m > 0
+          AND GREATEST(0, b.media_3m / 30.0 *
+            CASE COALESCE(pa.abc_cruzada, 'C') WHEN 'A' THEN ${diasA} WHEN 'B' THEN ${diasB} ELSE ${diasC} END
+            - COALESCE(p.estoque, 0)) > 0
+        ORDER BY
+          CASE WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_ruptura_dias} THEN 0
+               WHEN b.media_3m > 0 AND COALESCE(p.estoque, 0) / (b.media_3m / 30.0) < ${p.alerta_abaixo_meta} THEN 1
+               ELSE 2 END,
+          COALESCE(pa.abc_cruzada, 'C') ASC,
+          custo_R$ DESC NULLS LAST
+        LIMIT 100
+      `);
+      const subtotais = {};
+      let totalGeral = 0;
+      rows.forEach(r => {
+        const u = r.urgencia;
+        if (!subtotais[u]) subtotais[u] = { quantidade_skus: 0, custo_total_R$: 0 };
+        subtotais[u].quantidade_skus++;
+        subtotais[u].custo_total_R$ += parseFloat(r['custo_R$']) || 0;
+        totalGeral += parseFloat(r['custo_R$']) || 0;
+      });
+      Object.keys(subtotais).forEach(k => { subtotais[k].custo_total_R$ = subtotais[k].custo_total_R$.toFixed(2); });
+      return {
+        metas_dias: { A: diasA, B: diasB, C: diasC },
+        lead_time_dias: p.lead_time,
+        total_investimento_R$: totalGeral.toFixed(2),
+        subtotais_por_urgencia: subtotais,
+        recomendacoes: rows,
+      };
+    }
+
+    case 'sopc_diagnostico_base': {
+      const [totalSku, comVenda3m, totalPP, ppSemVenda, vendaSemPP, desativados] = await Promise.all([
+        safeQuery(pool, `SELECT COUNT(*) AS total FROM cadastros_sku`),
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas)
+          SELECT COUNT(DISTINCT "Sku") AS total
+          FROM bd_vendas
+          WHERE "Sku" IS NOT NULL AND ${STATUS_FILTER_SQL}
+            AND "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+        `),
+        safeQuery(pool, `SELECT COUNT(*) AS total FROM ponto_pedido WHERE sku IS NOT NULL`),
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+          vendas3m AS (
+            SELECT DISTINCT UPPER(TRIM("Sku"::text)) AS sku
+            FROM bd_vendas
+            WHERE "Sku" IS NOT NULL AND ${STATUS_FILTER_SQL}
+              AND "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+          )
+          SELECT COUNT(*) AS total
+          FROM ponto_pedido pp
+          LEFT JOIN vendas3m v ON UPPER(TRIM(pp.sku::text)) = v.sku
+          WHERE v.sku IS NULL AND pp.sku IS NOT NULL
+        `),
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+          vendas3m AS (
+            SELECT DISTINCT UPPER(TRIM("Sku"::text)) AS sku
+            FROM bd_vendas
+            WHERE "Sku" IS NOT NULL AND ${STATUS_FILTER_SQL}
+              AND "Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+          )
+          SELECT COUNT(*) AS total
+          FROM vendas3m v
+          LEFT JOIN ponto_pedido pp ON v.sku = UPPER(TRIM(pp.sku::text))
+          WHERE pp.sku IS NULL
+        `),
+        safeQuery(pool, `SELECT COUNT(*) AS total FROM sku_desativadas WHERE empresa = $1`, [company]),
+      ]);
+      const tot = parseInt(totalSku[0]?.total) || 0;
+      const vend = parseInt(comVenda3m[0]?.total) || 0;
+      const pp   = parseInt(totalPP[0]?.total) || 0;
+      const ppSV = parseInt(ppSemVenda[0]?.total) || 0;
+      const vSP  = parseInt(vendaSemPP[0]?.total) || 0;
+      const desativ = parseInt(desativados[0]?.total) || 0;
+      return {
+        total_cadastros_sku: tot,
+        total_com_venda_3m: vend,
+        total_em_ponto_pedido: pp,
+        skus_ponto_pedido_sem_venda: ppSV,
+        skus_com_venda_sem_ponto_pedido: vSP,
+        skus_desativados: desativ,
+        cobertura_pct: vend > 0 ? +((( vend - vSP) / vend) * 100).toFixed(1) : null,
+        diagnostico: {
+          portafolio_base_bd_vendas: vend,
+          gap_sem_ponto_pedido: `${vSP} SKUs vendendo mas sem cadastro em ponto_pedido`,
+          gap_estoque_parado: `${ppSV} SKUs em ponto_pedido sem venda nos últimos 3m`,
+        },
+      };
+    }
+
+    case 'sopc_encalhe_risco': {
+      const rows = await safeQuery(pool, `
+        WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+        base AS (
+          SELECT v."Sku" AS sku,
+            MAX(v."Nome Produto") AS nome,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END) / 3.0, 1) AS media_3m,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '1 month'
+              AND ${STATUS_FILTER_SQL} THEN v."Quantidade Vendida"::numeric ELSE 0 END), 0) AS qtd_1m,
+            ROUND(SUM(CASE WHEN v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '3 months'
+              AND ${STATUS_FILTER_SQL} THEN v."Total Venda"::numeric ELSE 0 END) / 3.0, 2) AS receita_media_mensal,
+            AVG(CASE WHEN ${STATUS_FILTER_SQL} AND v."Quantidade Vendida"::numeric > 0
+              THEN v."Custo Total"::numeric / NULLIF(v."Quantidade Vendida"::numeric, 0) ELSE NULL END) AS custo_unit
+          FROM bd_vendas v
+          WHERE v."Sku" IS NOT NULL AND TRIM(v."Sku"::text) != ''
+            AND v."Data"::date >= (SELECT d FROM max_d) - INTERVAL '6 months'
+          GROUP BY v."Sku"
+        ),
+        pp AS (
+          SELECT UPPER(TRIM("SKU"::text)) AS sku_k,
+            SUM("Estoque Base"::numeric) AS estoque
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL AND TRIM("SKU"::text) != ''
+          GROUP BY UPPER(TRIM("SKU"::text))
+          HAVING SUM("Estoque Base"::numeric) > 0
+        ),
+        pp_abc AS (
+          SELECT UPPER(TRIM(sku::text)) AS sku_k, abc_cruzada
+          FROM ponto_pedido WHERE sku IS NOT NULL
+        )
+        SELECT b.sku, b.nome,
+          COALESCE(pa.abc_cruzada, '?') AS curva_abc,
+          p.estoque AS estoque_atual,
+          ROUND(p.estoque / (b.media_3m / 30.0), 0) AS dias_cobertura,
+          b.media_3m,
+          CASE WHEN b.media_3m > 0 THEN ROUND((b.qtd_1m - b.media_3m) / b.media_3m * 100, 1) ELSE NULL END AS tendencia_pct,
+          ROUND(COALESCE(b.custo_unit, 0), 2) AS custo_unitario_medio,
+          ROUND(p.estoque * COALESCE(b.custo_unit, 0), 2) AS capital_imobilizado_R$,
+          b.receita_media_mensal,
+          CASE
+            WHEN COALESCE(pa.abc_cruzada, 'C') = 'C' AND p.estoque / (b.media_3m / 30.0) > 180 THEN 'ENCALHE_CRITICO'
+            WHEN p.estoque / (b.media_3m / 30.0) > 180 THEN 'ENCALHE_ATENCAO'
+            ELSE 'MONITORAR'
+          END AS classificacao
+        FROM base b
+        JOIN pp p ON UPPER(TRIM(b.sku)) = p.sku_k
+        LEFT JOIN pp_abc pa ON UPPER(TRIM(b.sku)) = pa.sku_k
+        WHERE b.media_3m > 0
+          AND p.estoque / (b.media_3m / 30.0) > 120
+          AND b.qtd_1m < b.media_3m * 0.85
+        ORDER BY capital_imobilizado_R$ DESC NULLS LAST
+        LIMIT 50
+      `);
+      const total_capital = rows.reduce((s, r) => s + (parseFloat(r['capital_imobilizado_R$']) || 0), 0);
+      return {
+        total_skus_encalhe: rows.length,
+        total_capital_imobilizado_R$: total_capital.toFixed(2),
+        skus: rows,
+      };
+    }
+
+    case 'sopc_analise_completa': {
+      const [portfolio, rupturas, reposicao, diagnostico, encalhe] = await Promise.all([
+        executeSopcTool('sopc_portfolio_saude', { limite: 200 }, pool, company),
+        executeSopcTool('sopc_rupturas_impacto', {}, pool, company),
+        executeSopcTool('sopc_reposicao_priorizada', {
+          dias_meta_a: input.dias_meta_a || p.meta_a,
+          dias_meta_b: input.dias_meta_b || p.meta_b,
+          dias_meta_c: input.dias_meta_c || p.meta_c,
+        }, pool, company),
+        executeSopcTool('sopc_diagnostico_base', {}, pool, company),
+        executeSopcTool('sopc_encalhe_risco', {}, pool, company),
+      ]);
+      const portfolioCompacto = {
+        total_skus: portfolio.total_skus,
+        resumo_por_status: portfolio.resumo_por_status,
+        top_criticos: (portfolio.skus || []).filter(s => ['RUPTURA','RUPTURA_IMINENTE','ABAIXO_META'].includes(s.status)).slice(0, 30),
+        nota: 'Para lista completa de SKUs chame sopc_portfolio_saude individualmente',
+      };
+      return {
+        parametros_sop: { meta_dias: { A: p.meta_a, B: p.meta_b, C: p.meta_c }, alerta_ruptura_dias: p.alerta_ruptura_dias, alerta_abaixo_meta_dias: p.alerta_abaixo_meta, encalhe_dias: p.encalhe_dias, lead_time_dias: p.lead_time },
+        sopc_portfolio_saude: portfolioCompacto,
+        sopc_rupturas_impacto: { ...rupturas, skus: (rupturas.skus || []).slice(0, 30) },
+        sopc_reposicao_priorizada: { ...reposicao, recomendacoes: (reposicao.recomendacoes || []).slice(0, 40) },
+        sopc_diagnostico_base: diagnostico,
+        sopc_encalhe_risco: { ...encalhe, skus: (encalhe.skus || []).slice(0, 20) },
+      };
+    }
+
+    default:
+      return { error: `Tool SOP '${toolName}' não reconhecida` };
+  }
+}
+
+// ─── TOOL EXECUTOR — VENDAS ──────────────────────────────────────────────────
+
+const CANAL_COMISSAO_SQL = `CASE
+  WHEN LOWER(COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"::text), '')) LIKE '%mercado livre%' THEN 0.16
+  WHEN LOWER(COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"::text), '')) LIKE '%shopee%' THEN 0.12
+  WHEN LOWER(COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"::text), '')) LIKE '%amazon%' THEN 0.15
+  ELSE 0.12
+END`;
+
+async function executeVendasTool(toolName, input, pool, company) {
+  const SF = `"Status" !~* '(cancel|devol|n[aã]o.?pago)'`;
+  const CANAL = `COALESCE(NULLIF(TRIM("Canal Apelido"::text),''), TRIM("Canal de venda"::text), 'Sem canal')`;
+
+  switch (toolName) {
+
+    case 'vendas_kpi_periodo': {
+      const rows = await safeQuery(pool, `
+        WITH ref AS (
+          SELECT COALESCE($1::int, MAX("Ano")) AS ano,
+                 COALESCE($2::int, MAX("Mes")) AS mes
+          FROM bd_vendas
+        ),
+        cur AS (
+          SELECT ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END),2) AS receita,
+                 ROUND(SUM(CASE WHEN ${SF} THEN "Quantidade Vendida"::numeric ELSE 0 END),0) AS qtd,
+                 ROUND(SUM(CASE WHEN ${SF} THEN COALESCE("Margem Produto"::numeric,0) ELSE 0 END),2) AS margem,
+                 COUNT(DISTINCT CASE WHEN ${SF} THEN "Order ID" END) AS pedidos,
+                 COUNT(DISTINCT CASE WHEN ${SF} THEN "Sku" END) AS skus_ativos
+          FROM bd_vendas, ref
+          WHERE "Ano"=ref.ano AND "Mes"=ref.mes
+        ),
+        prev AS (
+          SELECT ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END),2) AS receita,
+                 ROUND(SUM(CASE WHEN ${SF} THEN "Quantidade Vendida"::numeric ELSE 0 END),0) AS qtd
+          FROM bd_vendas, ref
+          WHERE ("Ano"=ref.ano AND "Mes"=ref.mes-1)
+             OR ("Ano"=ref.ano-1 AND "Mes"=12 AND ref.mes=1)
+        ),
+        yoy AS (
+          SELECT ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END),2) AS receita
+          FROM bd_vendas, ref
+          WHERE "Ano"=ref.ano-1 AND "Mes"=ref.mes
+        )
+        SELECT ref.ano, ref.mes,
+          cur.receita, cur.qtd, cur.margem, cur.pedidos, cur.skus_ativos,
+          ROUND(cur.margem / NULLIF(cur.receita,0) * 100, 1) AS margem_bruta_pct,
+          ROUND(cur.receita / NULLIF(cur.qtd,0), 2) AS ticket_medio,
+          ROUND(cur.receita / NULLIF(cur.skus_ativos,0), 2) AS receita_por_sku,
+          ROUND((cur.receita - prev.receita) / NULLIF(prev.receita,0) * 100, 1) AS variacao_mom_pct,
+          ROUND((cur.receita - yoy.receita) / NULLIF(yoy.receita,0) * 100, 1) AS variacao_yoy_pct
+        FROM ref, cur, prev, yoy
+      `, [input.ano || null, input.mes || null]);
+      return rows[0] || { error: 'Sem dados para o período' };
+    }
+
+    case 'vendas_diagnostico_queda': {
+      const rows = await safeQuery(pool, `
+        WITH ref AS (
+          SELECT COALESCE($1::int, MAX("Ano")) AS ano,
+                 COALESCE($2::int, MAX("Mes")) AS mes
+          FROM bd_vendas
+        ),
+        cur AS (
+          SELECT "Sku" AS sku,
+            MAX("Nome Produto") AS nome,
+            MAX(${CANAL}) AS canal,
+            MAX("Categoria") AS categoria,
+            SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita,
+            SUM(CASE WHEN ${SF} THEN "Quantidade Vendida"::numeric ELSE 0 END) AS qtd
+          FROM bd_vendas, ref WHERE "Ano"=ref.ano AND "Mes"=ref.mes
+          GROUP BY "Sku"
+        ),
+        prv AS (
+          SELECT "Sku" AS sku,
+            SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita,
+            SUM(CASE WHEN ${SF} THEN "Quantidade Vendida"::numeric ELSE 0 END) AS qtd
+          FROM bd_vendas, ref
+          WHERE ("Ano"=ref.ano AND "Mes"=ref.mes-1)
+             OR ("Ano"=ref.ano-1 AND "Mes"=12 AND ref.mes=1)
+          GROUP BY "Sku"
+        ),
+        totais AS (
+          SELECT
+            COALESCE(SUM(c.receita),0) AS rec_cur, COALESCE(SUM(p.receita),0) AS rec_prv,
+            COALESCE(SUM(c.qtd),0) AS qtd_cur,   COALESCE(SUM(p.qtd),0) AS qtd_prv,
+            COALESCE(SUM(p.receita),0) - COALESCE(SUM(c.receita),0) AS queda_total
+          FROM cur c FULL JOIN prv p ON c.sku=p.sku
+        )
+        SELECT
+          ROUND((t.rec_cur - t.rec_prv) / NULLIF(t.rec_prv,0) * 100, 1) AS variacao_mom_pct,
+          ROUND(t.rec_cur,2) AS receita_atual, ROUND(t.rec_prv,2) AS receita_anterior,
+          ROUND(t.queda_total,2) AS queda_total_R$,
+          ROUND((t.qtd_cur - t.qtd_prv) * (t.rec_prv / NULLIF(t.qtd_prv,0)), 2) AS efeito_volume_R$,
+          ROUND((t.rec_cur/NULLIF(t.qtd_cur,0) - t.rec_prv/NULLIF(t.qtd_prv,0)) * t.qtd_cur, 2) AS efeito_ticket_R$
+        FROM totais t
+      `, [input.ano || null, input.mes || null]);
+
+      const [canalRows, catRows, sumiramRows, aparecRow] = await Promise.all([
+        safeQuery(pool, `
+          WITH ref AS (SELECT COALESCE($1::int, MAX("Ano")) AS ano, COALESCE($2::int, MAX("Mes")) AS mes FROM bd_vendas),
+          cur AS (SELECT ${CANAL} AS canal, SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS r FROM bd_vendas,ref WHERE "Ano"=ref.ano AND "Mes"=ref.mes GROUP BY 1),
+          prv AS (SELECT ${CANAL} AS canal, SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS r FROM bd_vendas,ref WHERE ("Ano"=ref.ano AND "Mes"=ref.mes-1) OR ("Ano"=ref.ano-1 AND "Mes"=12 AND ref.mes=1) GROUP BY 1)
+          SELECT c.canal, ROUND(c.r,2) AS receita_cur, ROUND(p.r,2) AS receita_prv,
+            ROUND((c.r-p.r)/NULLIF(p.r,0)*100,1) AS variacao_pct
+          FROM cur c LEFT JOIN prv p ON c.canal=p.canal ORDER BY variacao_pct ASC NULLS LAST LIMIT 5
+        `, [input.ano || null, input.mes || null]),
+        safeQuery(pool, `
+          WITH ref AS (SELECT COALESCE($1::int, MAX("Ano")) AS ano, COALESCE($2::int, MAX("Mes")) AS mes FROM bd_vendas),
+          cur AS (SELECT "Categoria" AS cat, SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS r FROM bd_vendas,ref WHERE "Ano"=ref.ano AND "Mes"=ref.mes GROUP BY 1),
+          prv AS (SELECT "Categoria" AS cat, SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS r FROM bd_vendas,ref WHERE ("Ano"=ref.ano AND "Mes"=ref.mes-1) OR ("Ano"=ref.ano-1 AND "Mes"=12 AND ref.mes=1) GROUP BY 1)
+          SELECT c.cat AS categoria, ROUND(c.r,2) AS receita_cur, ROUND(p.r,2) AS receita_prv,
+            ROUND((c.r-p.r)/NULLIF(p.r,0)*100,1) AS variacao_pct
+          FROM cur c LEFT JOIN prv p ON c.cat=p.cat ORDER BY variacao_pct ASC NULLS LAST LIMIT 5
+        `, [input.ano || null, input.mes || null]),
+        safeQuery(pool, `
+          WITH ref AS (SELECT COALESCE($1::int, MAX("Ano")) AS ano, COALESCE($2::int, MAX("Mes")) AS mes FROM bd_vendas),
+          prv_skus AS (SELECT DISTINCT "Sku" AS sku, MAX("Nome Produto") AS nome, SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita FROM bd_vendas,ref WHERE ("Ano"=ref.ano AND "Mes"=ref.mes-1) OR ("Ano"=ref.ano-1 AND "Mes"=12 AND ref.mes=1) GROUP BY "Sku"),
+          cur_skus AS (SELECT DISTINCT "Sku" AS sku FROM bd_vendas,ref WHERE "Ano"=ref.ano AND "Mes"=ref.mes AND ${SF})
+          SELECT p.sku, p.nome, ROUND(p.receita,2) AS receita_anterior
+          FROM prv_skus p WHERE p.sku NOT IN (SELECT sku FROM cur_skus) AND p.receita > 0
+          ORDER BY p.receita DESC LIMIT 10
+        `, [input.ano || null, input.mes || null]),
+        safeQuery(pool, `
+          WITH ref AS (SELECT COALESCE($1::int, MAX("Ano")) AS ano, COALESCE($2::int, MAX("Mes")) AS mes FROM bd_vendas),
+          cur_skus AS (SELECT "Sku" AS sku, MAX("Nome Produto") AS nome, SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita FROM bd_vendas,ref WHERE "Ano"=ref.ano AND "Mes"=ref.mes AND ${SF} GROUP BY "Sku"),
+          prv_skus AS (SELECT DISTINCT "Sku" AS sku FROM bd_vendas,ref WHERE ("Ano"=ref.ano AND "Mes"=ref.mes-1) OR ("Ano"=ref.ano-1 AND "Mes"=12 AND ref.mes=1))
+          SELECT c.sku, c.nome, ROUND(c.receita,2) AS receita_atual
+          FROM cur_skus c WHERE c.sku NOT IN (SELECT sku FROM prv_skus) AND c.receita > 0
+          ORDER BY c.receita DESC LIMIT 10
+        `, [input.ano || null, input.mes || null]),
+      ]);
+
+      const base = rows[0] || {};
+      const efVol = parseFloat(base.efeito_volume_R$) || 0;
+      const efTick = parseFloat(base.efeito_ticket_R$) || 0;
+      const queda = parseFloat(base['queda_total_R$']) || 0;
+      return {
+        ...base,
+        efeito_mix_R$: +(queda - efVol - efTick).toFixed(2),
+        canal_por_variacao: canalRows,
+        categoria_por_variacao: catRows,
+        skus_que_sumiram: sumiramRows,
+        skus_que_apareceram: aparecRow,
+      };
+    }
+
+    case 'vendas_margem_real_por_canal': {
+      const meses = input.meses || 3;
+      const [canalRows, skuRows] = await Promise.all([
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+          base AS (
+            SELECT ${CANAL} AS canal,
+              SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita,
+              SUM(CASE WHEN ${SF} THEN COALESCE("Margem Produto"::numeric,0) ELSE 0 END) AS margem_bruta,
+              AVG(${CANAL_COMISSAO_SQL}) AS comissao_pct
+            FROM bd_vendas
+            WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval
+            GROUP BY ${CANAL}
+          )
+          SELECT canal,
+            ROUND(receita,2) AS receita_R$,
+            ROUND(margem_bruta / NULLIF(receita,0) * 100, 1) AS margem_bruta_pct,
+            ROUND(comissao_pct * 100, 1) AS comissao_pct,
+            ROUND((margem_bruta - receita * comissao_pct) / NULLIF(receita,0) * 100, 1) AS margem_pos_comissao_pct,
+            ROUND(margem_bruta - receita * comissao_pct, 2) AS margem_pos_comissao_R$,
+            CASE
+              WHEN (margem_bruta - receita * comissao_pct) / NULLIF(receita,0) > 0.10 THEN 'LUCRATIVO'
+              WHEN (margem_bruta - receita * comissao_pct) / NULLIF(receita,0) > 0 THEN 'MARGINAL'
+              ELSE 'PREJUIZO'
+            END AS status
+          FROM base ORDER BY receita DESC
+        `, [meses]),
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+          base AS (
+            SELECT "Sku" AS sku, MAX("Nome Produto") AS nome,
+              ${CANAL} AS canal,
+              SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita,
+              SUM(CASE WHEN ${SF} THEN COALESCE("Margem Produto"::numeric,0) ELSE 0 END) AS margem_bruta,
+              AVG(${CANAL_COMISSAO_SQL}) AS comissao_pct
+            FROM bd_vendas
+            WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval
+              AND "Sku" IS NOT NULL
+            GROUP BY "Sku", ${CANAL}
+          )
+          SELECT sku, nome, canal,
+            ROUND(receita,2) AS receita_R$,
+            ROUND(margem_bruta / NULLIF(receita,0) * 100, 1) AS margem_bruta_pct,
+            ROUND(comissao_pct * 100, 1) AS comissao_pct,
+            ROUND((margem_bruta - receita * comissao_pct) / NULLIF(receita,0) * 100, 1) AS margem_pos_comissao_pct,
+            CASE
+              WHEN (margem_bruta - receita * comissao_pct) / NULLIF(receita,0) > 0.10 THEN 'LUCRATIVO'
+              WHEN (margem_bruta - receita * comissao_pct) / NULLIF(receita,0) > 0 THEN 'MARGINAL'
+              ELSE 'PREJUIZO'
+            END AS status
+          FROM base WHERE receita > 0
+          ORDER BY receita DESC LIMIT 40
+        `, [meses]),
+      ]);
+      return { janela_meses: meses, por_canal: canalRows, por_sku_canal: skuRows };
+    }
+
+    case 'vendas_canibalismo_portfolio': {
+      const meses = input.meses || 6;
+      const rows = await safeQuery(pool, `
+        WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+        mensal AS (
+          SELECT "Sku" AS sku, MAX("Nome Produto") AS nome,
+            MAX("Categoria") AS categoria,
+            DATE_TRUNC('month',"Data"::date) AS mes,
+            SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita,
+            AVG(CASE WHEN ${SF} AND "Quantidade Vendida"::numeric>0
+              THEN "Total Venda"::numeric/"Quantidade Vendida"::numeric END) AS preco_medio
+          FROM bd_vendas
+          WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval
+            AND "Sku" IS NOT NULL
+          GROUP BY "Sku", DATE_TRUNC('month',"Data"::date)
+        ),
+        skus_base AS (
+          SELECT sku, nome, categoria,
+            AVG(preco_medio) AS preco_avg,
+            COUNT(DISTINCT mes) AS meses_com_venda
+          FROM mensal GROUP BY sku, nome, categoria
+          HAVING COUNT(DISTINCT mes) >= 3
+        ),
+        pares AS (
+          SELECT a.sku AS sku_a, a.nome AS nome_a, b.sku AS sku_b, b.nome AS nome_b,
+            a.categoria,
+            ROUND(a.preco_avg::numeric,2) AS preco_a,
+            ROUND(b.preco_avg::numeric,2) AS preco_b
+          FROM skus_base a JOIN skus_base b ON a.categoria=b.categoria AND a.sku < b.sku
+            AND ABS(a.preco_avg - b.preco_avg) / NULLIF(GREATEST(a.preco_avg, b.preco_avg),0) <= 0.20
+        ),
+        inversoes AS (
+          SELECT p.sku_a, p.sku_b, p.categoria, p.nome_a, p.nome_b, p.preco_a, p.preco_b,
+            COUNT(*) AS meses_analisados,
+            SUM(CASE WHEN
+              (ma.receita > LAG(ma.receita) OVER (PARTITION BY ma.sku ORDER BY ma.mes)
+               AND mb.receita < LAG(mb.receita) OVER (PARTITION BY mb.sku ORDER BY mb.mes))
+              OR
+              (ma.receita < LAG(ma.receita) OVER (PARTITION BY ma.sku ORDER BY ma.mes)
+               AND mb.receita > LAG(mb.receita) OVER (PARTITION BY mb.sku ORDER BY mb.mes))
+              THEN 1 ELSE 0 END) AS meses_inversao
+          FROM pares p
+          JOIN mensal ma ON ma.sku=p.sku_a
+          JOIN mensal mb ON mb.sku=p.sku_b AND mb.mes=ma.mes
+          GROUP BY p.sku_a, p.sku_b, p.categoria, p.nome_a, p.nome_b, p.preco_a, p.preco_b
+        )
+        SELECT sku_a, nome_a, sku_b, nome_b, categoria, preco_a, preco_b,
+          meses_inversao, meses_analisados,
+          ROUND(meses_inversao::numeric / NULLIF(meses_analisados-1,0) * 100, 0) AS indice_canibalismo_pct
+        FROM inversoes WHERE meses_analisados > 2
+        ORDER BY indice_canibalismo_pct DESC NULLS LAST LIMIT 20
+      `, [meses]);
+      return { janela_meses: meses, total_pares: rows.length, pares_canibais: rows };
+    }
+
+    case 'vendas_sazonalidade_historica': {
+      const rows = await safeQuery(pool, `
+        WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+        mensal AS (
+          SELECT "Ano" AS ano, "Mes" AS mes,
+            SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita
+          FROM bd_vendas GROUP BY "Ano","Mes"
+        ),
+        media_global AS (
+          SELECT AVG(receita) AS avg_global FROM mensal
+        ),
+        media_mes AS (
+          SELECT mes, AVG(receita) AS avg_mes, COUNT(*) AS anos_amostra
+          FROM mensal GROUP BY mes
+        ),
+        atual AS (
+          SELECT "Ano" AS ano, "Mes" AS mes,
+            SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita
+          FROM bd_vendas, max_d
+          WHERE "Ano"=(SELECT MAX("Ano") FROM bd_vendas)
+            AND "Mes"=(SELECT MAX("Mes") FROM bd_vendas WHERE "Ano"=(SELECT MAX("Ano") FROM bd_vendas))
+          GROUP BY "Ano","Mes"
+        )
+        SELECT mm.mes,
+          ROUND(mm.avg_mes,2) AS media_historica_R$,
+          ROUND(mm.avg_mes / NULLIF((SELECT avg_global FROM media_global),0), 3) AS indice_sazonalidade,
+          mm.anos_amostra,
+          CASE WHEN mm.mes = (SELECT mes FROM atual)
+            THEN ROUND((SELECT receita FROM atual),2) END AS receita_mes_atual,
+          CASE WHEN mm.mes = (SELECT mes FROM atual)
+            THEN ROUND(((SELECT receita FROM atual) - mm.avg_mes) / NULLIF(mm.avg_mes,0) * 100, 1) END AS performance_vs_historico_pct
+        FROM media_mes mm ORDER BY mm.mes
+      `);
+      const atual = rows.find(r => r.receita_mes_atual != null);
+      let interpretacao = null;
+      if (atual) {
+        const perf = parseFloat(atual.performance_vs_historico_pct) || 0;
+        const idx = parseFloat(atual.indice_sazonalidade) || 1;
+        interpretacao = perf > -5 ? 'sazonalidade_normal'
+          : idx < 0.85 ? 'queda_dentro_da_sazonalidade'
+          : 'queda_estrutural_acima_da_sazonalidade';
+      }
+      return { sazonalidade_por_mes: rows, interpretacao };
+    }
+
+    case 'vendas_cohort_skus': {
+      const [anoAtual, mesAtual] = await safeQuery(pool,
+        `SELECT MAX("Ano") AS ano, MAX("Mes") AS mes FROM bd_vendas WHERE "Ano"=(SELECT MAX("Ano") FROM bd_vendas)`
+      ).then(r => [r[0]?.ano, r[0]?.mes]);
+
+      const pAtualAno = input.periodo_atual_ano || anoAtual;
+      const pAtualMes = input.periodo_atual_mes || mesAtual;
+      const pBaseAno  = input.periodo_base_ano  || (pAtualAno - 1);
+      const pBaseMes  = input.periodo_base_mes  || pAtualMes;
+
+      const [baseSkus, atualSkus] = await Promise.all([
+        safeQuery(pool, `
+          SELECT "Sku" AS sku, MAX("Nome Produto") AS nome,
+            ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END),2) AS receita
+          FROM bd_vendas WHERE "Ano"=$1 AND "Mes"=$2 AND "Sku" IS NOT NULL AND ${SF}
+          GROUP BY "Sku" HAVING SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) > 0
+        `, [pBaseAno, pBaseMes]),
+        safeQuery(pool, `
+          SELECT "Sku" AS sku, MAX("Nome Produto") AS nome,
+            ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END),2) AS receita
+          FROM bd_vendas WHERE "Ano"=$1 AND "Mes"=$2 AND "Sku" IS NOT NULL AND ${SF}
+          GROUP BY "Sku" HAVING SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) > 0
+        `, [pAtualAno, pAtualMes]),
+      ]);
+
+      const baseMap  = new Map(baseSkus.map(r => [r.sku, r]));
+      const atualMap = new Map(atualSkus.map(r => [r.sku, r]));
+      const perdidos = baseSkus.filter(r => !atualMap.has(r.sku)).sort((a,b) => b.receita - a.receita).slice(0,10);
+      const ganhos   = atualSkus.filter(r => !baseMap.has(r.sku)).sort((a,b) => b.receita - a.receita).slice(0,10);
+      const mantidos = atualSkus.filter(r => baseMap.has(r.sku)).length;
+      const recPerdida = perdidos.reduce((s,r) => s + (parseFloat(r.receita)||0), 0);
+      const recGanha   = ganhos.reduce((s,r) => s + (parseFloat(r.receita)||0), 0);
+      return {
+        periodo_base: `${pBaseAno}-${String(pBaseMes).padStart(2,'0')}`,
+        periodo_atual: `${pAtualAno}-${String(pAtualMes).padStart(2,'0')}`,
+        skus_mantidos: mantidos,
+        skus_perdidos_count: perdidos.length,
+        skus_ganhos_count: ganhos.length,
+        receita_perdida_R$: recPerdida.toFixed(2),
+        receita_ganha_R$: recGanha.toFixed(2),
+        saldo_R$: (recGanha - recPerdida).toFixed(2),
+        top_skus_perdidos: perdidos,
+        top_skus_ganhos: ganhos,
+      };
+    }
+
+    case 'vendas_concentracao_risco': {
+      const meses = input.meses || 3;
+      const [skuRows, canalRows] = await Promise.all([
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+          total AS (SELECT SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS t
+            FROM bd_vendas WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval),
+          ranked AS (
+            SELECT "Sku" AS sku, MAX("Nome Produto") AS nome,
+              SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS receita,
+              ROW_NUMBER() OVER (ORDER BY SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) DESC) AS rk
+            FROM bd_vendas
+            WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval
+              AND "Sku" IS NOT NULL
+            GROUP BY "Sku"
+          )
+          SELECT sku, nome, ROUND(receita,2) AS receita_R$,
+            ROUND(receita/(SELECT t FROM total)*100,2) AS pct_receita,
+            rk
+          FROM ranked ORDER BY rk LIMIT 15
+        `, [meses]),
+        safeQuery(pool, `
+          WITH max_d AS (SELECT MAX("Data"::date) AS d FROM bd_vendas),
+          total AS (SELECT SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END) AS t
+            FROM bd_vendas WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval)
+          SELECT ${CANAL} AS canal,
+            ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END),2) AS receita_R$,
+            ROUND(SUM(CASE WHEN ${SF} THEN "Total Venda"::numeric ELSE 0 END)/(SELECT t FROM total)*100,1) AS pct_receita
+          FROM bd_vendas
+          WHERE "Data"::date >= (SELECT d FROM max_d) - ($1 || ' months')::interval
+          GROUP BY ${CANAL} ORDER BY receita_R$ DESC
+        `, [meses]),
+      ]);
+
+      const top5pct  = skuRows.filter(r => r.rk <= 5).reduce((s,r) => s + (parseFloat(r.pct_receita)||0), 0);
+      const top10pct = skuRows.filter(r => r.rk <= 10).reduce((s,r) => s + (parseFloat(r.pct_receita)||0), 0);
+      const hhi = skuRows.reduce((s,r) => s + Math.pow(parseFloat(r.pct_receita)||0, 2), 0);
+      const top3rec = skuRows.filter(r => r.rk <= 3).reduce((s,r) => s + (parseFloat(r['receita_R$'])||0), 0);
+      const canalDep = canalRows[0] || {};
+      return {
+        janela_meses: meses,
+        top_5_pct_receita: +top5pct.toFixed(1),
+        top_10_pct_receita: +top10pct.toFixed(1),
+        herfindahl_index: +hhi.toFixed(0),
+        classificacao_concentracao: hhi < 1500 ? 'DIVERSIFICADO' : hhi < 2500 ? 'MODERADO' : 'CONCENTRADO',
+        canal_mais_dependente: { canal: canalDep.canal, pct_receita: canalDep.pct_receita },
+        sku_mais_dependente: { sku: skuRows[0]?.sku, nome: skuRows[0]?.nome, pct_receita: skuRows[0]?.pct_receita },
+        cenario_ruptura_top3_R$: +top3rec.toFixed(2),
+        classificacao_risco: top5pct > 60 ? 'ALTO' : top5pct > 40 ? 'MEDIO' : 'BAIXO',
+        top_skus: skuRows,
+        canais: canalRows,
+      };
+    }
+
+    case 'vendas_analise_completa': {
+      const [kpi, sazonalidade, cohort, concentracao] = await Promise.all([
+        executeVendasTool('vendas_kpi_periodo', { ano: input.ano, mes: input.mes }, pool, company),
+        executeVendasTool('vendas_sazonalidade_historica', {}, pool, company),
+        executeVendasTool('vendas_cohort_skus', {}, pool, company),
+        executeVendasTool('vendas_concentracao_risco', { meses: 3 }, pool, company),
+      ]);
+      return { vendas_kpi_periodo: kpi, vendas_sazonalidade_historica: sazonalidade, vendas_cohort_skus: cohort, vendas_concentracao_risco: concentracao };
+    }
+
+    default:
+      return { error: `Tool Vendas '${toolName}' não reconhecida` };
+  }
+}
+
 // ─── TOOL EXECUTOR DISPATCHER ────────────────────────────────────────────────
 
 function getToolExecutor(agentKey, pool, company) {
   const agent = AGENTS[agentKey];
   if (agent?.toolExecutor === 'financeiro') {
     return (name, inp) => executeFinanceiroTool(name, inp, pool, company);
+  }
+  if (agent?.toolExecutor === 'sop') {
+    return (name, inp) => executeSopcTool(name, inp, pool, company);
+  }
+  if (agent?.toolExecutor === 'vendas') {
+    return (name, inp) => executeVendasTool(name, inp, pool, company);
   }
   return (name, inp) => executeEstoqueTool(name, inp, pool, company);
 }
@@ -1627,7 +2525,7 @@ module.exports = async (req, res) => {
     // Orquestrador: ativa todos os agentes em paralelo
     if (agentKey === 'orchestrator') {
       try {
-        const result = await runOrchestrator({ pool, companyName, question: null, agentKeys: Object.keys(AGENTS) });
+        const result = await runOrchestrator({ pool, company, companyName, question: null, agentKeys: Object.keys(AGENTS) });
         return res.json({ agent: 'orchestrator', ...result });
       } catch (e) {
         console.error('[AGENTS GET] orchestrator:', e.message);
@@ -1662,8 +2560,20 @@ module.exports = async (req, res) => {
         analysisCache[cacheKey] = { analysis, ts: Date.now() };
         return res.json({ agent: agentKey, analysis });
       } else if (agent.tools) {
+        let sysPrompt = agent.systemPrompt;
+        if (agentKey === 'sop') {
+          const sopcP = await getSopcParams(pool, company);
+          sysPrompt = sysPrompt
+            .replace(/{meta_a}/g, sopcP.meta_a)
+            .replace(/{meta_b}/g, sopcP.meta_b)
+            .replace(/{meta_c}/g, sopcP.meta_c)
+            .replace(/{lead_time}/g, sopcP.lead_time)
+            .replace(/{alerta_ruptura_dias}/g, sopcP.alerta_ruptura_dias)
+            .replace(/{alerta_abaixo_meta}/g, sopcP.alerta_abaixo_meta)
+            .replace(/{encalhe_dias}/g, sopcP.encalhe_dias);
+        }
         analysis = await callLLMWithTools({
-          systemPrompt: agent.systemPrompt,
+          systemPrompt: sysPrompt,
           userMessage: agent.autoPrompt,
           tools: agent.tools,
           executeTool: execTool,
@@ -1672,7 +2582,7 @@ module.exports = async (req, res) => {
         });
         return res.json({ agent: agentKey, analysis });
       } else {
-        const data = await agent.fetchData(pool);
+        const data = await agent.fetchData(pool, company);
         analysis = await callLLM({
           systemPrompt: agent.systemPrompt,
           userMessage: `${agent.autoPrompt}\n\nDados do banco de dados:\n${JSON.stringify(data, null, 2)}`,
@@ -1699,7 +2609,7 @@ module.exports = async (req, res) => {
       try {
         const routing = await callFlash(message);
         console.log('[orchestrator] roteamento:', routing);
-        const result = await runOrchestrator({ pool, companyName, question: message, agentKeys: routing.agents });
+        const result = await runOrchestrator({ pool, company, companyName, question: message, agentKeys: routing.agents });
         return res.json({ agent: 'orchestrator', routing_rationale: routing.rationale, ...result });
       } catch (e) {
         console.error('[AGENTS POST] orchestrator:', e.message);
@@ -1714,8 +2624,20 @@ module.exports = async (req, res) => {
       let reply;
       if (agent.tools) {
         const execTool = getToolExecutor(agentKey, pool, company);
+        let sysPromptPost = agent.systemPrompt;
+        if (agentKey === 'sop') {
+          const sopcP = await getSopcParams(pool, company);
+          sysPromptPost = sysPromptPost
+            .replace(/{meta_a}/g, sopcP.meta_a)
+            .replace(/{meta_b}/g, sopcP.meta_b)
+            .replace(/{meta_c}/g, sopcP.meta_c)
+            .replace(/{lead_time}/g, sopcP.lead_time)
+            .replace(/{alerta_ruptura_dias}/g, sopcP.alerta_ruptura_dias)
+            .replace(/{alerta_abaixo_meta}/g, sopcP.alerta_abaixo_meta)
+            .replace(/{encalhe_dias}/g, sopcP.encalhe_dias);
+        }
         reply = await callLLMWithTools({
-          systemPrompt: agent.systemPrompt,
+          systemPrompt: sysPromptPost,
           userMessage: `Pergunta do gestor: ${message}\n\nUse apenas as tools necessárias para responder. Não é preciso chamar todas.`,
           tools: agent.tools,
           executeTool: execTool,
@@ -1724,7 +2646,7 @@ module.exports = async (req, res) => {
         });
       } else {
         let data = contextData;
-        if (!data) data = await agent.fetchData(pool);
+        if (!data) data = await agent.fetchData(pool, company);
         reply = await callLLM({
           systemPrompt: agent.systemPrompt,
           userMessage: `Pergunta do gestor: ${message}\n\nContexto dos dados:\n${JSON.stringify(data, null, 2)}`,

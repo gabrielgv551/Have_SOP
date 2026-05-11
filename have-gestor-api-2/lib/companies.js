@@ -6,4 +6,8 @@ module.exports = {
     name: "Lanzi",
     dbEnvKey: "LANZI",
   },
+  marcon: {
+    name: "Marcon",
+    dbEnvKey: "MARCON",
+  },
 };

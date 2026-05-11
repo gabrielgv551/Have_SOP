@@ -70,6 +70,46 @@ async function fetchAllPluggyTransactions(apiKey, itemId, date_from, date_to) {
   return transactions;
 }
 
+async function handleBancos(req, res, pool, company) {
+  if (req.method === 'GET') {
+    const r = await pool.query(
+      `SELECT b.id, b.nome, b.cor, b.icone, b.formato, b.criado_em,
+              COUNT(DISTINCT (e.ano, e.mes))::int AS meses_com_dados,
+              COUNT(e.id)::int AS total_lancamentos,
+              MAX(e.atualizado_em) AS ultima_atualizacao
+         FROM caixa_bancos b
+         LEFT JOIN caixa_extrato e ON e.banco_id = b.id AND e.empresa = b.empresa
+        WHERE b.empresa = $1
+        GROUP BY b.id ORDER BY b.criado_em ASC`,
+      [company]
+    );
+    return res.json({ bancos: r.rows });
+  }
+
+  if (req.method === 'POST') {
+    const { nome, cor, icone, formato } = req.body;
+    if (!nome) return res.status(400).json({ error: 'nome obrigatorio' });
+    const r = await pool.query(
+      `INSERT INTO caixa_bancos (empresa, nome, cor, icone, formato)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (empresa, nome) DO UPDATE
+         SET cor = EXCLUDED.cor, icone = EXCLUDED.icone, formato = EXCLUDED.formato
+       RETURNING id, nome, cor, icone, formato`,
+      [company, nome.substring(0, 100), (cor || '#007cdc').substring(0, 20), (icone || '🏦').substring(0, 10), (formato || 'generico').substring(0, 50)]
+    );
+    return res.json({ ok: true, banco: r.rows[0] });
+  }
+
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'id obrigatorio' });
+    await pool.query('DELETE FROM caixa_bancos WHERE id=$1 AND empresa=$2', [parseInt(id), company]);
+    return res.json({ ok: true });
+  }
+
+  res.status(405).json({ error: 'Method not allowed' });
+}
+
 async function handlePluggy(req, res, pool, company) {
   if (!process.env.PLUGGY_CLIENT_ID || !process.env.PLUGGY_CLIENT_SECRET)
     return res.status(503).json({ error: 'Pluggy nao configurado. Adicione PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET nas variaveis de ambiente.' });
@@ -163,9 +203,66 @@ async function handlePluggy(req, res, pool, company) {
   res.status(405).json({ error: 'Method not allowed' });
 }
 
+async function handleSubempresas(req, res, pool, company) {
+  if (req.method === 'GET') {
+    const [subR, bancosR, canaisR, cpFornR] = await Promise.all([
+      pool.query('SELECT id, nome, cnpj, cor FROM subempresas WHERE empresa=$1 ORDER BY nome', [company]),
+      pool.query('SELECT id, nome, cor, icone, subempresa_id FROM caixa_bancos WHERE empresa=$1 ORDER BY nome', [company]),
+      pool.query('SELECT canal, grupo, subempresa_id FROM vendas_grupos_canais WHERE empresa=$1 ORDER BY grupo, canal', [company]),
+      pool.query(`SELECT empresa AS valor, COUNT(*)::int AS count, ROUND(SUM(COALESCE(saldo,0))::numeric,2) AS total_saldo FROM contas_pagar WHERE empresa IS NOT NULL AND empresa <> '' GROUP BY empresa ORDER BY empresa`).catch(() => ({ rows: [] })),
+    ]);
+    return res.json({ subempresas: subR.rows, bancos: bancosR.rows, canais: canaisR.rows, cp_empresa_valores: cpFornR.rows });
+  }
+  if (req.method === 'POST') {
+    const { nome, cnpj, cor } = req.body;
+    if (!nome) return res.status(400).json({ error: 'nome obrigatorio' });
+    const r = await pool.query(
+      `INSERT INTO subempresas (empresa, nome, cnpj, cor) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (empresa, nome) DO UPDATE SET cnpj=EXCLUDED.cnpj, cor=EXCLUDED.cor
+       RETURNING id, nome, cnpj, cor`,
+      [company, nome.substring(0, 100), cnpj || null, cor || '#007cdc']
+    );
+    return res.json({ ok: true, subempresa: r.rows[0] });
+  }
+  if (req.method === 'PATCH') {
+    const { tipo, item_id, subempresa_id, grupo } = req.body;
+    const sid = subempresa_id ? parseInt(subempresa_id) : null;
+    if (tipo === 'banco') {
+      if (!item_id) return res.status(400).json({ error: 'item_id obrigatorio' });
+      await pool.query('UPDATE caixa_bancos SET subempresa_id=$1 WHERE id=$2 AND empresa=$3', [sid, parseInt(item_id), company]);
+      return res.json({ ok: true });
+    }
+    if (tipo === 'canal') {
+      const { canal } = req.body;
+      if (!canal) return res.status(400).json({ error: 'canal obrigatorio' });
+      await pool.query('UPDATE vendas_grupos_canais SET subempresa_id=$1 WHERE empresa=$2 AND canal=$3', [sid, company, canal]);
+      return res.json({ ok: true });
+    }
+    if (tipo === 'contas_pagar_empresa') {
+      const { old_valor, subempresa_nome, checked } = req.body;
+      if (checked) {
+        if (old_valor) {
+          await pool.query('UPDATE contas_pagar SET empresa=$1 WHERE empresa=$2', [subempresa_nome, old_valor]);
+        }
+      } else {
+        await pool.query("UPDATE contas_pagar SET empresa=NULL WHERE empresa=$1", [subempresa_nome]);
+      }
+      return res.json({ ok: true });
+    }
+    return res.status(400).json({ error: 'tipo deve ser banco, canal ou contas_pagar_empresa' });
+  }
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'id obrigatorio' });
+    await pool.query('DELETE FROM subempresas WHERE id=$1 AND empresa=$2', [parseInt(id), company]);
+    return res.json({ ok: true });
+  }
+  res.status(405).json({ error: 'Method not allowed' });
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -174,16 +271,27 @@ module.exports = async (req, res) => {
   const company = payload.company || 'lanzi';
   const pool = getPool(company);
 
-  // Roteamento: ?module=pluggy → Open Finance
-  if (req.query.module === 'pluggy' || req.query.module === 'belvo') return handlePluggy(req, res, pool, company);
+  // Roteamento
+  try {
+    if (req.query.module === 'bancos') return await handleBancos(req, res, pool, company);
+    if (req.query.module === 'subempresas') return await handleSubempresas(req, res, pool, company);
+    if (req.query.module === 'pluggy' || req.query.module === 'belvo') return await handlePluggy(req, res, pool, company);
+  } catch (e) {
+    console.error('[CAIXA-EXTRATO module]', req.query.module, e.message);
+    return res.status(500).json({ error: e.message });
+  }
 
   try {
     if (req.method === 'GET') {
-      const { ano, mes } = req.query;
+      const { ano, mes, banco_id } = req.query;
       if (ano && mes) {
+        const bancoId = banco_id ? parseInt(banco_id) : null;
         const r = await pool.query(
-          'SELECT id, dia, descricao, valor FROM caixa_extrato WHERE empresa=$1 AND ano=$2 AND mes=$3 ORDER BY dia, id',
-          [company, parseInt(ano), parseInt(mes)]
+          `SELECT id, dia, descricao, razao_social, valor FROM caixa_extrato
+            WHERE empresa=$1 AND ano=$2 AND mes=$3
+              AND ($4::int IS NULL OR banco_id = $4)
+            ORDER BY dia, id`,
+          [company, parseInt(ano), parseInt(mes), bancoId]
         );
         return res.json({ rows: r.rows });
       }
@@ -197,36 +305,70 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST') {
-      const { ano, mes, rows } = req.body;
+      const { ano, mes, rows, banco_id, modo } = req.body;
+      // modo: 'substituir' (default) or 'adicionar' (merge, skip exact duplicates)
       if (!ano || !mes || !Array.isArray(rows) || !rows.length)
         return res.status(400).json({ error: 'Informe ano, mes e rows' });
 
+      const bancoId = banco_id ? parseInt(banco_id) : null;
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        // Delete existing for this month then reinsert
-        await client.query(
-          'DELETE FROM caixa_extrato WHERE empresa=$1 AND ano=$2 AND mes=$3',
-          [company, parseInt(ano), parseInt(mes)]
-        );
-        const CHUNK = 200;
         let inserted = 0;
-        for (let i = 0; i < rows.length; i += CHUNK) {
-          const chunk = rows.slice(i, i + CHUNK);
-          const vals = [], params = [];
-          chunk.forEach((r, idx) => {
-            const b = idx * 6;
-            vals.push(`($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6})`);
-            params.push(company, parseInt(ano), parseInt(mes), parseInt(r.dia), String(r.descricao || '').substring(0, 500), parseInt(r.valor) || 0);
-          });
+
+        if (modo === 'adicionar') {
+          // Merge mode: skip rows where (banco_id, dia, descricao, valor) already exist
+          const CHUNK = 50;
+          for (let i = 0; i < rows.length; i += CHUNK) {
+            const chunk = rows.slice(i, i + CHUNK);
+            for (const r of chunk) {
+              const exists = await client.query(
+                `SELECT 1 FROM caixa_extrato
+                  WHERE empresa=$1 AND ano=$2 AND mes=$3 AND banco_id IS NOT DISTINCT FROM $4
+                    AND dia=$5 AND descricao=$6 AND valor=$7 LIMIT 1`,
+                [company, parseInt(ano), parseInt(mes), bancoId,
+                 parseInt(r.dia), String(r.descricao || '').substring(0, 500), parseInt(r.valor) || 0]
+              );
+              if (!exists.rows.length) {
+                await client.query(
+                  'INSERT INTO caixa_extrato (empresa, ano, mes, dia, descricao, razao_social, valor, banco_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+                  [company, parseInt(ano), parseInt(mes), parseInt(r.dia),
+                   String(r.descricao || '').substring(0, 500),
+                   r.razao_social ? String(r.razao_social).substring(0, 300) : null,
+                   parseInt(r.valor) || 0, bancoId]
+                );
+                inserted++;
+              }
+            }
+          }
+        } else {
+          // Substituir mode (default): replace all rows for this bank+month
           await client.query(
-            `INSERT INTO caixa_extrato (empresa, ano, mes, dia, descricao, valor) VALUES ${vals.join(',')}`,
-            params
+            'DELETE FROM caixa_extrato WHERE empresa=$1 AND ano=$2 AND mes=$3 AND banco_id IS NOT DISTINCT FROM $4',
+            [company, parseInt(ano), parseInt(mes), bancoId]
           );
-          inserted += chunk.length;
+          const CHUNK = 200;
+          for (let i = 0; i < rows.length; i += CHUNK) {
+            const chunk = rows.slice(i, i + CHUNK);
+            const vals = [], params = [];
+            chunk.forEach((r, idx) => {
+              const b = idx * 8;
+              vals.push(`($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7},$${b+8})`);
+              params.push(company, parseInt(ano), parseInt(mes), parseInt(r.dia),
+                String(r.descricao || '').substring(0, 500),
+                r.razao_social ? String(r.razao_social).substring(0, 300) : null,
+                parseInt(r.valor) || 0, bancoId);
+            });
+            await client.query(
+              `INSERT INTO caixa_extrato (empresa, ano, mes, dia, descricao, razao_social, valor, banco_id) VALUES ${vals.join(',')}`,
+              params
+            );
+            inserted += chunk.length;
+          }
         }
+
         await client.query('COMMIT');
-        return res.json({ ok: true, count: inserted });
+        return res.json({ ok: true, count: inserted, modo: modo || 'substituir' });
       } catch (e) {
         await client.query('ROLLBACK'); throw e;
       } finally { client.release(); }

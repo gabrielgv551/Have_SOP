@@ -55,7 +55,7 @@ async function queryUsuarios(company, sql, params = []) {
 async function getAllUsers(company) {
   const result = await queryUsuarios(
     company,
-    'SELECT id, nome, usuario, perfil, ativo, criado_em, atualizado_em FROM usuarios WHERE empresa = $1 ORDER BY criado_em DESC',
+    'SELECT id, nome, usuario, perfil, ativo, nav_permissoes, criado_em, atualizado_em FROM usuarios WHERE empresa = $1 ORDER BY criado_em DESC',
     [company]
   );
   return result.rows;
@@ -68,7 +68,7 @@ async function getAllUsers(company) {
  * @returns {Promise<Object>} - Created user object
  */
 async function createUser(company, userData) {
-  const { nome, usuario, senha_hash, perfil } = userData;
+  const { nome, usuario, senha_hash, perfil, nav_permissoes } = userData;
 
   if (!nome || !usuario || !senha_hash || !perfil) {
     throw new Error('Missing required fields: nome, usuario, senha_hash, perfil');
@@ -76,8 +76,8 @@ async function createUser(company, userData) {
 
   const result = await queryUsuarios(
     company,
-    'INSERT INTO usuarios (empresa, nome, usuario, senha_hash, perfil, ativo) VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id, nome, usuario, perfil, ativo, criado_em',
-    [company, nome, usuario, senha_hash, perfil]
+    'INSERT INTO usuarios (empresa, nome, usuario, senha_hash, perfil, ativo, nav_permissoes) VALUES ($1, $2, $3, $4, $5, TRUE, $6) RETURNING id, nome, usuario, perfil, ativo, nav_permissoes, criado_em',
+    [company, nome, usuario, senha_hash, perfil, nav_permissoes || null]
   );
 
   if (result.rows.length === 0) {
@@ -95,7 +95,7 @@ async function createUser(company, userData) {
  * @returns {Promise<Object>} - Updated user object
  */
 async function updateUser(company, userId, updates) {
-  const { nome, perfil, ativo, senha_hash } = updates;
+  const { nome, perfil, ativo, senha_hash, nav_permissoes } = updates;
   const fields = [];
   const params = [userId, company];
   let paramIndex = 3;
@@ -124,6 +124,12 @@ async function updateUser(company, userId, updates) {
     paramIndex++;
   }
 
+  if (nav_permissoes !== undefined) {
+    fields.push(`nav_permissoes = $${paramIndex}`);
+    params.push(nav_permissoes);
+    paramIndex++;
+  }
+
   if (fields.length === 0) {
     throw new Error('No fields to update');
   }
@@ -132,7 +138,7 @@ async function updateUser(company, userId, updates) {
     UPDATE usuarios
     SET ${fields.join(', ')}
     WHERE id = $1 AND empresa = $2
-    RETURNING id, nome, usuario, perfil, ativo, criado_em, atualizado_em
+    RETURNING id, nome, usuario, perfil, ativo, nav_permissoes, criado_em, atualizado_em
   `;
 
   const result = await queryUsuarios(company, sql, params);

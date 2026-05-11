@@ -13,13 +13,11 @@ function validatePasswordStrength(password) {
 }
 
 async function isUsernameUnique(pool, company, username) {
-  try {
-    const res = await pool.query('SELECT 1 FROM usuarios WHERE usuario = $1', [username]);
-    return res.rowCount === 0;
-  } catch (e) {
-    console.error('isUsernameUnique error:', e);
-    return false;
-  }
+  const res = await pool.query(
+    'SELECT 1 FROM usuarios WHERE usuario = $1 AND empresa = $2',
+    [username, company]
+  );
+  return res.rowCount === 0;
 }
 
 async function hashPassword(password) {
