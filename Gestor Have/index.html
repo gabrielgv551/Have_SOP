@@ -16183,10 +16183,18 @@ if (id === 'dfs-kpis') {
           document.getElementById('int-modal-title').textContent = 'Adicionar Tiny ERP';
           document.getElementById('int-modal-sub').textContent   = 'Conecte sua conta do Tiny ERP';
           body.innerHTML = `
-            <div style="margin-bottom:14px">
+            <div style="margin-bottom:12px">
               <label class="int-form-lbl">Nome da conta (ex: Matriz, Filial)</label>
-              <input class="int-form-input" type="text" id="int-f-erp-label" placeholder="Ex: Matriz">
+              <input class="int-form-input" type="text" id="int-f-erp-label" placeholder="Ex: Marcon">
               <div class="int-hint">Identificador desta conexão.</div>
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">Client ID <span style="color:var(--muted);font-size:11px">(gerado no Tiny → Configurações → Aplicativos API)</span></label>
+              <input class="int-form-input" type="text" id="int-f-erp-client-id" placeholder="tiny-api-..." autocomplete="off">
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">Client Secret</label>
+              <input class="int-form-input" type="password" id="int-f-erp-client-secret" placeholder="••••••••" autocomplete="off">
             </div>
             <div style="margin-bottom:4px">
               <label class="int-form-lbl">O que deseja sincronizar?</label>
@@ -16212,15 +16220,27 @@ if (id === 'dfs-kpis') {
         document.getElementById('int-modal-overlay').classList.add('open');
       };
 
-      window.intAddERP = function(){
-        const label = document.getElementById('int-f-erp-label').value.trim();
+      window.intAddERP = async function(){
+        const label    = document.getElementById('int-f-erp-label').value.trim();
+        const clientId = document.getElementById('int-f-erp-client-id').value.trim();
+        const clientSc = document.getElementById('int-f-erp-client-secret').value.trim();
         if(!label){ alert('Informe o nome da conta.'); return; }
+        if(!clientId){ alert('Informe o Client ID gerado no Tiny.'); return; }
+        if(!clientSc){ alert('Informe o Client Secret gerado no Tiny.'); return; }
         const mods = [];
         if(document.getElementById('int-f-mod-vendas')?.checked)  mods.push('vendas');
         if(document.getElementById('int-f-mod-estoque')?.checked) mods.push('estoque');
         if(document.getElementById('int-f-mod-pedidos')?.checked) mods.push('pedidos');
         if(!mods.length){ alert('Selecione ao menos um módulo.'); return; }
         const id = 'tiny_'+label.toLowerCase().replace(/\s+/g,'_');
+        // Salva Client ID e Secret no banco antes de abrir OAuth
+        try {
+          const t = localStorage.getItem('have_token');
+          await fetch(API_BASE+'/data?module=configuracoes', {
+            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},
+            body: JSON.stringify({ tiny_client_id: clientId, tiny_client_secret: clientSc })
+          });
+        } catch(e){ console.warn('Aviso: não foi possível salvar credenciais Tiny', e); }
         // Salva estado para o callback recuperar
         window._tinyPendingAccountId = id;
         window._tinyPendingModules   = mods.join(',');
@@ -16230,10 +16250,9 @@ if (id === 'dfs-kpis') {
           INT_CATALOG.erps.push({ id, label:'Tiny ERP - '+label, logo:TINY_LOGO_IMG, type:'token', chave: id+'_token' });
           intRender();
         }
-        // Abre janela OAuth Tiny
-        const TINY_CLIENT_ID = (window._TINY_CLIENT_ID || '');
+        // Abre janela OAuth com Client ID do cliente
         const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/tiny-callback');
-        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${TINY_CLIENT_ID}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access+profile+roles+application-selector-tiny&state=${id}`;
+        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access&state=${id}`;
         window.open(authUrl, '_blank', 'width=620,height=720');
       };
 
