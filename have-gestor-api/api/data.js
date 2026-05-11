@@ -929,38 +929,58 @@ module.exports = async (req, res) => {
             return { html_size: html.length, scripts_found: scriptSrcs.length, app_scripts: appScripts.slice(0,8), findings };
           } catch(e) { return { error: e.message }; }
         })(),
-        // Testa sessão PHP com access_token como cookie
-        session_tests: await (async () => {
-          const cookieVariants = [
-            `logado=${encodeURIComponent(accessToken)}`,
-            `PHPSESSID=${accessToken.substring(0,32)}; logado=${encodeURIComponent(accessToken)}`,
-            `tiny_session=${encodeURIComponent(accessToken)}`,
-          ];
+        // Tenta ROPC com tiny-webapp para obter token que estabelece sessão PHP
+        webapp_session_test: await (async () => {
+          const tinyEmail    = TINY_CLIENT_ID; // usa como referência apenas
+          const kTokenUrl    = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
+          const kAuthUrl     = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth';
           const results = {};
-          for (const [i, cookieStr] of cookieVariants.entries()) {
-            const r = await fetch('https://erp.olist.com/services/auth.services.php?a=ping', {
-              headers: { Cookie: cookieStr, 'X-Requested-With': 'XMLHttpRequest' }
-            }).catch(e => ({ status: 0, text: async () => e.message }));
-            const text = await r.text();
-            results[`cookie_${i+1}`] = { status: r.status, preview: text.substring(0,120) };
-          }
-          // Tenta Keycloak userinfo para ver o sub/email do usuário
+
+          // 1. Userinfo via access_token atual
           const uiRes = await fetch('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/userinfo', {
             headers: { Authorization: 'Bearer ' + accessToken }
           }).catch(() => null);
-          results.keycloak_userinfo = uiRes ? { status: uiRes.status, body: await uiRes.json().catch(() => null) } : null;
-          // Tenta serviços PHP com cookie Bearer
-          const phpServices = [
-            'margem_contribuicao', 'relatorio', 'exportar', 'dashboard', 'pedido'
-          ];
-          for (const svc of phpServices) {
-            const rs = await fetch(
-              `https://erp.olist.com/services/${svc}.services.php?a=listar&dataInicial=${dataInicial}&dataFinal=${dataFinal}`,
-              { headers: { Cookie: `logado=${encodeURIComponent(accessToken)}; TINYSESSID=test`, 'X-Requested-With': 'XMLHttpRequest' } }
-            ).catch(e => ({ status: 0, text: async () => e.message }));
-            const t = await rs.text();
-            results[`php_${svc}`] = { status: rs.status, preview: t.substring(0,120) };
+          results.keycloak_userinfo = uiRes ? { status: uiRes.status, body: await uiRes.json().catch(()=>null) } : null;
+
+          // 2. Tenta token exchange: troca access_token por token do tiny-webapp
+          const exchRes = await fetch(kTokenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+              client_id: 'tiny-webapp',
+              subject_token: accessToken,
+              subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+              requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+            }).toString(),
+          }).catch(()=>null);
+          if (exchRes) {
+            const exchData = await exchRes.json().catch(()=>{});
+            results.token_exchange = { status: exchRes.status, data: exchData };
+            // Se exchange funcionou, tenta usar o novo token com a sessão PHP
+            if (exchRes.ok && exchData.access_token) {
+              const pingRes = await fetch('https://erp.olist.com/services/auth.services.php?a=ping', {
+                headers: { Authorization: 'Bearer ' + exchData.access_token, 'X-Requested-With': 'XMLHttpRequest' }
+              }).catch(()=>null);
+              if (pingRes) {
+                const pingBody = await pingRes.text();
+                results.php_ping_with_webapp_token = { status: pingRes.status, preview: pingBody.substring(0,200) };
+              }
+            }
           }
+
+          // 3. Tenta usar refresh_token actual para obter token no client tiny-webapp
+          const rfrRes = await fetch(kTokenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'refresh_token',
+              client_id: 'tiny-webapp',
+              refresh_token: refreshToken,
+            }).toString(),
+          }).catch(()=>null);
+          results.webapp_refresh = rfrRes ? { status: rfrRes.status, body: await rfrRes.json().catch(()=>null) } : null;
+
           return results;
         })(),
       });
