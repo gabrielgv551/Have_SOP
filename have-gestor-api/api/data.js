@@ -164,9 +164,15 @@ module.exports = async (req, res) => {
 
   // Módulo público — sem autenticação (só expõe client IDs, nunca secrets)
   if (req.query.module === 'public-config') {
-    return res.json({
-      tiny_client_id: (process.env.TINY_CLIENT_ID || '').trim(),
-    });
+    const company = req.query.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      const r = await pool.query(`SELECT valor FROM configuracoes WHERE empresa=$1 AND chave='tiny_client_id'`, [company]);
+      const dbClientId = r.rows[0]?.valor || '';
+      return res.json({
+        tiny_client_id: dbClientId || (process.env.TINY_CLIENT_ID || '').trim(),
+      });
+    } catch { return res.json({ tiny_client_id: (process.env.TINY_CLIENT_ID || '').trim() }); }
   }
 
   // 1. Verificar token JWT
@@ -510,7 +516,7 @@ module.exports = async (req, res) => {
         const r = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
         const result = {};
         r.rows.forEach(({ chave, valor }) => {
-          const sensitive = chave.endsWith('_token') || chave.endsWith('_refresh') || chave === 'gefinance_password';
+          const sensitive = chave.endsWith('_token') || chave.endsWith('_refresh') || chave.endsWith('_secret') || chave === 'gefinance_password';
           result[chave] = sensitive ? (valor ? '***' : null) : valor;
         });
         result.gefinance_password_set = !!result.gefinance_password;
@@ -639,11 +645,16 @@ module.exports = async (req, res) => {
     const { code, state, modules } = _tBody;
     if (!code || !state) return res.status(400).json({ error: 'code e state são obrigatórios' });
 
-    const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
-    const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
     const TINY_REDIRECT_URI  = 'https://have-gestor-frontend.vercel.app/tiny-callback';
     const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
     const TINY_API_BASE  = 'https://erp.tiny.com.br/public-api/v3';
+    // Credenciais por empresa (DB) com fallback para env vars globais
+    const _company = payload?.company || 'lanzi';
+    const _pool = getPool(_company);
+    const _creds = await _pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave IN ('tiny_client_id','tiny_client_secret')`, [_company]);
+    const _credMap = {}; _creds.rows.forEach(r => { _credMap[r.chave] = r.valor; });
+    const TINY_CLIENT_ID     = (_credMap.tiny_client_id     || process.env.TINY_CLIENT_ID     || '').trim();
+    const TINY_CLIENT_SECRET = (_credMap.tiny_client_secret || process.env.TINY_CLIENT_SECRET || '').trim();
 
     if (!TINY_CLIENT_ID) return res.status(500).json({ error: 'TINY_CLIENT_ID não configurado no servidor' });
 
@@ -804,8 +815,10 @@ module.exports = async (req, res) => {
 
       const TINY_API       = 'https://erp.tiny.com.br/public-api/v3';
       const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
-      const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
-      const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
+      const _dbCreds = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave IN ('tiny_client_id','tiny_client_secret')`, [company]);
+      const _credMap2 = {}; _dbCreds.rows.forEach(r => { _credMap2[r.chave] = r.valor; });
+      const TINY_CLIENT_ID     = (_credMap2.tiny_client_id     || process.env.TINY_CLIENT_ID     || '').trim();
+      const TINY_CLIENT_SECRET = (_credMap2.tiny_client_secret || process.env.TINY_CLIENT_SECRET || '').trim();
 
       // Tenta refresh do token
       let refreshResult = null;
@@ -891,13 +904,11 @@ module.exports = async (req, res) => {
     const pool    = getPool(company);
     const TINY_API       = 'https://erp.tiny.com.br/public-api/v3';
     const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
-    const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
-    const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
 
     try {
       // 1. Buscar credenciais no banco
       const cfgRes = await pool.query(
-        `SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`,
+        `SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND (chave LIKE $2 OR chave IN ('tiny_client_id','tiny_client_secret'))`,
         [company, account + '%']
       );
       const cfg = {};
@@ -907,6 +918,8 @@ module.exports = async (req, res) => {
       const refreshToken = cfg[account + '_refresh'];
       const expAt        = cfg[account + '_exp'];
       const modulos      = (cfg[account + '_modulos'] || 'vendas,estoque').split(',').map(m => m.trim());
+      const TINY_CLIENT_ID     = (cfg.tiny_client_id     || process.env.TINY_CLIENT_ID     || '').trim();
+      const TINY_CLIENT_SECRET = (cfg.tiny_client_secret || process.env.TINY_CLIENT_SECRET || '').trim();
 
       if (!accessToken) return res.status(400).json({ error: `Conta ${account} não autenticada.` });
 
