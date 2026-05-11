@@ -1312,12 +1312,21 @@ module.exports = async (req, res) => {
           if (er.status === 429) { await new Promise(r => setTimeout(r, 5000)); continue; }
           if (!er.ok) { await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET financeiro_ok=TRUE WHERE id_tiny=$1`, [id_tiny]); continue; }
           const ed = await er.json(); const ep = ed.data || ed;
-          const tp=parseFloat(ep.totalProdutos||0)||0, td=parseFloat(ep.totalDesconto||0)||0, tf=parseFloat(ep.totalFrete||0)||0;
-          const ti=parseFloat(ep.totalImpostos||0)||0, to2=parseFloat(ep.totalOutrasDespesas||0)||0, fp=parseFloat(ep.fretePago||ep.transportador?.valorFrete||0)||0;
-          const com=parseFloat(ep.comissao||ep.comissoes||ep.totalComissoes||0)||0;
-          const tax=parseFloat(ep.taxasETarifas||ep.taxas||0)||0;
+          const tp=parseFloat(ep.valorTotalProdutos||ep.totalProdutos||0)||0, td=parseFloat(ep.valorDesconto||ep.totalDesconto||0)||0, tf=parseFloat(ep.valorFrete||ep.totalFrete||0)||0;
+          const ti=0, to2=parseFloat(ep.valorOutrasDespesas||ep.totalOutrasDespesas||0)||0, fp=0, com=0, tax=0;
           let custo=0, qtd=0;
-          if (Array.isArray(ep.itens)) for (const it of ep.itens) { custo+=(parseFloat(it.precoCusto||it.produto?.precoCusto||0)||0)*(parseFloat(it.quantidade||1)||1); qtd+=parseFloat(it.quantidade||1)||1; }
+          // Criar tabela de itens se n\u00e3o existir
+          await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_itens_${safeName} (id BIGSERIAL PRIMARY KEY, id_pedido TEXT NOT NULL, sku TEXT, nome_produto TEXT, quantidade NUMERIC DEFAULT 0, valor_unit NUMERIC DEFAULT 0, desconto_unit NUMERIC DEFAULT 0, preco_custo NUMERIC DEFAULT 0, total_item NUMERIC DEFAULT 0, UNIQUE (id_pedido, sku))`).catch(()=>{});
+          if (Array.isArray(ep.itens)) {
+            for (const it of ep.itens) {
+              const qty=parseFloat(it.quantidade||1)||1, vc=parseFloat(it.precoCusto||it.produto?.precoCusto||0)||0;
+              const sku=it.produto?.sku||it.sku||it.produto?.codigo||String(it.produto?.id||'');
+              const valUnit=parseFloat(it.valorUnitario||it.valor||0)||0;
+              const nome=it.produto?.nome||it.descricao||null;
+              custo+=vc*qty; qtd+=qty;
+              await pool.query(`INSERT INTO bd_pedidos_tiny_itens_${safeName} (id_pedido,sku,nome_produto,quantidade,valor_unit,preco_custo,total_item) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id_pedido,sku) DO UPDATE SET quantidade=EXCLUDED.quantidade,valor_unit=EXCLUDED.valor_unit,preco_custo=EXCLUDED.preco_custo,total_item=EXCLUDED.total_item`, [id_tiny, sku||null, nome, qty, valUnit, vc, qty*valUnit]).catch(()=>{});
+            }
+          }
           const receita=tp-td+tf; const margem=receita-custo-fp-ti-to2-com-tax;
           await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET total_produtos=$2,total_desconto=$3,total_frete=$4,total_impostos=$5,total_outras_despesas=$6,frete_pago=$7,custo_produtos=$8,margem_contribuicao=$9,margem_pct=$10,qtd_itens=$11,comissoes=$12,taxas_tarifas=$13,financeiro_ok=TRUE,atualizado_em=NOW() WHERE id_tiny=$1`,
             [id_tiny,tp,td,tf,ti,to2,fp,custo,margem,receita>0?Math.round(margem/receita*10000)/100:0,qtd,com,tax]);
@@ -1393,6 +1402,20 @@ module.exports = async (req, res) => {
       const delayMs   = parseInt(req.query.delay || '600');
       const TINY_API  = 'https://erp.tiny.com.br/public-api/v3';
 
+      // 0. Criar tabela de itens dos pedidos (se não existir)
+      await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_itens_${safeName} (
+        id            BIGSERIAL PRIMARY KEY,
+        id_pedido     TEXT NOT NULL,
+        sku           TEXT,
+        nome_produto  TEXT,
+        quantidade    NUMERIC DEFAULT 0,
+        valor_unit    NUMERIC DEFAULT 0,
+        desconto_unit NUMERIC DEFAULT 0,
+        preco_custo   NUMERIC DEFAULT 0,
+        total_item    NUMERIC DEFAULT 0,
+        UNIQUE (id_pedido, sku)
+      )`).catch(()=>{});
+
       // 1. Garantir colunas financeiras existem
       const financialCols = [
         ['total_produtos',       'NUMERIC'],
@@ -1457,15 +1480,33 @@ module.exports = async (req, res) => {
           const comissoes     = 0;
           const taxasTarifas  = 0;
 
-          // Itens: quantidade e custo via join estoque
+          // Itens: quantidade, custo e salva na tabela de itens
           let qtdItens = 0;
           const skusQtd = {};
+          const itensList = [];
           if (Array.isArray(p.itens)) {
             for (const item of p.itens) {
-              const qty = parseFloat(item.quantidade || 1) || 1;
+              const qty      = parseFloat(item.quantidade || 1) || 1;
+              const valUnit  = parseFloat(item.valorUnitario || item.valor || 0) || 0;
+              const descUnit = parseFloat(item.desconto || item.valorDesconto || 0) || 0;
+              const custo    = parseFloat(item.precoCusto || item.produto?.precoCusto || 0) || 0;
+              const sku      = item.produto?.sku || item.sku || item.produto?.codigo || String(item.produto?.id || '');
+              const nome     = item.produto?.nome || item.descricao || null;
               qtdItens += qty;
-              const sku = item.produto?.sku || item.produto?.id;
               if (sku) skusQtd[String(sku)] = (skusQtd[String(sku)] || 0) + qty;
+              itensList.push({ sku: sku || null, nome, qty, valUnit, descUnit, custo, total: qty * valUnit });
+            }
+            // Salva/atualiza itens do pedido
+            for (const it of itensList) {
+              await pool.query(`
+                INSERT INTO bd_pedidos_tiny_itens_${safeName}
+                  (id_pedido, sku, nome_produto, quantidade, valor_unit, desconto_unit, preco_custo, total_item)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                ON CONFLICT (id_pedido, sku) DO UPDATE SET
+                  quantidade=EXCLUDED.quantidade, valor_unit=EXCLUDED.valor_unit,
+                  desconto_unit=EXCLUDED.desconto_unit, preco_custo=EXCLUDED.preco_custo,
+                  total_item=EXCLUDED.total_item
+              `, [id, it.sku, it.nome, it.qty, it.valUnit, it.descUnit, it.custo, it.total]).catch(()=>{});
             }
           }
 
