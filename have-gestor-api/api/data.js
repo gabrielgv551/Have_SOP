@@ -901,17 +901,42 @@ module.exports = async (req, res) => {
         refresh: refreshResult,
         db: dbCounts,
         endpoints: {
-          pedidos:           await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
-          // Testa Bearer token com serviços internos do erp.olist.com (PHP)
-          auth_ping:         await tinyFetchFull(`https://erp.olist.com/services/auth.services.php?a=ping`),
-          svc_margem_lista:  await tinyFetchFull(`https://erp.olist.com/services/margem_contribuicao.services.php?a=listar&dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1`),
-          svc_relat_margem:  await tinyFetchFull(`https://erp.olist.com/services/relatorio.services.php?a=margem_contribuicao&dataInicial=${dataInicial}&dataFinal=${dataFinal}`),
-          svc_pedido_margem: await tinyFetchFull(`https://erp.olist.com/services/pedido.services.php?a=margem&dataInicial=${dataInicial}&dataFinal=${dataFinal}`),
-          svc_export_margem: await tinyFetchFull(`https://erp.olist.com/services/exportar.services.php?a=margem_contribuicao&dataInicial=${dataInicial}&dataFinal=${dataFinal}`),
-          // Tenta exchange do Bearer por sessão PHP
-          sso_exchange:      await tinyFetchFull(`https://erp.olist.com/sso/token?access_token=${encodeURIComponent(accessToken)}`),
-          sso_login:         await tinyFetchFull(`https://erp.olist.com/login?token=${encodeURIComponent(accessToken)}`),
+          pedidos: await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
         },
+        // Testa sessão PHP com access_token como cookie
+        session_tests: await (async () => {
+          const cookieVariants = [
+            `logado=${encodeURIComponent(accessToken)}`,
+            `PHPSESSID=${accessToken.substring(0,32)}; logado=${encodeURIComponent(accessToken)}`,
+            `tiny_session=${encodeURIComponent(accessToken)}`,
+          ];
+          const results = {};
+          for (const [i, cookieStr] of cookieVariants.entries()) {
+            const r = await fetch('https://erp.olist.com/services/auth.services.php?a=ping', {
+              headers: { Cookie: cookieStr, 'X-Requested-With': 'XMLHttpRequest' }
+            }).catch(e => ({ status: 0, text: async () => e.message }));
+            const text = await r.text();
+            results[`cookie_${i+1}`] = { status: r.status, preview: text.substring(0,120) };
+          }
+          // Tenta Keycloak userinfo para ver o sub/email do usuário
+          const uiRes = await fetch('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/userinfo', {
+            headers: { Authorization: 'Bearer ' + accessToken }
+          }).catch(() => null);
+          results.keycloak_userinfo = uiRes ? { status: uiRes.status, body: await uiRes.json().catch(() => null) } : null;
+          // Tenta serviços PHP com cookie Bearer
+          const phpServices = [
+            'margem_contribuicao', 'relatorio', 'exportar', 'dashboard', 'pedido'
+          ];
+          for (const svc of phpServices) {
+            const rs = await fetch(
+              `https://erp.olist.com/services/${svc}.services.php?a=listar&dataInicial=${dataInicial}&dataFinal=${dataFinal}`,
+              { headers: { Cookie: `logado=${encodeURIComponent(accessToken)}; TINYSESSID=test`, 'X-Requested-With': 'XMLHttpRequest' } }
+            ).catch(e => ({ status: 0, text: async () => e.message }));
+            const t = await rs.text();
+            results[`php_${svc}`] = { status: rs.status, preview: t.substring(0,120) };
+          }
+          return results;
+        })(),
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
