@@ -979,17 +979,8 @@ module.exports = async (req, res) => {
         const days        = daysParam > 0 ? daysParam : (lastSync ? 2 : 30);
         const dataInicial = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
         const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
-        let cnt = 0;
-        for (const p of pedidos) {
-          await pool.query(`
-            INSERT INTO bd_pedidos_tiny_${safeName}
-              (id_tiny,numero,numero_ecommerce,data_pedido,situacao,nome_cliente,cpf_cnpj,uf,
-               total_pedido,canal_venda,transportadora,codigo_rastreamento,atualizado_em)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
-            ON CONFLICT (id_tiny) DO UPDATE SET
-              situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido,
-              codigo_rastreamento=EXCLUDED.codigo_rastreamento, atualizado_em=NOW()
-          `, [
+        if (pedidos.length > 0) {
+          const rows = pedidos.map(p => [
             String(p.id||''),
             p.numeroPedido ? String(p.numeroPedido) : null,
             p.ecommerce?.numeroPedidoEcommerce||null,
@@ -1003,9 +994,26 @@ module.exports = async (req, res) => {
             p.transportador?.nome||null,
             p.transportador?.codigoRastreamento||null,
           ]);
-          cnt++;
+          await pool.query(`
+            INSERT INTO bd_pedidos_tiny_${safeName}
+              (id_tiny,numero,numero_ecommerce,data_pedido,situacao,nome_cliente,cpf_cnpj,uf,
+               total_pedido,canal_venda,transportadora,codigo_rastreamento,atualizado_em)
+            SELECT * FROM UNNEST(
+              $1::text[],$2::text[],$3::text[],$4::date[],$5::int[],$6::text[],$7::text[],$8::text[],
+              $9::numeric[],$10::text[],$11::text[],$12::text[],
+              (SELECT array_agg(NOW()) FROM generate_series(1,$13))
+            )
+            ON CONFLICT (id_tiny) DO UPDATE SET
+              situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido,
+              codigo_rastreamento=EXCLUDED.codigo_rastreamento, atualizado_em=NOW()
+          `, [
+            rows.map(r=>r[0]), rows.map(r=>r[1]), rows.map(r=>r[2]), rows.map(r=>r[3]),
+            rows.map(r=>r[4]), rows.map(r=>r[5]), rows.map(r=>r[6]), rows.map(r=>r[7]),
+            rows.map(r=>r[8]), rows.map(r=>r[9]), rows.map(r=>r[10]), rows.map(r=>r[11]),
+            rows.length,
+          ]);
         }
-        results.vendas = cnt;
+        results.vendas = pedidos.length;
       }
 
       // 4. Sincronizar estoque/produtos
@@ -1019,24 +1027,32 @@ module.exports = async (req, res) => {
           marca TEXT, categoria TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
         const produtos = await tinyPages('/produtos');
-        let cnt = 0;
-        for (const p of produtos) {
-          await pool.query(`
-            INSERT INTO bd_estoque_tiny_${safeName} (id_tiny,sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,atualizado_em)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())
-            ON CONFLICT (id_tiny) DO UPDATE SET
-              nome=EXCLUDED.nome, estoque_atual=EXCLUDED.estoque_atual,
-              preco_venda=EXCLUDED.preco_venda, atualizado_em=NOW()
-          `, [
+        if (produtos.length > 0) {
+          const rows = produtos.map(p => [
             String(p.id||p.codigo||''), p.codigo||null, p.nome||null, p.unidade||null,
             parseFloat(p.saldo?.total??p.estoqueAtual??0)||0,
             parseFloat(p.saldo?.minimo??p.estoqueMinimo??0)||0,
             parseFloat(p.precoCusto||0)||0, parseFloat(p.preco||0)||0,
             p.marca||null, p.categoria?.nome||p.categoria||null,
           ]);
-          cnt++;
+          await pool.query(`
+            INSERT INTO bd_estoque_tiny_${safeName} (id_tiny,sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,atualizado_em)
+            SELECT * FROM UNNEST(
+              $1::text[],$2::text[],$3::text[],$4::text[],
+              $5::numeric[],$6::numeric[],$7::numeric[],$8::numeric[],
+              $9::text[],$10::text[],
+              (SELECT array_agg(NOW()) FROM generate_series(1,$11))
+            )
+            ON CONFLICT (id_tiny) DO UPDATE SET
+              nome=EXCLUDED.nome, estoque_atual=EXCLUDED.estoque_atual,
+              preco_venda=EXCLUDED.preco_venda, atualizado_em=NOW()
+          `, [
+            rows.map(r=>r[0]), rows.map(r=>r[1]), rows.map(r=>r[2]), rows.map(r=>r[3]),
+            rows.map(r=>r[4]), rows.map(r=>r[5]), rows.map(r=>r[6]), rows.map(r=>r[7]),
+            rows.map(r=>r[8]), rows.map(r=>r[9]), rows.length,
+          ]);
         }
-        results.estoque = cnt;
+        results.estoque = produtos.length;
       }
 
       // 5. Atualizar timestamp de sync
