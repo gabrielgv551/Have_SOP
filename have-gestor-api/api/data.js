@@ -1124,6 +1124,120 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
+  // ── tiny-enrich: enriquece pedidos com dados financeiros do endpoint de detalhe ──
+  if (req.query.module === 'tiny-enrich') {
+    try {
+      const account = req.query.account;
+      if (!account) return res.status(400).json({ error: 'account obrigatório' });
+
+      const cfg = {};
+      const cfgRows = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
+      for (const r of cfgRows.rows) cfg[r.chave] = r.valor;
+
+      // Obter / renovar token
+      let accessToken = cfg[account + '_token'];
+      const exp = cfg[account + '_exp'] ? new Date(cfg[account + '_exp']) : null;
+      if (!accessToken) return res.status(401).json({ error: 'Conta não autenticada. Conecte via OAuth primeiro.' });
+      if (exp && new Date() >= exp) {
+        const refreshToken = cfg[account + '_refresh'];
+        const clientId     = cfg['tiny_client_id']     || process.env.TINY_CLIENT_ID;
+        const clientSecret = cfg['tiny_client_secret'] || process.env.TINY_CLIENT_SECRET;
+        if (refreshToken && clientId && clientSecret) {
+          const tr = await fetch('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type:'refresh_token', client_id:clientId, client_secret:clientSecret, refresh_token:refreshToken }),
+          });
+          if (tr.ok) {
+            const nt = await tr.json();
+            accessToken = nt.access_token;
+            const newExp = new Date(Date.now() + (nt.expires_in || 300) * 1000).toISOString();
+            for (const [k, v] of [[account+'_token', accessToken],[account+'_refresh', nt.refresh_token||refreshToken],[account+'_exp', newExp]])
+              await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+          }
+        }
+      }
+
+      const safeName  = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+      const batchSize = parseInt(req.query.batch || '50');
+      const TINY_API  = 'https://erp.tiny.com.br/public-api/v3';
+
+      // 1. Garantir colunas financeiras existem
+      const financialCols = [
+        ['total_produtos',       'NUMERIC'],
+        ['total_desconto',       'NUMERIC'],
+        ['total_frete',          'NUMERIC'],
+        ['total_impostos',       'NUMERIC'],
+        ['total_outras_despesas','NUMERIC'],
+        ['frete_pago',           'NUMERIC'],
+        ['custo_produtos',       'NUMERIC'],
+        ['margem_contribuicao',  'NUMERIC'],
+        ['margem_pct',           'NUMERIC'],
+        ['qtd_itens',            'INT'],
+        ['financeiro_ok',        'BOOLEAN DEFAULT FALSE'],
+      ];
+      for (const [col, type] of financialCols)
+        await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
+
+      // 2. Buscar pedidos sem dados financeiros ainda
+      const pendentes = await pool.query(
+        `SELECT id_tiny FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE ORDER BY data_criacao DESC LIMIT $1`,
+        [batchSize]
+      );
+      const ids = pendentes.rows.map(r => r.id_tiny);
+      if (ids.length === 0) return res.json({ ok: true, account, enriched: 0, pending: 0, message: 'Todos os pedidos já enriquecidos!' });
+
+      // 3. Buscar detalhes e enriquecer
+      let enriched = 0;
+      for (const id of ids) {
+        try {
+          const r = await fetch(`${TINY_API}/pedidos/${id}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+          if (!r.ok) { await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET financeiro_ok=TRUE WHERE id_tiny=$1`, [id]); continue; }
+          const d = await r.json();
+          const p = d.data || d;
+
+          const totalProdutos  = parseFloat(p.totalProdutos   || p.total_produtos   || 0) || 0;
+          const totalDesconto  = parseFloat(p.totalDesconto   || p.total_desconto   || 0) || 0;
+          const totalFrete     = parseFloat(p.totalFrete      || p.total_frete      || 0) || 0;
+          const totalImpostos  = parseFloat(p.totalImpostos   || p.total_impostos   || 0) || 0;
+          const totalOutras    = parseFloat(p.totalOutrasDespesas || p.total_outras  || 0) || 0;
+          const fretePago      = parseFloat(p.fretePago       || p.freteValorFrete  || p.transportador?.valorFrete || 0) || 0;
+
+          // Custo dos produtos (soma dos itens)
+          let custoProdutos = 0;
+          let qtdItens = 0;
+          if (Array.isArray(p.itens)) {
+            for (const item of p.itens) {
+              const custo = parseFloat(item.precoCusto || item.produto?.precoCusto || 0) || 0;
+              const qty   = parseFloat(item.quantidade || 1) || 1;
+              custoProdutos += custo * qty;
+              qtdItens      += qty;
+            }
+          }
+
+          // Margem de Contribuição = Receita - CMV - Frete Pago - Impostos
+          const receita = totalProdutos - totalDesconto + totalFrete;
+          const margem  = receita - custoProdutos - fretePago - totalImpostos - totalOutras;
+          const margemPct = receita > 0 ? Math.round((margem / receita) * 10000) / 100 : 0;
+
+          await pool.query(`
+            UPDATE bd_pedidos_tiny_${safeName} SET
+              total_produtos=$2, total_desconto=$3, total_frete=$4, total_impostos=$5,
+              total_outras_despesas=$6, frete_pago=$7, custo_produtos=$8,
+              margem_contribuicao=$9, margem_pct=$10, qtd_itens=$11,
+              financeiro_ok=TRUE, atualizado_em=NOW()
+            WHERE id_tiny=$1
+          `, [id, totalProdutos, totalDesconto, totalFrete, totalImpostos, totalOutras, fretePago, custoProdutos, margem, margemPct, qtdItens]);
+          enriched++;
+        } catch { /* pula este pedido */ }
+      }
+
+      // Contar pendentes restantes
+      const restantes = await pool.query(`SELECT COUNT(*) AS c FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE`);
+      return res.json({ ok: true, account, enriched, pending: parseInt(restantes.rows[0].c) });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
   // Módulo Vendas
   if (req.query.module === 'vendas') {
     const company = payload.company || 'lanzi';
