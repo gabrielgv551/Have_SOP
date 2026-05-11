@@ -16233,7 +16233,7 @@ if (id === 'dfs-kpis') {
         // Abre janela OAuth Tiny
         const TINY_CLIENT_ID = (window._TINY_CLIENT_ID || '');
         const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/tiny-callback');
-        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${TINY_CLIENT_ID}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access+pedidos+produtos+estoque+contatos+financeiro+fiscal+transportadoras+contas&state=${id}`;
+        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${TINY_CLIENT_ID}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access+profile+roles+application-selector-tiny&state=${id}`;
         window.open(authUrl, '_blank', 'width=620,height=720');
       };
 
