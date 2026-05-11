@@ -901,12 +901,10 @@ module.exports = async (req, res) => {
         refresh: refreshResult,
         db: dbCounts,
         endpoints: {
-          pedidos:  await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
-          produtos: await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
-          contatos: await tinyFetchFull(`${TINY_API}/contatos?pagina=1&limite=1`),
-          estoque:  await tinyFetchFull(`${TINY_API}/estoque/posicao?pagina=1&limite=1`),
-          conta:    await tinyFetchFull(`${TINY_API}/conta`),
-          info:     await tinyFetchFull(`${TINY_API}/informacoes-conta`),
+          pedidos:       await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
+          pedido_detalhe: req.query.pedido_id ? await tinyFetchFull(`${TINY_API}/pedidos/${req.query.pedido_id}`) : '(passe ?pedido_id=xxx)',
+          produtos:      await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
+          estoque:       await tinyFetchFull(`${TINY_API}/estoque/posicao?pagina=1&limite=1`),
         },
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
