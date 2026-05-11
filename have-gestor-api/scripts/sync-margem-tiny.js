@@ -125,97 +125,152 @@ async function getSessionFromBrowser() {
   return session;
 }
 
-async function fetchMargem(session, fromISO, toISO) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json, text/plain, */*',
-    'Cookie': session.cookieStr,
-    'Origin': 'https://erp.olist.com',
-    'Referer': 'https://erp.olist.com/margem_contribuicao',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124',
-    'X-CSRF-TOKEN': session.csrfToken,
-    'X-Requested-With': 'XMLHttpRequest',
-  };
+async function fetchMargemViaBrowser(fromISO, toISO) {
+  // Usa Playwright para fazer requests dentro da sessão ativa do browser
+  // Isso evita o 403 que acontece ao tentar reusar cookies no Node.js fora do browser
+  console.log('[sync-margem] Abrindo browser para buscar dados da API...');
+  const browser = await chromium.launch({
+    headless: false,
+    args: [
+      '--disable-blink-features=AutomationControlled',
+      '--start-maximized',
+    ],
+  });
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    locale: 'pt-BR',
+    extraHTTPHeaders: { 'Accept-Language': 'pt-BR,pt;q=0.9' },
+  });
+  // Bypass navigator.webdriver detection
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+  });
+  const page = await context.newPage();
 
-  let page = 1, allItems = [], totalPages = 1;
-  do {
-    const body = JSON.stringify({
-      page, perPage: PER_PAGE, sort: 'date', order: 'desc',
-      filters: {
-        period: { start: fromISO, end: toISO },
-        search: '', channels: [], products: [], categories: [], tags: [],
-      },
-    });
-    const r = await fetch(OLIST_API, { method: 'POST', headers, body });
-    if (!r.ok) {
-      const txt = await r.text();
-      throw new Error(`Olist API ${r.status}: ${txt.substring(0, 200)}`);
-    }
-    const json = await r.json();
-    const items = json.data || json.items || json.itens || [];
-    allItems.push(...items);
-    if (page === 1) {
-      const total = json.meta?.total || json.pagination?.total || json.total || items.length;
-      totalPages  = Math.ceil(total / PER_PAGE);
-      console.log(`[sync-margem] Total de registros: ${total} (${totalPages} páginas)`);
-      if (items.length > 0) console.log('[sync-margem] Campos da API:', Object.keys(items[0]).join(', '));
-    }
-    console.log(`[sync-margem] Página ${page}/${totalPages}: ${items.length} itens`);
-    page++;
-    if (items.length < PER_PAGE) break;
-    await new Promise(r => setTimeout(r, 300));
-  } while (page <= totalPages);
+  // Intercepta efetuarLogin para logar o body E adicionar forcarLogin caso exista
+  await page.route('**/efetuarLogin**', async route => {
+    const req = route.request();
+    const origBody = req.postData() || '';
+    console.log('[sync-margem] efetuarLogin body original:', origBody.substring(0, 400));
+    // Tenta adicionar forçar login (campo comum em ERPs PHP)
+    let modifiedBody = origBody;
+    try {
+      if (origBody.startsWith('{')) {
+        const parsed = JSON.parse(origBody);
+        parsed.forcarLogin = true;
+        parsed.forceLogin  = true;
+        modifiedBody = JSON.stringify(parsed);
+      } else if (origBody.includes('=')) {
+        modifiedBody = origBody + '&forcarLogin=true&forceLogin=true';
+      }
+    } catch {}
+    await route.continue({ postData: modifiedBody });
+  });
 
-  return allItems;
+  // Registra listener ANTES de qualquer goto — efetuarLogin dispara durante/após redirect Keycloak
+  const loginLegacyPromise = page.waitForResponse(
+    r => r.url().includes('efetuarLogin') || r.url().includes('autenticar'),
+    { timeout: 60000 }
+  ).catch(() => null);
+
+  // Login
+  await page.goto('https://erp.olist.com', { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await page.waitForTimeout(2000);
+  if (page.url().includes('accounts.tiny') || page.url().includes('login')) {
+    console.log('[sync-margem] Fazendo login no Keycloak...');
+    await page.fill('#username, input[name="username"]', TINY_EMAIL);
+    await page.fill('#password, input[name="password"]', TINY_PASSWORD);
+    await page.click('#kc-login, button[type="submit"]');
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 40000 });
+  }
+  console.log(`[sync-margem] Keycloak OK. URL: ${page.url()}`);
+
+  // Aguarda o SPA chamar efetuarLogin (sessão PHP legacy) — OBRIGATÓRIO antes de navegar
+  console.log('[sync-margem] Aguardando sessão PHP (efetuarLogin)...');
+  const loginRes = await loginLegacyPromise;
+  if (loginRes) {
+    const loginBody = await loginRes.text().catch(() => '');
+    console.log(`[sync-margem] efetuarLogin status ${loginRes.status()} body: ${loginBody.substring(0, 200)}`);
+  } else {
+    console.log('[sync-margem] efetuarLogin não detectado — continuando');
+  }
+  await page.waitForTimeout(2000);
+
+  // DIAGNÓSTICO: captura TODOS os requests do erp.olist.com para descobrir o endpoint real
+  const networkLog = [];
+  const capturedResponses = [];
+
+  page.on('request', req => {
+    if (req.url().includes('erp.olist.com') || req.url().includes('erp.tiny.com.br')) {
+      networkLog.push(`REQ [${req.resourceType()}] ${req.method()} ${req.url().split('?')[0]}`);
+    }
+  });
+  page.on('response', async resp => {
+    const url = resp.url();
+    if (!url.includes('erp.olist.com') && !url.includes('erp.tiny.com.br')) return;
+    const ct = resp.headers()['content-type'] || '';
+    networkLog.push(`RES ${resp.status()} ${url.split('?')[0]}`);
+    if (ct.includes('json') && (url.includes('/api/') || url.includes('margem') || url.includes('margin') || url.includes('contribuicao'))) {
+      try {
+        const json  = await resp.json();
+        const items = json.data || json.items || json.itens || json.resultado || [];
+        capturedResponses.push({ url, json, itemCount: items.length });
+        console.log(`[sync-margem] JSON capturado de ${url.split('?')[0]}: ${items.length} itens`);
+        if (items.length > 0) console.log('[sync-margem] Campos:', Object.keys(items[0]).join(', '));
+      } catch {}
+    }
+  });
+
+  // Navega para margem usando window.location para ficar no mesmo contexto de sessão
+  console.log('[sync-margem] Navegando para margem_contribuicao (in-context)...');
+  await page.evaluate(() => { window.location.href = 'https://erp.olist.com/margem_contribuicao#/list'; });
+  await page.waitForTimeout(10000); // SPA precisa de tempo para montar o componente lazy
+
+  console.log(`[sync-margem] URL atual: ${page.url()}`);
+  console.log(`[sync-margem] Título: ${await page.title()}`);
+
+  // Diagnóstico: print HTML para ver o que foi renderizado
+  const htmlSnippet = await page.content().catch(() => '');
+  console.log('[sync-margem] HTML (primeiros 500 chars):', htmlSnippet.substring(0, 500));
+
+  await page.screenshot({ path: 'margem-debug.png' });
+  console.log('[sync-margem] === Requests capturados para erp.olist.com ===');
+  networkLog.slice(-40).forEach(l => console.log(' ', l));
+
+  const allItems = capturedResponses.flatMap(r => r.json.data || r.json.items || r.json.itens || r.json.resultado || []);
+  const total    = capturedResponses[0]?.json?.meta?.total || capturedResponses[0]?.json?.total || allItems.length;
+  console.log(`[sync-margem] Total: ${allItems.length} / ${total}`);
+
+  const cookies    = await context.cookies('https://erp.olist.com');
+  const cookieStr  = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+  const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN' || c.name.toLowerCase().includes('csrf'));
+  const csrfToken  = xsrfCookie ? decodeURIComponent(xsrfCookie.value) : '';
+
+  await browser.close();
+  return { allItems, csrfToken, cookieStr };
 }
 
 (async () => {
   console.log(`[sync-margem] Conta: ${TINY_ACCOUNT} | Período: ${MARGEM_DAYS} dias`);
 
-  // Tenta reusar sessão salva (válida por 8h)
-  let session = null;
-  if (fs.existsSync(SESSION_FILE)) {
-    try {
-      const saved = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
-      if (Date.now() - saved.savedAt < 8 * 3600 * 1000) {
-        session = saved;
-        console.log('[sync-margem] Reutilizando sessão salva.');
-      }
-    } catch {}
-  }
-  if (!session) session = await getSessionFromBrowser();
-
-  // Busca dados da API interna
   const fromISO = isoDate(MARGEM_DAYS, false);
   const toISO   = isoDate(0, true);
-  console.log(`[sync-margem] Buscando ${fromISO.split('T')[0]} → ${toISO.split('T')[0]}`);
+  console.log(`[sync-margem] Período: ${fromISO.split('T')[0]} → ${toISO.split('T')[0]}`);
 
-  let items;
-  try {
-    items = await fetchMargem(session, fromISO, toISO);
-  } catch (e) {
-    console.log(`[sync-margem] Erro com sessão salva (${e.message}). Renovando login...`);
-    fs.unlinkSync(SESSION_FILE);
-    session = await getSessionFromBrowser();
-    items = await fetchMargem(session, fromISO, toISO);
-  }
+  // Busca dados via browser (context.request usa cookies da sessão automaticamente)
+  const { allItems, cookieStr, csrfToken } = await fetchMargemViaBrowser(fromISO, toISO);
 
-  if (items.length === 0) {
+  if (allItems.length === 0) {
     console.log('[sync-margem] ⚠️  Nenhum item retornado. Verifique margem-debug.png');
     return;
   }
 
-  console.log(`[sync-margem] ${items.length} registros obtidos. Enviando para Gestor...`);
+  console.log(`[sync-margem] ${allItems.length} registros. Enviando para Gestor...`);
 
-  // Envia para o módulo tiny-margem do Gestor (que faz o upsert no banco)
+  // Salva credenciais + chama tiny-margem para upsert no banco
   const result = await gestorRequest('POST',
     `module=tiny-margem&account=${TINY_ACCOUNT}`,
-    {
-      sessionCookie: session.cookieStr,
-      csrfToken: session.csrfToken,
-      from: fromISO.split('T')[0],
-      to: toISO.split('T')[0],
-    }
+    { sessionCookie: cookieStr, csrfToken, from: fromISO.split('T')[0], to: toISO.split('T')[0] }
   );
   console.log('[sync-margem] ✅ Resultado:', JSON.stringify(result, null, 2));
 })().catch(err => {

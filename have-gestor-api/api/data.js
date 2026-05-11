@@ -1594,16 +1594,25 @@ module.exports = async (req, res) => {
       for (const [col, type] of [['comissoes','NUMERIC'],['taxas_tarifas','NUMERIC'],['total_impostos','NUMERIC'],['margem_contribuicao','NUMERIC'],['margem_pct','NUMERIC'],['custo_produtos','NUMERIC'],['total_produtos','NUMERIC'],['total_desconto','NUMERIC'],['total_frete','NUMERIC'],['financeiro_ok','BOOLEAN DEFAULT FALSE']])
         await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
 
-      // Headers da API interna do Olist
+      // Busca Bearer token do Keycloak armazenado (mesma conta usada no tiny-sync)
+      const tokenRow = await pool.query(
+        `SELECT valor FROM configuracoes WHERE empresa=$1 AND chave=$2`,
+        [company, account + '_token']
+      ).catch(() => ({ rows: [] }));
+      const bearerToken = tokenRow.rows[0]?.valor || '';
+
+      // Estratégia 1: Authorization Bearer (Keycloak token — sem necessidade de sessão PHP)
+      // Estratégia 2: Cookie de sessão + CSRF (fallback)
       const olistHeaders = {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/plain, */*',
-        'Cookie': sessionCookie,
         'Origin': 'https://erp.olist.com',
         'Referer': 'https://erp.olist.com/margem_contribuicao',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124',
-        'X-CSRF-TOKEN': csrfToken,
         'X-Requested-With': 'XMLHttpRequest',
+        ...(bearerToken ? { 'Authorization': 'Bearer ' + bearerToken } : {}),
+        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
+        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
       };
 
       // Converte data local BR (DD/MM/YYYY ou YYYY-MM-DD) para ISO UTC
