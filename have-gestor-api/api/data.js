@@ -943,19 +943,21 @@ module.exports = async (req, res) => {
       const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
       const results  = {};
 
-      // Helper: fetch paginado da Tiny API v3
+      // Helper: fetch paginado da Tiny API v3 (usa limit/offset)
       async function tinyPages(endpoint, params = {}) {
         const items = [];
-        let pagina  = 1;
+        let offset = 0;
+        const limit = 100;
         while (true) {
-          const qs = new URLSearchParams({ ...params, pagina: String(pagina), limite: '100' }).toString();
+          const qs = new URLSearchParams({ ...params, limit: String(limit), offset: String(offset) }).toString();
           const r  = await fetch(`${TINY_API}${endpoint}?${qs}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
-          if (!r.ok) { console.error('[tiny-sync] ' + endpoint + ' p' + pagina + ' → ' + r.status); break; }
+          if (!r.ok) { console.error('[tiny-sync] ' + endpoint + ' offset' + offset + ' → ' + r.status); break; }
           const d   = await r.json();
           const pg  = d.itens || d.data || [];
           items.push(...pg);
-          if (pagina >= (d.totalPaginas || 1) || pg.length === 0) break;
-          pagina++;
+          const total = d.paginacao?.total ?? d.total ?? 0;
+          offset += pg.length;
+          if (pg.length === 0 || offset >= total) break;
         }
         return items;
       }
@@ -966,11 +968,10 @@ module.exports = async (req, res) => {
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY,
           numero TEXT, numero_ecommerce TEXT, data_pedido DATE,
-          situacao TEXT, nome_cliente TEXT, cpf_cnpj TEXT, uf TEXT,
-          valor_produtos NUMERIC DEFAULT 0, valor_frete NUMERIC DEFAULT 0,
-          valor_desconto NUMERIC DEFAULT 0, total_pedido NUMERIC DEFAULT 0,
-          forma_pagamento TEXT, transportadora TEXT, codigo_rastreamento TEXT,
-          canal_venda TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
+          situacao INT, nome_cliente TEXT, cpf_cnpj TEXT, uf TEXT,
+          total_pedido NUMERIC DEFAULT 0, canal_venda TEXT,
+          transportadora TEXT, codigo_rastreamento TEXT,
+          atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
         const dataFinal   = new Date().toISOString().split('T')[0];
         const dataInicial = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
@@ -980,23 +981,24 @@ module.exports = async (req, res) => {
           await pool.query(`
             INSERT INTO bd_pedidos_tiny_${safeName}
               (id_tiny,numero,numero_ecommerce,data_pedido,situacao,nome_cliente,cpf_cnpj,uf,
-               valor_produtos,valor_frete,valor_desconto,total_pedido,forma_pagamento,
-               transportadora,codigo_rastreamento,canal_venda,atualizado_em)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())
+               total_pedido,canal_venda,transportadora,codigo_rastreamento,atualizado_em)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
             ON CONFLICT (id_tiny) DO UPDATE SET
-              situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido, atualizado_em=NOW()
+              situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido,
+              codigo_rastreamento=EXCLUDED.codigo_rastreamento, atualizado_em=NOW()
           `, [
-            String(p.id||p.numero||''), p.numero||null, p.numeroEcommerce||p.numero_ecommerce||null,
+            String(p.id||''),
+            p.numeroPedido ? String(p.numeroPedido) : null,
+            p.ecommerce?.numeroPedidoEcommerce||null,
             p.dataCriacao ? p.dataCriacao.split('T')[0] : null,
-            p.situacao?.descricao||p.situacao||null,
-            p.contato?.nome||p.cliente?.nome||null, p.contato?.cpfCnpj||p.cliente?.cpf_cnpj||null,
-            p.contato?.endereco?.uf||p.cliente?.uf||null,
-            parseFloat(p.totalProdutos||p.total_produtos||0)||0,
-            parseFloat(p.totalFrete||p.valor_frete||0)||0,
-            parseFloat(p.totalDesconto||p.valor_desconto||0)||0,
-            parseFloat(p.total||p.valor_total||0)||0,
-            p.formaPagamento?.nome||null, p.transportador?.nome||null,
-            p.codigoRastreamento||null, p.canalVenda||null,
+            typeof p.situacao === 'number' ? p.situacao : null,
+            p.cliente?.nome||null,
+            p.cliente?.cpfCnpj||null,
+            p.cliente?.endereco?.uf||null,
+            parseFloat(p.valor||0)||0,
+            p.ecommerce?.nome||null,
+            p.transportador?.nome||null,
+            p.transportador?.codigoRastreamento||null,
           ]);
           cnt++;
         }
@@ -1020,7 +1022,7 @@ module.exports = async (req, res) => {
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())
             ON CONFLICT (id_tiny) DO UPDATE SET
               nome=EXCLUDED.nome, estoque_atual=EXCLUDED.estoque_atual,
-              estoque_minimo=EXCLUDED.estoque_minimo, preco_venda=EXCLUDED.preco_venda, atualizado_em=NOW()
+              preco_venda=EXCLUDED.preco_venda, atualizado_em=NOW()
           `, [
             String(p.id||p.codigo||''), p.codigo||null, p.nome||null, p.unidade||null,
             parseFloat(p.saldo?.total??p.estoqueAtual??0)||0,
