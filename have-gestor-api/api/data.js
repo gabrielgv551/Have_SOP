@@ -1192,10 +1192,13 @@ module.exports = async (req, res) => {
 
       // 3. Buscar detalhes e enriquecer
       let enriched = 0;
+      let rateLimited = 0;
       for (const id of ids) {
         try {
           const r = await fetch(`${TINY_API}/pedidos/${id}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+          if (r.status === 429) { rateLimited++; if (rateLimited >= 3) break; await new Promise(res => setTimeout(res, 2000)); continue; }
           if (!r.ok) { await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET financeiro_ok=TRUE WHERE id_tiny=$1`, [id]); continue; }
+          rateLimited = 0;
           const d = await r.json();
           const p = d.data || d;
 
@@ -1237,7 +1240,7 @@ module.exports = async (req, res) => {
 
       // Contar pendentes restantes
       const restantes = await pool.query(`SELECT COUNT(*) AS c FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE`);
-      return res.json({ ok: true, account, enriched, pending: parseInt(restantes.rows[0].c) });
+      return res.json({ ok: true, account, enriched, rate_limited: rateLimited, pending: parseInt(restantes.rows[0].c) });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
