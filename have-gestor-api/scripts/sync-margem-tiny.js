@@ -1,27 +1,35 @@
 #!/usr/bin/env node
 /**
  * sync-margem-tiny.js
- * Exporta automaticamente a Margem de Contribuição do Tiny ERP
- * e envia para a Have Gestor API.
+ * Sincroniza a Margem de Contribuição do Olist ERP para a Have Gestor API.
+ *
+ * Estratégia:
+ *   1. Playwright faz login no Tiny/Olist via Keycloak (email + senha)
+ *   2. Extrai cookies de sessão + X-CSRF-TOKEN da página
+ *   3. Chama: POST https://erp.olist.com/api/v1/contribution-margin/list
+ *   4. Pagina todos os resultados e envia para Have Gestor (módulo tiny-margem)
+ *   5. Salva cookie para reuso nas próximas chamadas via tiny-margem (GET)
  *
  * Uso:
  *   node sync-margem-tiny.js
  *
- * Configuração (variáveis de ambiente ou editar as constantes abaixo):
+ * Variáveis de ambiente:
  *   TINY_EMAIL=seuemail@gmail.com
  *   TINY_PASSWORD=suasenha
  *   GESTOR_URL=https://have-gestor-api.vercel.app
  *   GESTOR_TOKEN=seuJWTtoken
  *   TINY_ACCOUNT=tiny_marcon
- *   MARGEM_DAYS=90   (quantos dias de margem exportar, padrão: 90)
+ *   MARGEM_DAYS=90
  *
- * Instalar dependências (uma vez):
+ * Instalar (uma vez):
  *   npm install playwright
  *   npx playwright install chromium
  */
 
 const { chromium } = require('playwright');
 const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
 
 // ── Configuração ──────────────────────────────────────────────────────────────
 const TINY_EMAIL    = process.env.TINY_EMAIL    || 'SEU_EMAIL_TINY';
@@ -30,209 +38,187 @@ const GESTOR_URL    = process.env.GESTOR_URL    || 'https://have-gestor-api.verc
 const GESTOR_TOKEN  = process.env.GESTOR_TOKEN  || 'SEU_JWT_TOKEN';
 const TINY_ACCOUNT  = process.env.TINY_ACCOUNT  || 'tiny_marcon';
 const MARGEM_DAYS   = parseInt(process.env.MARGEM_DAYS || '90');
+const SESSION_FILE  = path.join(__dirname, '.olist-session.json');
+const OLIST_API     = 'https://erp.olist.com/api/v1/contribution-margin/list';
+const PER_PAGE      = 200;
 // ─────────────────────────────────────────────────────────────────────────────
 
-function dateStr(daysBack) {
+function isoDate(daysBack, endOfDay = false) {
   const d = new Date();
   d.setDate(d.getDate() - daysBack);
-  return d.toISOString().slice(0, 10).replace(/-/g, '/');
+  if (endOfDay) d.setUTCHours(2, 59, 59, 999);
+  else d.setUTCHours(3, 0, 0, 0);
+  return d.toISOString();
 }
 
-async function postToGestor(csvText) {
+function gestorRequest(method, qs, bodyObj) {
   return new Promise((resolve, reject) => {
-    const url = new URL(`/api/data?module=import-margem&account=${TINY_ACCOUNT}`, GESTOR_URL);
-    const body = Buffer.from(csvText, 'utf8');
-    const options = {
+    const url  = new URL(`/api/data?${qs}`, GESTOR_URL);
+    const body = bodyObj ? Buffer.from(JSON.stringify(bodyObj), 'utf8') : null;
+    const req  = https.request({
       hostname: url.hostname,
       path: url.pathname + url.search,
-      method: 'POST',
+      method,
       headers: {
         'Authorization': 'Bearer ' + GESTOR_TOKEN,
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Length': body.length,
+        'Content-Type': 'application/json',
+        ...(body ? { 'Content-Length': body.length } : {}),
       },
-    };
-    const req = https.request(options, res => {
+    }, res => {
       let data = '';
       res.on('data', d => data += d);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch { resolve(data); }
-      });
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(data); } });
     });
     req.on('error', reject);
-    req.write(body);
+    if (body) req.write(body);
     req.end();
   });
 }
 
-(async () => {
-  console.log(`[sync-margem] Iniciando para conta: ${TINY_ACCOUNT}`);
-  console.log(`[sync-margem] Período: últimos ${MARGEM_DAYS} dias`);
-
+async function getSessionFromBrowser() {
+  console.log('[sync-margem] Abrindo browser para login...');
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124',
     locale: 'pt-BR',
   });
   const page = await context.newPage();
 
-  // Captura interceptação de requests para achar a API interna
-  let apiUrl = null;
-  const capturedData = [];
-
-  page.on('response', async response => {
-    const url = response.url();
-    if (!url.includes('erp.olist.com')) return;
-    // Ignora assets estáticos
-    if (/\.(css|js|png|jpg|svg|ico|woff|woff2|ttf)/.test(url)) return;
-    if (url.includes('gtm') || url.includes('analytics') || url.includes('clarity')) return;
-    const ct = response.headers()['content-type'] || '';
-    if (ct.includes('json') || ct.includes('csv')) {
-      try {
-        const body = await response.text();
-        if (body.length > 50 && (body.includes('faturamento') || body.includes('margem') || body.includes('comissao') || body.includes('contribuicao') || body.includes('pedido'))) {
-          console.log(`[sync-margem] ✅ URL de dados encontrada: ${url}`);
-          apiUrl = url;
-          capturedData.push({ url, contentType: ct, body });
-        }
-      } catch {}
-    }
-  });
-
-  // 1. Ir para o Tiny ERP
-  console.log('[sync-margem] Abrindo erp.olist.com...');
-  await page.goto('https://erp.olist.com', { waitUntil: 'networkidle', timeout: 30000 });
-
-  // 2. Login — vai redirecionar para o Keycloak
+  // 1. Abre o ERP — vai redirecionar para Keycloak
+  await page.goto('https://erp.olist.com', { waitUntil: 'domcontentloaded', timeout: 40000 });
   await page.waitForTimeout(2000);
-  const currentUrl = page.url();
-  console.log(`[sync-margem] URL após load: ${currentUrl}`);
 
-  if (currentUrl.includes('accounts.tiny.com.br') || currentUrl.includes('keycloak') || currentUrl.includes('login')) {
-    console.log('[sync-margem] Fazendo login no Keycloak...');
-    await page.fill('input[name="username"], input[type="email"], #username', TINY_EMAIL);
-    await page.fill('input[name="password"], input[type="password"], #password', TINY_PASSWORD);
-    await page.click('button[type="submit"], input[type="submit"], #kc-login, .btn-primary');
-    await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
-    console.log(`[sync-margem] URL após login: ${page.url()}`);
+  // 2. Login no Keycloak
+  if (page.url().includes('accounts.tiny') || page.url().includes('login')) {
+    console.log('[sync-margem] Preenchendo credenciais Keycloak...');
+    await page.fill('#username, input[name="username"]', TINY_EMAIL);
+    await page.fill('#password, input[name="password"]', TINY_PASSWORD);
+    await page.click('#kc-login, button[type="submit"]');
+    await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 40000 });
   }
+  console.log(`[sync-margem] Logado. URL: ${page.url()}`);
 
-  // 3. Navegar para margem de contribuição
-  console.log('[sync-margem] Navegando para margem de contribuição...');
+  // 3. Navega para margem para garantir que a SPA inicializa e emite o CSRF
   await page.goto('https://erp.olist.com/margem_contribuicao', { waitUntil: 'networkidle', timeout: 30000 });
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(2000);
 
-  // 4. Aplicar filtro de data
-  const dataInicio = dateStr(MARGEM_DAYS);
-  const dataFim    = dateStr(0);
-  console.log(`[sync-margem] Aplicando filtro: ${dataInicio} a ${dataFim}`);
-  console.log(`[sync-margem] URL atual: ${page.url()}`);
+  // 4. Extrai cookies de sessão
+  const cookies = await context.cookies('https://erp.olist.com');
+  const cookieStr = cookies.map(c => `${c.name}=${c.value}`).join('; ');
 
-  // Aguarda a SPA carregar
-  await page.waitForTimeout(4000);
-
-  // Tenta preencher campos de data de várias formas
-  const dateInputSelectors = [
-    'input[type="date"]',
-    'input[placeholder*="nicio"]',
-    'input[placeholder*="Data"]',
-    'input[name*="inicio"]',
-    'input[name*="dataInicial"]',
-  ];
-  for (const sel of dateInputSelectors) {
-    try {
-      const el = await page.$(sel);
-      if (el) { await el.fill(dataInicio); break; }
-    } catch {}
-  }
-  const dateEndSelectors = [
-    'input[type="date"]:nth-of-type(2)',
-    'input[placeholder*="inal"]',
-    'input[name*="fim"]',
-    'input[name*="dataFinal"]',
-  ];
-  for (const sel of dateEndSelectors) {
-    try {
-      const el = await page.$(sel);
-      if (el) { await el.fill(dataFim); break; }
-    } catch {}
-  }
-  // Clica em buscar
-  try {
-    await page.click('button:has-text("Buscar"), button:has-text("Filtrar"), button:has-text("Aplicar")');
-    await page.waitForTimeout(4000);
-  } catch {}
-
-  // 5. Tentar exportar CSV
-  console.log('[sync-margem] Tentando exportar CSV...');
-  let csvData = null;
-  try {
-    const [ download ] = await Promise.all([
-      page.waitForEvent('download', { timeout: 15000 }),
-      page.click('button:has-text("Exportar"), a:has-text("Exportar"), button:has-text("CSV"), a:has-text("CSV")'),
-    ]);
-    const path = await download.path();
-    const fs = require('fs');
-    csvData = fs.readFileSync(path, 'latin1');
-    console.log(`[sync-margem] ✅ CSV baixado: ${csvData.length} bytes`);
-  } catch(e) {
-    console.log('[sync-margem] Exportação via botão falhou:', e.message);
-  }
-
-  // 6. Se não conseguiu CSV via botão, usa dados JSON capturados nas requests
-  if (!csvData && capturedData.length > 0) {
-    console.log(`[sync-margem] ${capturedData.length} resposta(s) capturada(s) das requests`);
-    // Prefere CSV se houver
-    const csvCapture = capturedData.find(d => d.contentType?.includes('csv'));
-    if (csvCapture) {
-      csvData = csvCapture.body;
-      console.log('[sync-margem] Usando dados CSV capturados');
-    } else {
-      // Converte JSON para CSV se necessário
-      const jsonCapture = capturedData[0];
-      try {
-        const parsed = JSON.parse(jsonCapture.body);
-        const rows = Array.isArray(parsed) ? parsed : (parsed.itens || parsed.data || parsed.registros || [parsed]);
-        if (rows.length > 0) {
-          const headers = Object.keys(rows[0]);
-          csvData = headers.join(';') + '\n' + rows.map(r => headers.map(h => r[h] ?? '').join(';')).join('\n');
-          console.log(`[sync-margem] Convertido JSON→CSV: ${rows.length} linhas`);
-        }
-      } catch {
-        csvData = jsonCapture.body;
-      }
-    }
-  }
-
-  // 7. Captura screenshot para debug
-  await page.screenshot({ path: 'margem-debug.png', fullPage: false });
-  console.log('[sync-margem] Screenshot salva: margem-debug.png');
-
-  // 8. Log da URL da API descoberta — guardamos para chamadas futuras sem browser
-  if (apiUrl) {
-    console.log(`\n[sync-margem] 🔑 URL da API interna:\n  ${apiUrl}\n`);
-    const fs = require('fs');
-    fs.writeFileSync('margem-api-url.txt', apiUrl + '\n' + JSON.stringify(capturedData.map(d=>d.url), null, 2));
+  // 5. Extrai CSRF token (meta tag ou cookie XSRF-TOKEN)
+  let csrfToken = '';
+  const xsrfCookie = cookies.find(c => c.name === 'XSRF-TOKEN' || c.name === 'csrf_token' || c.name.includes('csrf'));
+  if (xsrfCookie) {
+    csrfToken = decodeURIComponent(xsrfCookie.value);
   } else {
-    console.log('[sync-margem] Nenhuma URL de dados capturada. Verifique margem-debug.png');
+    csrfToken = await page.$eval('meta[name="csrf-token"]', el => el.content).catch(() => '');
   }
+  console.log(`[sync-margem] CSRF token: ${csrfToken ? csrfToken.substring(0, 20) + '...' : '(não encontrado)'}`);
 
+  await page.screenshot({ path: 'margem-debug.png' });
   await browser.close();
 
-  // 9. Envia para Gestor
-  if (csvData && csvData.length > 100) {
-    console.log('[sync-margem] Enviando para Gestor API...');
-    const result = await postToGestor(csvData);
-    console.log('[sync-margem] ✅ Resultado:', JSON.stringify(result, null, 2));
-  } else {
-    console.log('[sync-margem] ⚠️  Nenhum dado capturado. Verifique margem-debug.png');
-    if (capturedData.length > 0) {
-      console.log('[sync-margem] Requests capturadas:', capturedData.map(d => d.url));
+  const session = { cookieStr, csrfToken, savedAt: Date.now() };
+  fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
+  console.log('[sync-margem] Sessão salva em .olist-session.json');
+  return session;
+}
+
+async function fetchMargem(session, fromISO, toISO) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/plain, */*',
+    'Cookie': session.cookieStr,
+    'Origin': 'https://erp.olist.com',
+    'Referer': 'https://erp.olist.com/margem_contribuicao',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124',
+    'X-CSRF-TOKEN': session.csrfToken,
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+
+  let page = 1, allItems = [], totalPages = 1;
+  do {
+    const body = JSON.stringify({
+      page, perPage: PER_PAGE, sort: 'date', order: 'desc',
+      filters: {
+        period: { start: fromISO, end: toISO },
+        search: '', channels: [], products: [], categories: [], tags: [],
+      },
+    });
+    const r = await fetch(OLIST_API, { method: 'POST', headers, body });
+    if (!r.ok) {
+      const txt = await r.text();
+      throw new Error(`Olist API ${r.status}: ${txt.substring(0, 200)}`);
     }
+    const json = await r.json();
+    const items = json.data || json.items || json.itens || [];
+    allItems.push(...items);
+    if (page === 1) {
+      const total = json.meta?.total || json.pagination?.total || json.total || items.length;
+      totalPages  = Math.ceil(total / PER_PAGE);
+      console.log(`[sync-margem] Total de registros: ${total} (${totalPages} páginas)`);
+      if (items.length > 0) console.log('[sync-margem] Campos da API:', Object.keys(items[0]).join(', '));
+    }
+    console.log(`[sync-margem] Página ${page}/${totalPages}: ${items.length} itens`);
+    page++;
+    if (items.length < PER_PAGE) break;
+    await new Promise(r => setTimeout(r, 300));
+  } while (page <= totalPages);
+
+  return allItems;
+}
+
+(async () => {
+  console.log(`[sync-margem] Conta: ${TINY_ACCOUNT} | Período: ${MARGEM_DAYS} dias`);
+
+  // Tenta reusar sessão salva (válida por 8h)
+  let session = null;
+  if (fs.existsSync(SESSION_FILE)) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
+      if (Date.now() - saved.savedAt < 8 * 3600 * 1000) {
+        session = saved;
+        console.log('[sync-margem] Reutilizando sessão salva.');
+      }
+    } catch {}
+  }
+  if (!session) session = await getSessionFromBrowser();
+
+  // Busca dados da API interna
+  const fromISO = isoDate(MARGEM_DAYS, false);
+  const toISO   = isoDate(0, true);
+  console.log(`[sync-margem] Buscando ${fromISO.split('T')[0]} → ${toISO.split('T')[0]}`);
+
+  let items;
+  try {
+    items = await fetchMargem(session, fromISO, toISO);
+  } catch (e) {
+    console.log(`[sync-margem] Erro com sessão salva (${e.message}). Renovando login...`);
+    fs.unlinkSync(SESSION_FILE);
+    session = await getSessionFromBrowser();
+    items = await fetchMargem(session, fromISO, toISO);
   }
 
-  console.log('[sync-margem] Concluído.');
+  if (items.length === 0) {
+    console.log('[sync-margem] ⚠️  Nenhum item retornado. Verifique margem-debug.png');
+    return;
+  }
+
+  console.log(`[sync-margem] ${items.length} registros obtidos. Enviando para Gestor...`);
+
+  // Envia para o módulo tiny-margem do Gestor (que faz o upsert no banco)
+  const result = await gestorRequest('POST',
+    `module=tiny-margem&account=${TINY_ACCOUNT}`,
+    {
+      sessionCookie: session.cookieStr,
+      csrfToken: session.csrfToken,
+      from: fromISO.split('T')[0],
+      to: toISO.split('T')[0],
+    }
+  );
+  console.log('[sync-margem] ✅ Resultado:', JSON.stringify(result, null, 2));
 })().catch(err => {
-  console.error('[sync-margem] Erro:', err);
+  console.error('[sync-margem] Erro fatal:', err.message);
   process.exit(1);
 });

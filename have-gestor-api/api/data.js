@@ -1558,6 +1558,131 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
+  // ── tiny-margem: busca margem de contribuição direto da API interna do Olist ERP ──
+  // Requer cookie de sessão e X-CSRF-TOKEN obtidos após login via Playwright (sync-margem-tiny.js)
+  if (req.query.module === 'tiny-margem') {
+    try {
+      const company  = payload.company || 'lanzi';
+      const pool     = getPool(company);
+      const account  = req.query.account;
+      if (!account) return res.status(400).json({ error: 'account obrigatório' });
+      const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+
+      // Credenciais da sessão: podem vir no body (POST) ou na tabela de config (GET)
+      let sessionCookie, csrfToken;
+      if (req.method === 'POST' && req.body?.sessionCookie) {
+        sessionCookie = req.body.sessionCookie;
+        csrfToken     = req.body.csrfToken || '';
+        // Salva para uso futuro (próximas chamadas sem body)
+        for (const [k,v] of [[account+'_olist_cookie', sessionCookie],[account+'_olist_csrf', csrfToken]]) {
+          await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+        }
+      } else {
+        const cfgRes = await pool.query(`SELECT chave,valor FROM configuracoes WHERE empresa=$1 AND chave IN ($2,$3)`, [company, account+'_olist_cookie', account+'_olist_csrf']);
+        const cfg = Object.fromEntries(cfgRes.rows.map(r=>[r.chave,r.valor]));
+        sessionCookie = cfg[account+'_olist_cookie'];
+        csrfToken     = cfg[account+'_olist_csrf'] || '';
+      }
+      if (!sessionCookie) return res.status(400).json({ error: 'Sem sessão Olist. Envie sessionCookie no body ou rode sync-margem-tiny.js primeiro.' });
+
+      // Parâmetros de data
+      const from = req.query.from || req.body?.from || new Date(Date.now() - 30*86400000).toISOString().split('T')[0];
+      const to   = req.query.to   || req.body?.to   || new Date().toISOString().split('T')[0];
+      const perPage = 200;
+
+      // Garante colunas financeiras na tabela de pedidos
+      for (const [col, type] of [['comissoes','NUMERIC'],['taxas_tarifas','NUMERIC'],['total_impostos','NUMERIC'],['margem_contribuicao','NUMERIC'],['margem_pct','NUMERIC'],['custo_produtos','NUMERIC'],['total_produtos','NUMERIC'],['total_desconto','NUMERIC'],['total_frete','NUMERIC'],['financeiro_ok','BOOLEAN DEFAULT FALSE']])
+        await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
+
+      // Headers da API interna do Olist
+      const olistHeaders = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
+        'Cookie': sessionCookie,
+        'Origin': 'https://erp.olist.com',
+        'Referer': 'https://erp.olist.com/margem_contribuicao',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124',
+        'X-CSRF-TOKEN': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+      };
+
+      // Converte data local BR (DD/MM/YYYY ou YYYY-MM-DD) para ISO UTC
+      function toISO(dateStr, endOfDay = false) {
+        const d = new Date(dateStr.includes('/') ? dateStr.split('/').reverse().join('-') : dateStr);
+        if (endOfDay) d.setUTCHours(2, 59, 59, 999);
+        else d.setUTCHours(3, 0, 0, 0);
+        return d.toISOString();
+      }
+
+      let page = 1, totalFetched = 0, totalUpdated = 0;
+      let firstResponse = null;
+
+      while (true) {
+        const payload_body = {
+          page,
+          perPage,
+          sort: 'date',
+          order: 'desc',
+          filters: {
+            period: { start: toISO(from, false), end: toISO(to, true) },
+            search: '', channels: [], products: [], categories: [], tags: [],
+          },
+        };
+        const r = await fetch('https://erp.olist.com/api/v1/contribution-margin/list', {
+          method: 'POST',
+          headers: olistHeaders,
+          body: JSON.stringify(payload_body),
+        });
+
+        if (!r.ok) {
+          const errText = await r.text();
+          return res.status(r.status).json({ error: `Olist API ${r.status}`, detail: errText.substring(0, 300), page });
+        }
+
+        const json = await r.json();
+        if (page === 1) firstResponse = { keys: json.data?.[0] ? Object.keys(json.data[0]) : [], meta: json.meta || json.pagination || {} };
+        const items = json.data || json.itens || json.items || [];
+        if (items.length === 0) break;
+        totalFetched += items.length;
+
+        // Upsert em lote
+        for (const item of items) {
+          // Normaliza campos — a API pode usar camelCase ou snake_case
+          const numeroPedido   = String(item.orderNumber || item.numero_pedido || item.order_number || item.orderId || '');
+          const numeroEcommerce = String(item.orderEcommerceNumber || item.numero_ecommerce || '');
+          const faturamento    = parseFloat(item.revenue        || item.faturamento    || 0) || 0;
+          const cmv            = parseFloat(item.cmv            || item.custo          || 0) || 0;
+          const comissao       = parseFloat(item.commission     || item.comissao       || 0) || 0;
+          const taxas          = parseFloat(item.taxes          || item.taxas          || 0) || 0;
+          const impostos       = parseFloat(item.taxes          || item.impostos       || 0) || 0;
+          const frete          = parseFloat(item.freight        || item.frete          || 0) || 0;
+          const desconto       = parseFloat(item.discount       || item.desconto       || 0) || 0;
+          const margem         = parseFloat(item.contributionMargin || item.margem     || 0) || 0;
+          const margemPct      = parseFloat(item.contributionMarginPercentage || item.margem_pct || 0) || 0;
+
+          // Tenta encontrar o pedido pelo número
+          const upd = await pool.query(`
+            UPDATE bd_pedidos_tiny_${safeName} SET
+              total_produtos=$2, total_desconto=$3, total_frete=$4,
+              total_impostos=$5, custo_produtos=$6,
+              comissoes=$7, taxas_tarifas=$8,
+              margem_contribuicao=$9, margem_pct=$10,
+              financeiro_ok=TRUE, atualizado_em=NOW()
+            WHERE numero=$1 OR numero_ecommerce=$1 OR numero_canal_venda=$1
+          `, [numeroPedido||numeroEcommerce, faturamento, desconto, frete, impostos, cmv, comissao, taxas, margem, margemPct]);
+          if (upd.rowCount > 0) totalUpdated++;
+        }
+
+        const totalPages = Math.ceil((json.meta?.total || json.pagination?.total || json.total || items.length) / perPage);
+        if (page >= totalPages || items.length < perPage) break;
+        page++;
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      return res.json({ ok: true, account, from, to, fetched: totalFetched, updated: totalUpdated, pages: page, schema_sample: firstResponse });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
   // ── tiny-canais: gerencia tabela de comissão/taxa por canal de venda ──
   if (req.query.module === 'tiny-canais') {
     try {
