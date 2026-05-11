@@ -798,21 +798,47 @@ module.exports = async (req, res) => {
       const cfgRes = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`, [company, account + '%']);
       const cfg = {};
       cfgRes.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
-      const accessToken = cfg[account + '_token'];
+      let accessToken = cfg[account + '_token'];
+      const refreshToken = cfg[account + '_refresh'];
       if (!accessToken) return res.status(400).json({ error: 'Conta não autenticada' });
-      const TINY_API = 'https://api.tiny.com.br/public-api/v3';
+
+      const TINY_API       = 'https://api.tiny.com.br/public-api/v3';
+      const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
+      const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
+      const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
+
+      // Tenta refresh do token
+      let refreshResult = null;
+      if (refreshToken && TINY_CLIENT_ID) {
+        const rr = await fetch(TINY_TOKEN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'refresh_token', client_id: TINY_CLIENT_ID, client_secret: TINY_CLIENT_SECRET, refresh_token: refreshToken }).toString(),
+        });
+        const rrData = await rr.json().catch(() => ({}));
+        refreshResult = { status: rr.status, expires_in: rrData.expires_in, ok: rr.ok };
+        if (rr.ok && rrData.access_token) {
+          accessToken = rrData.access_token;
+          const newExp = new Date(Date.now() + (rrData.expires_in || 300) * 1000).toISOString();
+          for (const [k, v] of [[account+'_token', rrData.access_token],[account+'_refresh', rrData.refresh_token||refreshToken],[account+'_exp', newExp]]) {
+            await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+          }
+        }
+      }
+
       const dataFinal   = new Date().toISOString().split('T')[0];
       const dataInicial = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-      const [rEmp, rPed, rProd] = await Promise.all([
-        fetch(`${TINY_API}/empresas`, { headers: { 'Authorization': 'Bearer ' + accessToken } }),
-        fetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=5`, { headers: { 'Authorization': 'Bearer ' + accessToken } }),
-        fetch(`${TINY_API}/produtos?pagina=1&limite=5`, { headers: { 'Authorization': 'Bearer ' + accessToken } }),
-      ]);
+      async function tinyFetch(url) {
+        const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+        const text = await r.text();
+        let body; try { body = JSON.parse(text); } catch { body = text.substring(0, 300); }
+        return { status: r.status, body };
+      }
       return res.json({
-        token_exp: cfg[account + '_exp'],
-        empresas:  { status: rEmp.status,  body: await rEmp.json().catch(e => e.message) },
-        pedidos:   { status: rPed.status,  body: await rPed.json().catch(e => e.message) },
-        produtos:  { status: rProd.status, body: await rProd.json().catch(e => e.message) },
+        token_exp_original: cfg[account + '_exp'],
+        refresh: refreshResult,
+        pedidos:  await tinyFetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=3`),
+        produtos: await tinyFetch(`${TINY_API}/produtos?pagina=1&limite=3`),
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
