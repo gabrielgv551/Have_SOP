@@ -886,7 +886,7 @@ module.exports = async (req, res) => {
       try {
         const safeName = account.replace(/[^a-z0-9_]/gi,'_').toLowerCase();
         const [cp, ce] = await Promise.all([
-          pool.query(`SELECT COUNT(*) AS total, MIN(data_pedido) AS mais_antigo, MAX(data_pedido) AS mais_recente FROM bd_pedidos_tiny_${safeName}`).catch(()=>null),
+          pool.query(`SELECT COUNT(*) AS total, MIN(data_criacao) AS mais_antigo, MAX(data_criacao) AS mais_recente FROM bd_pedidos_tiny_${safeName}`).catch(()=>null),
           pool.query(`SELECT COUNT(*) AS total FROM bd_estoque_tiny_${safeName}`).catch(()=>null),
         ]);
         dbCounts = {
