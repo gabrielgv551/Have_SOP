@@ -962,9 +962,10 @@ module.exports = async (req, res) => {
         return items;
       }
 
-      // 3. Sincronizar pedidos (últimos 90 dias)
+      // 3. Sincronizar pedidos
       if (modulos.includes('vendas')) {
-        await pool.query(`DROP TABLE IF EXISTS bd_pedidos_tiny_${safeName}`);
+        const lastSync = cfg[account + '_token_sync'];
+        if (!lastSync) await pool.query(`DROP TABLE IF EXISTS bd_pedidos_tiny_${safeName}`);
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY,
           numero TEXT, numero_ecommerce TEXT, data_pedido DATE,
@@ -974,7 +975,9 @@ module.exports = async (req, res) => {
           atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
         const dataFinal   = new Date().toISOString().split('T')[0];
-        const dataInicial = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
+        const daysParam   = parseInt(req.query.days || '0');
+        const days        = daysParam > 0 ? daysParam : (lastSync ? 2 : 30);
+        const dataInicial = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
         const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
         let cnt = 0;
         for (const p of pedidos) {
@@ -1007,7 +1010,8 @@ module.exports = async (req, res) => {
 
       // 4. Sincronizar estoque/produtos
       if (modulos.includes('estoque')) {
-        await pool.query(`DROP TABLE IF EXISTS bd_estoque_tiny_${safeName}`);
+        const lastSyncEst = cfg[account + '_token_sync'];
+        if (!lastSyncEst) await pool.query(`DROP TABLE IF EXISTS bd_estoque_tiny_${safeName}`);
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_estoque_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY, sku TEXT, nome TEXT, unidade TEXT,
           estoque_atual NUMERIC DEFAULT 0, estoque_minimo NUMERIC DEFAULT 0,
