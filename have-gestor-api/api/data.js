@@ -1361,30 +1361,45 @@ module.exports = async (req, res) => {
           const d = await r.json();
           const p = d.data || d;
 
-          const totalProdutos  = parseFloat(p.totalProdutos   || p.total_produtos   || 0) || 0;
-          const totalDesconto  = parseFloat(p.totalDesconto   || p.total_desconto   || 0) || 0;
-          const totalFrete     = parseFloat(p.totalFrete      || p.total_frete      || 0) || 0;
-          const totalImpostos  = parseFloat(p.totalImpostos   || p.total_impostos   || 0) || 0;
-          const totalOutras    = parseFloat(p.totalOutrasDespesas || p.total_outras  || 0) || 0;
-          const fretePago      = parseFloat(p.fretePago       || p.freteValorFrete  || p.transportador?.valorFrete || 0) || 0;
-          const comissoes      = parseFloat(p.comissao        || p.comissoes        || p.totalComissoes || 0) || 0;
-          const taxasTarifas   = parseFloat(p.taxasETarifas   || p.taxas            || 0) || 0;
+          // Campos reais da API v3 (nomes confirmados via inspeção)
+          const totalProdutos = parseFloat(p.valorTotalProdutos || p.totalProdutos || 0) || 0;
+          const totalDesconto = parseFloat(p.valorDesconto      || p.totalDesconto || 0) || 0;
+          const totalFrete    = parseFloat(p.valorFrete         || p.totalFrete    || 0) || 0;
+          const totalOutras   = parseFloat(p.valorOutrasDespesas|| p.totalOutrasDespesas || 0) || 0;
+          // totalImpostos e comissoes não estão neste endpoint — ficam 0 (calculados via tabela externa)
+          const totalImpostos = 0;
+          const fretePago     = 0;
+          const comissoes     = 0;
+          const taxasTarifas  = 0;
 
-          // Custo dos produtos (soma dos itens)
-          let custoProdutos = 0;
+          // Itens: quantidade e custo via join estoque
           let qtdItens = 0;
+          const skusQtd = {};
           if (Array.isArray(p.itens)) {
             for (const item of p.itens) {
-              const custo = parseFloat(item.precoCusto || item.produto?.precoCusto || 0) || 0;
-              const qty   = parseFloat(item.quantidade || 1) || 1;
-              custoProdutos += custo * qty;
-              qtdItens      += qty;
+              const qty = parseFloat(item.quantidade || 1) || 1;
+              qtdItens += qty;
+              const sku = item.produto?.sku || item.produto?.id;
+              if (sku) skusQtd[String(sku)] = (skusQtd[String(sku)] || 0) + qty;
             }
           }
 
-          // Margem de Contribuição = Receita - CMV - Frete Pago - Impostos - Comissões - Taxas
-          const receita = totalProdutos - totalDesconto + totalFrete;
-          const margem  = receita - custoProdutos - fretePago - totalImpostos - totalOutras - comissoes - taxasTarifas;
+          // Buscar custo dos SKUs na tabela de estoque
+          let custoProdutos = 0;
+          const skuList = Object.keys(skusQtd);
+          if (skuList.length > 0) {
+            const costRes = await pool.query(
+              `SELECT sku, preco_custo FROM bd_estoque_tiny_${safeName} WHERE sku = ANY($1)`,
+              [skuList]
+            ).catch(() => ({ rows: [] }));
+            for (const row of costRes.rows) {
+              custoProdutos += (parseFloat(row.preco_custo) || 0) * (skusQtd[row.sku] || 0);
+            }
+          }
+
+          // MC = (Produtos - Desconto + Frete recebido) - CMV - Outras Despesas
+          const receita   = totalProdutos - totalDesconto + totalFrete;
+          const margem    = receita - custoProdutos - totalOutras;
           const margemPct = receita > 0 ? Math.round((margem / receita) * 10000) / 100 : 0;
 
           await pool.query(`
