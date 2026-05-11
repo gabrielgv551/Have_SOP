@@ -1130,6 +1130,9 @@ module.exports = async (req, res) => {
       const account = req.query.account;
       if (!account) return res.status(400).json({ error: 'account obrigatório' });
 
+      const company = payload.company || 'lanzi';
+      const pool = getPool(company);
+
       const cfg = {};
       const cfgRows = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
       for (const r of cfgRows.rows) cfg[r.chave] = r.valor;
