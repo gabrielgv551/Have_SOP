@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 
 // Whitelist de tabelas permitidas — segurança contra SQL injection via nome de tabela
+// Tabelas dinâmicas Tiny são verificadas separadamente via isTinyTable()
+function isTinyTable(t) { return /^bd_(pedidos|estoque)_tiny_[a-z0-9_]+$/.test(t); }
 const TABELAS_PERMITIDAS = [
   'curva_abc',
   'ponto_pedido',
@@ -1494,7 +1496,7 @@ module.exports = async (req, res) => {
 
   // 2. Verificar tabela (whitelist)
   const { tabela } = req.query;
-  if (!tabela || !TABELAS_PERMITIDAS.includes(tabela))
+  if (!tabela || (!TABELAS_PERMITIDAS.includes(tabela) && !isTinyTable(tabela)))
     return res.status(400).json({ error: `Tabela '${tabela}' não permitida.` });
 
   // 3. Query no banco da empresa correta
