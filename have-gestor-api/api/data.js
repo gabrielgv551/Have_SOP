@@ -974,10 +974,10 @@ module.exports = async (req, res) => {
           transportadora TEXT, codigo_rastreamento TEXT,
           atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
-        const dataFinal   = new Date().toISOString().split('T')[0];
+        const dataFinal   = req.query.to   || new Date().toISOString().split('T')[0];
         const daysParam   = parseInt(req.query.days || '0');
         const days        = daysParam > 0 ? daysParam : (lastSync ? 2 : 30);
-        const dataInicial = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+        const dataInicial = req.query.from || new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
         const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
         if (pedidos.length > 0) {
           const rows = pedidos.map(p => [
