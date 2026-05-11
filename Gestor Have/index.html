@@ -955,6 +955,8 @@
 
             .table-scroll {
                 overflow-x: auto;
+                overflow-y: auto;
+                max-height: calc(100vh - 220px);
             }
 
             table {
@@ -975,6 +977,7 @@
                 background: #007CDC;
                 position: sticky;
                 top: 0;
+                z-index: 11;
                 white-space: nowrap;
             }
 
@@ -2301,7 +2304,11 @@
                 padding: 4px 8px !important;
                 background: var(--surface) !important;
                 border-bottom: 1px solid var(--border) !important;
+                position: sticky !important;
+                top: 37px !important;
+                z-index: 10;
             }
+
 
             .col-filter-input {
                 width: 100%;
@@ -2787,7 +2794,7 @@
                         <button id="pp-pill-ok" class="pp-pill pp-pill-ok" onclick="setPpFilter('OK')">● OK (<span id="pp-cnt-ok">–</span>)</button>
                         <button id="pp-pill-semov" class="pp-pill pp-pill-semov" onclick="setPpFilter('SEM MOVIMENTO')">Sem mov (<span id="pp-cnt-semov">–</span>)</button>
                         <button id="pp-disc-toggle" onclick="togglePpDiscontinued()" class="pp-pill pp-pill-semov"><span id="pp-disc-icon">○</span> Descontinuados</button>
-                        <button onclick="downloadTableCSV('pp-table','ponto-pedido.csv')" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1px solid rgba(79,127,255,0.3);background:transparent;color:#4f7fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s" title="Baixar CSV"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button><span id="pp-sku-count" style="margin-left:auto;color:var(--muted);font-size:12px;font-weight:500">– SKUs</span>
+                        <button onclick="downloadTableCSV('pp-table','ponto-pedido.csv')" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1px solid rgba(79,127,255,0.3);background:transparent;color:#4f7fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s" title="Baixar CSV"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button><button id="pp-valor-toggle" onclick="togglePpValorView()" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1.5px solid rgba(0,124,220,0.4);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s" title="Alternar entre quantidades e valores R$"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg># Qtd</button><span id="pp-sku-count" style="margin-left:auto;color:var(--muted);font-size:12px;font-weight:500">– SKUs</span>
                     </div>
                     <!-- Hidden select kept for filterTable compatibility -->
                     <select id="pp-filter" style="display:none" onchange="filterTable('pp')">
@@ -2806,12 +2813,12 @@
                                         <th class="sortable" data-column="sku" data-type="string">SKU</th>
                                         <th class="sortable" data-column="abc_cruzada" data-type="string">ABC</th>
                                         <th class="sortable" data-column="dias_estoque" data-type="number">Dias Est.</th>
-                                        <th class="sortable" data-column="media_mensal" data-type="number">Média Mensal</th>
-                                        <th class="sortable" data-column="estoque_atual" data-type="number">Est. Atual</th>
-                                        <th class="sortable" data-column="pedidos_aberto" data-type="number">Ped. Aberto</th>
-                                        <th class="sortable" data-column="ponto_pedido" data-type="number">Ponto Pedido</th>
-                                        <th class="sortable" data-column="estoque_seguranca" data-type="number">Est. Seg.</th>
-                                        <th class="sortable" data-column="qty_sugerida" data-type="number">Qtd Sugerida</th>
+                                        <th id="pp-th-media" class="sortable" data-column="media_mensal" data-type="number">Média Mensal</th>
+                                        <th id="pp-th-estoque" class="sortable" data-column="estoque_atual" data-type="number">Est. Atual</th>
+                                        <th id="pp-th-pedaberto" class="sortable" data-column="pedidos_aberto" data-type="number">Ped. Aberto</th>
+                                        <th id="pp-th-pontoped" class="sortable" data-column="ponto_pedido" data-type="number">Ponto Pedido</th>
+                                        <th id="pp-th-estseg" class="sortable" data-column="estoque_seguranca" data-type="number">Est. Seg.</th>
+                                        <th id="pp-th-qtysugerida" class="sortable" data-column="qty_sugerida" data-type="number">Qtd Sugerida</th>
                                         <th class="sortable" data-column="custo_sugerido" data-type="number">Custo Sugerido</th>
                                         <th class="sortable" data-column="data_sugerida_pedido" data-type="string">Data Pedido</th>
                                         <th class="sortable" data-column="confianca" data-type="string">Confiança</th>
@@ -3954,9 +3961,10 @@
                     </div>
 
                     <!-- Tabs -->
-                    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;">
                         <button id="tab-plano-balanco" onclick="switchPlanoTab('balanco')" style="padding:8px 20px;border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;background:none;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;">Balanço</button>
                         <button id="tab-plano-dre" onclick="switchPlanoTab('dre')" style="padding:8px 20px;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;font-size:13px;color:var(--muted);cursor:pointer;">DRE</button>
+                        <button onclick="downloadPlanoContasModelo()" style="margin-left:auto;display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:2px;" title="Baixar modelo CSV para preencher com I.A."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Baixar Modelo</button>
                     </div>
 
                     <!-- Balanço tab -->
@@ -5406,6 +5414,32 @@
                 updateTotals();
             }
 
+            async function removeAccountFromPlanoDeContas(btn) {
+                const row = btn.closest('tr[data-mapping-key]');
+                if (!row) return;
+                const mappingKey = row.dataset.mappingKey;
+                const colonIdx = mappingKey.indexOf(':');
+                const sectionId = mappingKey.slice(0, colonIdx);
+                const code = mappingKey.slice(colonIdx + 1);
+                if (!confirm('Remover a conta "' + code + '" do plano de contas? Esta ação não pode ser desfeita.')) return;
+                try {
+                    const structure = getStructure();
+                    if (structure[sectionId]) {
+                        structure[sectionId] = structure[sectionId].filter(a => a.code !== code);
+                        if (!structure[sectionId].length) delete structure[sectionId];
+                    }
+                    await saveStructure(structure);
+                    const mappings = getMappings();
+                    delete mappings[mappingKey];
+                    await persistMappings(mappings);
+                    row.remove();
+                    showToast('Conta removida do plano de contas', 'success');
+                } catch (e) {
+                    console.error('removeAccountFromPlanoDeContas error:', e);
+                    showToast('Erro ao remover conta: ' + e.message, 'error');
+                }
+            }
+
             function updateTotals() {
                 const formatNumber = (num) => new Intl.NumberFormat('pt-BR').format(num.toFixed(0));
                 const parseNumber = (str) => parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
@@ -5554,7 +5588,8 @@
                                 const rowsForMonth = monthDataMap[m] || [];
                                 let total = 0, hasData = false;
                                 contasList.forEach(conta => {
-                                    const match = rowsForMonth.find(r => r.conta === conta);
+                                    const _nc = String(conta || '').replace(/\./g, '');
+                                    const match = rowsForMonth.find(r => String(r.conta || '').replace(/\./g, '') === _nc);
                                     if (match) { total += parseFloat(match.saldo_atual || 0); hasData = true; }
                                 });
                                 const cell = row.querySelector(`.account-value[data-month="${m}"]`);
@@ -5715,9 +5750,10 @@
                 const seen = new Set();
                 const accounts = [];
                 (rows || []).forEach(r => {
-                    if (!seen.has(r.conta)) {
-                        seen.add(r.conta);
-                        accounts.push({ conta: r.conta, nome: r.nome });
+                    const _nc = String(r.conta || '').replace(/\./g, '');
+                    if (!seen.has(_nc)) {
+                        seen.add(_nc);
+                        accounts.push({ conta: _nc, nome: r.nome });
                     }
                 });
                 accounts.sort((a, b) => String(a.conta).localeCompare(String(b.conta), undefined, { numeric: true }));
@@ -5727,9 +5763,61 @@
             let _balanceteAccounts = [];
 
             function _mappingSelectHtml(selected) {
+                const _selNc = String(selected || '').replace(/\./g, '');
                 return _balanceteAccounts.map(ba =>
-                    `<option value="${esc(ba.conta)}" ${selected === ba.conta ? 'selected' : ''}>${esc(ba.conta)} – ${esc(ba.nome)}</option>`
+                    `<option value="${esc(ba.conta)}" ${ba.conta === _selNc ? 'selected' : ''}>${esc(ba.conta)} – ${esc(ba.nome)}</option>`
                 ).join('');
+            }
+
+            function downloadPlanoContasModelo() {
+                const rows = [];
+                rows.push(['TIPO', 'SECAO', 'CONTA', 'CONTA_BALANCETE_1', 'CONTA_BALANCETE_2', 'CONTA_BALANCETE_3']);
+
+                const balStructure = getStructure();
+                const balMappings = getMappings();
+                Object.entries(bodyIdToLabel).forEach(([secId, secLabel]) => {
+                    (balStructure[secId] || []).forEach(acc => {
+                        const mapped = balMappings[secId + ':' + acc.code];
+                        const arr = Array.isArray(mapped) ? mapped : (mapped ? [mapped] : []);
+                        rows.push(['Balanço', secLabel, acc.name, arr[0] || '', arr[1] || '', arr[2] || '']);
+                    });
+                });
+
+                const dreStructure = getDreStructure();
+                const dreMappings = getDreMappings();
+                Object.entries(dreBodyIdToLabel).forEach(([secId, secLabel]) => {
+                    const directMapped = dreMappings[secId + ':__direct__'];
+                    const dArr = Array.isArray(directMapped) ? directMapped : (directMapped ? [directMapped] : []);
+                    rows.push(['DRE', secLabel, secLabel + ' — total direto', dArr[0] || '', dArr[1] || '', dArr[2] || '']);
+                    (dreStructure[secId] || []).forEach(acc => {
+                        const mapped = dreMappings[secId + ':' + acc.code];
+                        const arr = Array.isArray(mapped) ? mapped : (mapped ? [mapped] : []);
+                        rows.push(['DRE', secLabel, acc.name, arr[0] || '', arr[1] || '', arr[2] || '']);
+                    });
+                });
+
+                rows.push([]);
+                rows.push(['## CONTAS DISPONÍVEIS NO BALANCETE (use os códigos acima nas colunas CONTA_BALANCETE_*)']);
+                rows.push(['CODIGO', 'NOME']);
+                (_balanceteAccounts || []).forEach(ba => rows.push([ba.conta, ba.nome]));
+
+                const esc2 = v => { const s = String(v == null ? '' : v); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                const csv = '\ufeff' + rows.map(r => r.map(esc2).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'modelo-plano-de-contas.csv';
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+                showToast('Modelo baixado — abra o CSV e mande para a I.A. preencher as colunas CONTA_BALANCETE_*', 'success');
+            }
+
+            function _removeMappingSelRow(btn) {
+                const isBalanco = !!btn.closest('#plano-contas-tbody');
+                const isDre = !!btn.closest('#plano-dre-tbody');
+                btn.closest('.mapping-sel-row').remove();
+                if (isBalanco) saveAccountMappings();
+                else if (isDre) saveDreMappings();
             }
 
             function _addMappingSelectRow(container, selectedValue) {
@@ -5741,7 +5829,7 @@
                         <option value="">Não mapeado</option>
                         ${_mappingSelectHtml(selectedValue || '')}
                     </select>
-                    <button onclick="this.closest('.mapping-sel-row').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0;flex-shrink:0;">✕</button>
+                    <button onclick="_removeMappingSelRow(this)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0;flex-shrink:0;">✕</button>
                 `;
                 container.appendChild(div);
             }
@@ -5888,7 +5976,7 @@
                     td.appendChild(addBtn);
 
                     row.innerHTML = `
-                        <td><span class="sku-code">${esc(acc.code)}</span></td>
+                        <td style="position:relative;"><span class="sku-code">${esc(acc.code)}</span><button onclick="removeAccountFromPlanoDeContas(this)" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--red,#e5534b);cursor:pointer;font-size:13px;padding:0;line-height:1;" title="Remover conta do plano">✕</button></td>
                         <td>${esc(acc.name)}<br><small style="color:var(--muted);font-size:11px;">${esc(bodyIdToLabel[acc.sectionId] || acc.sectionId)}</small></td>
                     `;
                     row.appendChild(td);
@@ -6118,7 +6206,7 @@
                     const tbody = document.getElementById(secId);
                     if (!tbody) return;
                     tbody.innerHTML = '';
-                    (accounts || []).forEach((acc, idx) => {
+                    (accounts || []).filter(acc => (acc.code || '') !== '__direct__').forEach((acc, idx) => {
                         const accCode = acc.code || (secId + '_' + idx);
                         const tr = document.createElement('tr');
                         tr.className = 'dfs-row-item dre-manual-row';
@@ -6149,9 +6237,10 @@
                     Object.keys(dreBodyIdToLabel).forEach(secId => {
                         const tbody = document.getElementById(secId);
                         if (!tbody) return;
-                        const rows = tbody.querySelectorAll('tr.dre-manual-row');
+                        const rows = Array.from(tbody.querySelectorAll('tr.dre-manual-row'))
+                            .filter(row => row.dataset.structureCode !== '__direct__');
                         if (rows.length) {
-                            structure[secId] = Array.from(rows).map((row, idx) => ({
+                            structure[secId] = rows.map((row, idx) => ({
                                 code: row.dataset.structureCode || (secId + '_' + idx),
                                 name: (row.querySelector('[data-role="name"]') || {}).value || ''
                             }));
@@ -6293,7 +6382,8 @@
                     for (let m = 1; m <= 12; m++) {
                         let total = 0, hasData = false;
                         contasList.forEach(conta => {
-                            const match = (monthDataMap[m] || []).find(r => r.conta === conta);
+                            const _nc = String(conta || '').replace(/\./g, '');
+                            const match = (monthDataMap[m] || []).find(r => String(r.conta || '').replace(/\./g, '') === _nc);
                             if (match) { total += parseFloat(match.saldo_atual || 0); hasData = true; }
                         });
                         saldoByMonth[m] = { total, hasData };
@@ -7064,7 +7154,8 @@
                 const contas = Array.isArray(raw) ? raw : [raw];
                 let total = 0;
                 contas.forEach(conta => {
-                    const match = window._fcxPrevDecRows.find(r => r.conta === conta);
+                    const _nc = String(conta || '').replace(/\./g, '');
+                    const match = window._fcxPrevDecRows.find(r => String(r.conta || '').replace(/\./g, '') === _nc);
                     if (match) total += parseFloat(match.saldo_atual || 0);
                 });
                 return total / 100;
@@ -7850,6 +7941,27 @@
             }
 
             let ppHideDiscontinued = false;
+            function togglePpValorView() {
+                state.ppValorView = !state.ppValorView;
+                const btn = document.getElementById('pp-valor-toggle');
+                const isV = state.ppValorView;
+                if (btn) {
+                    btn.style.background = isV ? 'var(--accent)' : 'transparent';
+                    btn.style.color = isV ? '#fff' : 'var(--accent)';
+                    btn.style.border = isV ? '1.5px solid var(--accent)' : '1.5px solid rgba(0,124,220,0.4)';
+                    btn.innerHTML = isV ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> R$ Valores' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> # Qtd';
+                }
+                const ths = [
+                    ['pp-th-media',       isV ? 'Fat. Mensal'     : 'Média Mensal'],
+                    ['pp-th-estoque',     isV ? 'Val. Estoque'    : 'Est. Atual'],
+                    ['pp-th-pedaberto',   isV ? 'Val. Em Transit.' : 'Ped. Aberto'],
+                    ['pp-th-pontoped',    isV ? 'Val. Pto Pedido'  : 'Ponto Pedido'],
+                    ['pp-th-estseg',      isV ? 'Val. Est. Seg.'   : 'Est. Seg.'],
+                    ['pp-th-qtysugerida', isV ? 'Val. Compra'      : 'Qtd Sugerida'],
+                ];
+                ths.forEach(([id, txt]) => { const el = document.getElementById(id); if (el) el.textContent = txt; });
+                renderTable('pp', state.pp || []);
+            }
             async function togglePpDiscontinued() {
                 ppHideDiscontinued = !ppHideDiscontinued;
                 const btn = document.getElementById('pp-disc-toggle');
@@ -7875,6 +7987,8 @@
                     state.pp = data;
                     state.custoMap = {};
                     cadData.forEach(r => { state.custoMap[String(r.Sku || '').trim()] = +r['Custo Un'] || 0; });
+                    state.precoVendaMap = {};
+                    cadData.forEach(r => { const _pv = +r['Preço de Venda'] || +r['Preco Venda'] || +r['preco_venda'] || +r['Preço Un'] || 0; if (_pv > 0) state.precoVendaMap[String(r.Sku || '').trim()] = _pv; });
                     state.marcaMap = {};
                     cadData.forEach(r => { state.marcaMap[String(r.Sku || '').trim()] = String(r.Marca || '').trim(); });
                     populateMarcaDropdowns();
@@ -8586,7 +8700,7 @@
             function rowHTML(key, r) {
                 if (key === 'abc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada)}</span></td><td>${fmtN(r.volume_total)}</td><td>R$ ${fmtN(r.margem_total)}</td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${esc(r.abc_volume)}</span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${esc(r.abc_margem)}</span></td><td>${fmtPct(r.nivel_servico)}</td></tr>`;
 
-                if (key === 'pp') { const _custo = (state.custoMap || {})[String(r.sku || '').trim()] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[String(r.sku || '').trim()]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_media != null ? fmtBR(_media) : '–'}</td><td>${fmtN(r.estoque_atual)}</td><td>${fmtN(r.pedidos_aberto)}</td><td>${fmtN(r.ponto_pedido)}</td><td>${fmtN(r.estoque_seguranca)}</td><td><strong>${fmtN(r.qty_sugerida)}</strong></td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$ ' + fmtN(_custoSug) : '–'}</td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
+                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
 
                 if (key === 'es') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.desvio_padrao)}</td><td>${fmtN(r.lead_time)}</td><td>${fmtBR(r.fator_z)}</td><td>${fmtBR(r.es_estatistico)}</td><td>${fmtBR(r.es_teto)}</td><td><strong>${fmtN(r.estoque_seguranca)}</strong></td><td>${r.teto_aplicado === 'true' || r.teto_aplicado === true ? '<span style="color:var(--orange)">✓ Sim</span>' : '<span style="color:var(--muted)">Não</span>'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td></tr>`;
 
@@ -16119,7 +16233,7 @@ if (id === 'dfs-kpis') {
         // Abre janela OAuth Tiny
         const TINY_CLIENT_ID = (window._TINY_CLIENT_ID || '');
         const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/tiny-callback');
-        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${TINY_CLIENT_ID}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access&state=${id}`;
+        const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${TINY_CLIENT_ID}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access+pedidos+produtos+estoque+contatos+financeiro+fiscal+transportadoras+contas&state=${id}`;
         window.open(authUrl, '_blank', 'width=620,height=720');
       };
 
