@@ -1341,6 +1341,13 @@ module.exports = async (req, res) => {
       for (const [col, type] of financialCols)
         await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
 
+      // 1b. Carregar tabela de comissões/taxas por canal
+      const canaisCfgRows = await pool.query(
+        `SELECT canal, pct_comissao, pct_taxa, pct_imposto FROM tiny_canais_config WHERE empresa=$1`,
+        [company]
+      ).catch(()=>({rows:[]}));
+      const canaisCfg = Object.fromEntries(canaisCfgRows.rows.map(r=>[r.canal.toLowerCase().trim(),r]));
+
       // 2. Buscar pedidos sem dados financeiros ainda (com filtro de data opcional)
       const enrichFrom = req.query.from || null;
       const enrichTo   = req.query.to   || null;
@@ -1349,9 +1356,10 @@ module.exports = async (req, res) => {
       if (enrichFrom) { dateParams.push(enrichFrom); dateClause += ` AND data_criacao >= $${dateParams.length}`; }
       if (enrichTo)   { dateParams.push(enrichTo);   dateClause += ` AND data_criacao <= $${dateParams.length}`; }
       const pendentes = await pool.query(
-        `SELECT id_tiny FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE${dateClause} ORDER BY data_criacao DESC LIMIT $1`,
+        `SELECT id_tiny, LOWER(TRIM(COALESCE(marketplace,''))) AS canal FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE${dateClause} ORDER BY data_criacao DESC LIMIT $1`,
         dateParams
       );
+      const pedidosMap = Object.fromEntries(pendentes.rows.map(r=>[r.id_tiny, r.canal]));
       const ids = pendentes.rows.map(r => r.id_tiny);
       if (ids.length === 0) return res.json({ ok: true, account, enriched: 0, pending: 0, message: 'Todos os pedidos já enriquecidos!' });
 
@@ -1403,19 +1411,30 @@ module.exports = async (req, res) => {
             }
           }
 
-          // MC = (Produtos - Desconto + Frete recebido) - CMV - Outras Despesas
+          // Buscar taxas do canal na tabela de configuração
+          const canalKey  = (pedidosMap[id] || '').toLowerCase().trim();
+          const canalConf = canaisCfg[canalKey] || {};
+          const pctComissao = parseFloat(canalConf.pct_comissao || 0) / 100;
+          const pctTaxa     = parseFloat(canalConf.pct_taxa     || 0) / 100;
+          const pctImposto  = parseFloat(canalConf.pct_imposto  || 0) / 100;
+          const comissaoCalc    = totalProdutos * pctComissao;
+          const taxaCalc        = totalProdutos * pctTaxa;
+          const impostoCalc     = totalProdutos * pctImposto;
+
+          // MC = Faturamento - CMV - Comissão - Taxa - Imposto - Outras Despesas
           const receita   = totalProdutos - totalDesconto + totalFrete;
-          const margem    = receita - custoProdutos - totalOutras;
+          const margem    = receita - custoProdutos - comissaoCalc - taxaCalc - impostoCalc - totalOutras;
           const margemPct = receita > 0 ? Math.round((margem / receita) * 10000) / 100 : 0;
 
           await pool.query(`
             UPDATE bd_pedidos_tiny_${safeName} SET
-              total_produtos=$2, total_desconto=$3, total_frete=$4, total_impostos=$5,
-              total_outras_despesas=$6, frete_pago=$7, comissoes=$8, taxas_tarifas=$9,
+              total_produtos=$2, total_desconto=$3, total_frete=$4,
+              total_outras_despesas=$5, frete_pago=$6,
+              comissoes=$7, taxas_tarifas=$8, total_impostos=$9,
               custo_produtos=$10, margem_contribuicao=$11, margem_pct=$12, qtd_itens=$13,
               financeiro_ok=TRUE, atualizado_em=NOW()
             WHERE id_tiny=$1
-          `, [id, totalProdutos, totalDesconto, totalFrete, totalImpostos, totalOutras, fretePago, comissoes, taxasTarifas, custoProdutos, margem, margemPct, qtdItens]);
+          `, [id, totalProdutos, totalDesconto, totalFrete, totalOutras, fretePago, comissaoCalc, taxaCalc, impostoCalc, custoProdutos, margem, margemPct, qtdItens]);
           enriched++;
           await new Promise(res => setTimeout(res, delayMs));
         } catch { /* pula este pedido */ }
@@ -1424,6 +1443,173 @@ module.exports = async (req, res) => {
       // Contar pendentes restantes
       const restantes = await pool.query(`SELECT COUNT(*) AS c FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE`);
       return res.json({ ok: true, account, enriched, rate_limited: rateLimited, pending: parseInt(restantes.rows[0].c) });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // ── tiny-canais: gerencia tabela de comissão/taxa por canal de venda ──
+  if (req.query.module === 'tiny-canais') {
+    try {
+      const company  = payload.company || 'lanzi';
+      const pool     = getPool(company);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS tiny_canais_config (
+          empresa             VARCHAR(50) NOT NULL,
+          canal               TEXT        NOT NULL,
+          pct_comissao        NUMERIC(6,2) NOT NULL DEFAULT 0,
+          pct_taxa            NUMERIC(6,2) NOT NULL DEFAULT 0,
+          pct_imposto         NUMERIC(6,2) NOT NULL DEFAULT 0,
+          atualizado_em       TIMESTAMP DEFAULT NOW(),
+          PRIMARY KEY (empresa, canal)
+        )
+      `);
+
+      // GET → listar canais existentes nos pedidos + config
+      if (req.method !== 'POST') {
+        const account  = req.query.account;
+        const safeName = account ? account.replace(/[^a-z0-9_]/gi,'_').toLowerCase() : null;
+        let canaisDb = [];
+        if (safeName) {
+          canaisDb = (await pool.query(
+            `SELECT DISTINCT COALESCE(NULLIF(marketplace,''),'Sem canal') AS canal
+             FROM bd_pedidos_tiny_${safeName} ORDER BY 1`
+          ).catch(()=>({rows:[]}))).rows.map(r=>r.canal);
+        }
+        const cfg = (await pool.query(
+          `SELECT canal, pct_comissao, pct_taxa, pct_imposto FROM tiny_canais_config WHERE empresa=$1 ORDER BY canal`,
+          [company]
+        )).rows;
+        const cfgMap = Object.fromEntries(cfg.map(r=>[r.canal,r]));
+        const result = canaisDb.map(canal => ({
+          canal,
+          pct_comissao: parseFloat(cfgMap[canal]?.pct_comissao || 0),
+          pct_taxa:     parseFloat(cfgMap[canal]?.pct_taxa     || 0),
+          pct_imposto:  parseFloat(cfgMap[canal]?.pct_imposto  || 0),
+        }));
+        return res.json({ canais: result, config_db: cfg });
+      }
+
+      // POST → salvar/atualizar configuração
+      const rows = Array.isArray(req.body) ? req.body : [req.body];
+      for (const { canal, pct_comissao=0, pct_taxa=0, pct_imposto=0 } of rows) {
+        if (!canal) continue;
+        await pool.query(`
+          INSERT INTO tiny_canais_config (empresa,canal,pct_comissao,pct_taxa,pct_imposto,atualizado_em)
+          VALUES ($1,$2,$3,$4,$5,NOW())
+          ON CONFLICT (empresa,canal) DO UPDATE SET
+            pct_comissao=EXCLUDED.pct_comissao, pct_taxa=EXCLUDED.pct_taxa,
+            pct_imposto=EXCLUDED.pct_imposto, atualizado_em=NOW()
+        `, [company, canal, pct_comissao, pct_taxa, pct_imposto]);
+      }
+      return res.json({ ok: true, saved: rows.length });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // ── import-margem: importa CSV exportado do relatório de Margem de Contribuição do Tiny ──
+  if (req.query.module === 'import-margem') {
+    try {
+      const account = req.query.account;
+      if (!account) return res.status(400).json({ error: 'account obrigatório' });
+      const company  = payload.company || 'lanzi';
+      const pool     = getPool(company);
+      const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+
+      // Garantir colunas financeiras
+      for (const [col, type] of [
+        ['comissoes','NUMERIC'], ['taxas_tarifas','NUMERIC'], ['frete_pago','NUMERIC'],
+        ['custo_produtos','NUMERIC'], ['margem_contribuicao','NUMERIC'], ['margem_pct','NUMERIC'],
+        ['qtd_itens','INT'], ['total_produtos','NUMERIC'], ['financeiro_ok','BOOLEAN DEFAULT FALSE'],
+      ]) await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
+
+      // Aceitar CSV como body texto ou JSON { csv: "..." }
+      let csvText = '';
+      if (typeof req.body === 'string') {
+        csvText = req.body;
+      } else if (req.body?.csv) {
+        csvText = req.body.csv;
+      } else {
+        return res.status(400).json({ error: 'Envie o CSV no body (Content-Type: text/plain) ou JSON { csv: "..." }' });
+      }
+
+      // Parser CSV (suporta ; e , como separador, ignora aspas)
+      const lines = csvText.replace(/\r/g, '').split('\n').filter(l => l.trim());
+      if (lines.length < 2) return res.status(400).json({ error: 'CSV vazio ou inválido' });
+
+      const sep = lines[0].includes(';') ? ';' : ',';
+      const parseRow = l => l.split(sep).map(c => c.replace(/^"|"$/g, '').trim());
+      const parseNum = v => {
+        if (!v || v === '-') return 0;
+        // Formato BR: 1.234,56 → remove pontos de milhar, troca vírgula por ponto
+        return parseFloat(v.replace(/\./g, '').replace(',', '.')) || 0;
+      };
+
+      const headers = parseRow(lines[0]).map(h => h.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+        .replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+      );
+
+      // Mapear colunas conhecidas do Tiny para índices
+      const idx = name => headers.findIndex(h => h.includes(name));
+      const iNumero     = idx('pedido') !== -1 ? idx('pedido') : idx('numero');
+      const iFaturamento= idx('faturamento');
+      const iComissoes  = idx('comissao');
+      const iTaxas      = idx('taxa');
+      const iFrete      = idx('frete');
+      const iCusto      = idx('custo');
+      const iMargem     = idx('margem_de') !== -1 ? idx('margem_de') : idx('margem_c');
+      const iIndice     = idx('indice');
+      const iQtd        = idx('qtd') !== -1 ? idx('qtd') : idx('quantidade');
+
+      if (iNumero === -1) return res.status(400).json({ error: 'Coluna de número do pedido não encontrada', headers });
+
+      let updated = 0, notFound = 0;
+      const notFoundList = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = parseRow(lines[i]);
+        if (row.length < 2) continue;
+
+        const numeroPedido = row[iNumero]?.replace(/\D/g, ''); // só dígitos
+        if (!numeroPedido) continue;
+
+        const faturamento = iFaturamento !== -1 ? parseNum(row[iFaturamento]) : 0;
+        const comissoes   = iComissoes   !== -1 ? parseNum(row[iComissoes])   : 0;
+        const taxas       = iTaxas       !== -1 ? parseNum(row[iTaxas])       : 0;
+        const frete       = iFrete       !== -1 ? parseNum(row[iFrete])       : 0;
+        const custo       = iCusto       !== -1 ? parseNum(row[iCusto])       : 0;
+        const margem      = iMargem      !== -1 ? parseNum(row[iMargem])      : 0;
+        const indice      = iIndice      !== -1 ? parseNum(row[iIndice])      : 0;
+        const qtd         = iQtd         !== -1 ? parseNum(row[iQtd])         : 0;
+
+        const r = await pool.query(`
+          UPDATE bd_pedidos_tiny_${safeName} SET
+            total_produtos    = $2,
+            comissoes         = $3,
+            taxas_tarifas     = $4,
+            frete_pago        = $5,
+            custo_produtos    = $6,
+            margem_contribuicao = $7,
+            margem_pct        = $8,
+            qtd_itens         = $9,
+            financeiro_ok     = TRUE,
+            atualizado_em     = NOW()
+          WHERE numero = $1
+        `, [numeroPedido, faturamento, comissoes, taxas, frete, custo, margem, indice, qtd]);
+
+        if (r.rowCount > 0) {
+          updated++;
+        } else {
+          notFound++;
+          if (notFoundList.length < 10) notFoundList.push(numeroPedido);
+        }
+      }
+
+      return res.json({
+        ok: true, total_rows: lines.length - 1,
+        updated, not_found: notFound,
+        not_found_sample: notFoundList,
+        headers_detected: headers,
+      });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
