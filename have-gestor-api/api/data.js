@@ -903,6 +903,32 @@ module.exports = async (req, res) => {
         endpoints: {
           pedidos: await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
         },
+        // Descobre a URL interna real lendo o JS da SPA
+        spa_discovery: await (async () => {
+          try {
+            // 1. Pega o HTML da página
+            const htmlRes = await fetch('https://erp.olist.com/margem_contribuicao', {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124', Accept: 'text/html' },
+              redirect: 'follow',
+            });
+            const html = await htmlRes.text();
+            // 2. Extrai src de scripts
+            const scriptSrcs = [...html.matchAll(/src=["']([^"']+\.js[^"']*?)["']/g)].map(m => m[1]);
+            const appScripts = scriptSrcs.filter(s => !s.includes('gtm') && !s.includes('analytics') && !s.includes('hotjar'));
+            // 3. Busca em até 2 scripts por "services" ou "margem" ou endpoint pattern
+            const findings = [];
+            for (const src of appScripts.slice(0, 5)) {
+              const fullUrl = src.startsWith('http') ? src : 'https://erp.olist.com' + src;
+              const jsRes = await fetch(fullUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }).catch(() => null);
+              if (!jsRes?.ok) continue;
+              const js = await jsRes.text();
+              // Busca padrões de URL de API
+              const patterns = [...js.matchAll(/["'](\/[a-z0-9/_-]*(?:services|margem|api|contribuicao)[a-z0-9/_.-]*(?:php|\?)[^"']{0,80})["']/gi)];
+              if (patterns.length > 0) findings.push({ script: src, urls: patterns.slice(0,10).map(m=>m[1]) });
+            }
+            return { html_size: html.length, scripts_found: scriptSrcs.length, app_scripts: appScripts.slice(0,8), findings };
+          } catch(e) { return { error: e.message }; }
+        })(),
         // Testa sessão PHP com access_token como cookie
         session_tests: await (async () => {
           const cookieVariants = [
