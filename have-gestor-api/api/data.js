@@ -643,7 +643,7 @@ module.exports = async (req, res) => {
     const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
     const TINY_REDIRECT_URI  = 'https://have-gestor-frontend.vercel.app/tiny-callback';
     const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
-    const TINY_API_BASE  = 'https://api.tiny.com.br/public-api/v3';
+    const TINY_API_BASE  = 'https://erp.tiny.com.br/public-api/v3';
 
     if (!TINY_CLIENT_ID) return res.status(500).json({ error: 'TINY_CLIENT_ID não configurado no servidor' });
 
@@ -802,7 +802,7 @@ module.exports = async (req, res) => {
       const refreshToken = cfg[account + '_refresh'];
       if (!accessToken) return res.status(400).json({ error: 'Conta não autenticada' });
 
-      const TINY_API       = 'https://api.tiny.com.br/public-api/v3';
+      const TINY_API       = 'https://erp.tiny.com.br/public-api/v3';
       const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
       const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
       const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
@@ -851,17 +851,20 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
-  // Módulo Tiny Sync — sincroniza pedidos e estoque via API v2 (token estático)
+  // Módulo Tiny Sync — sincroniza pedidos e estoque via API v3 (OAuth Bearer)
   if (req.query.module === 'tiny-sync') {
     const account = req.query.account; // ex: 'tiny_marcon'
     if (!account) return res.status(400).json({ error: 'account é obrigatório. Ex: ?account=tiny_marcon' });
 
     const company = payload.company || 'lanzi';
     const pool    = getPool(company);
-    const TINY_V2 = 'https://api.tiny.com.br/api2';
+    const TINY_API       = 'https://erp.tiny.com.br/public-api/v3';
+    const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
+    const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
+    const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
 
     try {
-      // 1. Buscar api_token estático no banco
+      // 1. Buscar credenciais no banco
       const cfgRes = await pool.query(
         `SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`,
         [company, account + '%']
@@ -869,37 +872,51 @@ module.exports = async (req, res) => {
       const cfg = {};
       cfgRes.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
 
-      const apiToken = cfg[account + '_api_token'];
-      const modulos  = (cfg[account + '_modulos'] || 'vendas,estoque').split(',').map(m => m.trim());
+      let accessToken    = cfg[account + '_token'];
+      const refreshToken = cfg[account + '_refresh'];
+      const expAt        = cfg[account + '_exp'];
+      const modulos      = (cfg[account + '_modulos'] || 'vendas,estoque').split(',').map(m => m.trim());
 
-      if (!apiToken) return res.status(400).json({ error: `Token de API não encontrado para ${account}. Salve via configuracoes?module=configuracoes com chave=${account}_api_token.` });
+      if (!accessToken) return res.status(400).json({ error: `Conta ${account} não autenticada.` });
+
+      // 2. Renovar token se expirado (ou sempre renovar para garantir token fresco)
+      if (refreshToken && TINY_CLIENT_ID) {
+        const rr = await fetch(TINY_TOKEN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'refresh_token', client_id: TINY_CLIENT_ID, client_secret: TINY_CLIENT_SECRET, refresh_token: refreshToken }).toString(),
+        });
+        if (rr.ok) {
+          const nt = await rr.json();
+          accessToken = nt.access_token;
+          const newExp = new Date(Date.now() + (nt.expires_in || 300) * 1000).toISOString();
+          for (const [k, v] of [[account+'_token', nt.access_token],[account+'_refresh', nt.refresh_token||refreshToken],[account+'_exp', newExp]]) {
+            await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+          }
+        }
+      }
 
       const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
       const results  = {};
 
-      // Helper: fetch paginado da API v2 do Tiny
-      async function tinyV2Pages(endpoint, extraParams = {}) {
+      // Helper: fetch paginado da Tiny API v3
+      async function tinyPages(endpoint, params = {}) {
         const items = [];
         let pagina  = 1;
         while (true) {
-          const qs = new URLSearchParams({ token: apiToken, formato: 'json', ...extraParams, pagina: String(pagina) }).toString();
-          const r  = await fetch(`${TINY_V2}/${endpoint}?${qs}`);
-          if (!r.ok) break;
-          const d  = await r.json();
-          const ret = d.retorno || {};
-          if (ret.status !== 'OK' && ret.status !== 'Ok') break;
-          const key = Object.keys(ret).find(k => Array.isArray(ret[k]));
-          if (!key) break;
-          const pg = ret[key];
+          const qs = new URLSearchParams({ ...params, pagina: String(pagina), limite: '100' }).toString();
+          const r  = await fetch(`${TINY_API}${endpoint}?${qs}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+          if (!r.ok) { console.error('[tiny-sync] ' + endpoint + ' p' + pagina + ' → ' + r.status); break; }
+          const d   = await r.json();
+          const pg  = d.itens || d.data || [];
           items.push(...pg);
-          const totalPages = parseInt(ret.numero_paginas || ret.totalPaginas || '1');
-          if (pagina >= totalPages || pg.length === 0) break;
+          if (pagina >= (d.totalPaginas || 1) || pg.length === 0) break;
           pagina++;
         }
         return items;
       }
 
-      // 2. Sincronizar pedidos (últimos 90 dias)
+      // 3. Sincronizar pedidos (últimos 90 dias)
       if (modulos.includes('vendas')) {
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY,
@@ -910,19 +927,11 @@ module.exports = async (req, res) => {
           forma_pagamento TEXT, transportadora TEXT, codigo_rastreamento TEXT,
           canal_venda TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
-
-        const fmtDate = (d) => {
-          if (!d) return null;
-          const [day, month, year] = d.split('/');
-          return year && month && day ? `${year}-${month}-${day}` : null;
-        };
-
-        const dataFim   = new Date().toLocaleDateString('pt-BR');
-        const dataIni   = new Date(Date.now() - 90 * 86400000).toLocaleDateString('pt-BR');
-        const pedidosList = await tinyV2Pages('pedidos.pesquisa.php', { dataInicial: dataIni, dataFinal: dataFim });
+        const dataFinal   = new Date().toISOString().split('T')[0];
+        const dataInicial = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
+        const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
         let cnt = 0;
-        for (const wrapper of pedidosList) {
-          const p = wrapper.pedido || wrapper;
+        for (const p of pedidos) {
           await pool.query(`
             INSERT INTO bd_pedidos_tiny_${safeName}
               (id_tiny,numero,numero_ecommerce,data_pedido,situacao,nome_cliente,cpf_cnpj,uf,
@@ -932,54 +941,53 @@ module.exports = async (req, res) => {
             ON CONFLICT (id_tiny) DO UPDATE SET
               situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido, atualizado_em=NOW()
           `, [
-            String(p.id||p.numero||''), p.numero||null, p.numero_ecommerce||null,
-            fmtDate(p.data_pedido)||null, p.situacao||null,
-            p.nome||p.nome_contato||null, p.cpf_cnpj||null, p.uf||null,
-            parseFloat(p.valor||p.total_produtos||0)||0,
-            parseFloat(p.frete||p.valor_frete||0)||0,
-            parseFloat(p.desconto||p.valor_desconto||0)||0,
-            parseFloat(p.valor||p.total||0)||0,
-            p.forma_pagamento||null, p.transportadora||null,
-            p.codigo_rastreamento||null, p.canal_venda||null,
+            String(p.id||p.numero||''), p.numero||null, p.numeroEcommerce||p.numero_ecommerce||null,
+            p.dataCriacao ? p.dataCriacao.split('T')[0] : null,
+            p.situacao?.descricao||p.situacao||null,
+            p.contato?.nome||p.cliente?.nome||null, p.contato?.cpfCnpj||p.cliente?.cpf_cnpj||null,
+            p.contato?.endereco?.uf||p.cliente?.uf||null,
+            parseFloat(p.totalProdutos||p.total_produtos||0)||0,
+            parseFloat(p.totalFrete||p.valor_frete||0)||0,
+            parseFloat(p.totalDesconto||p.valor_desconto||0)||0,
+            parseFloat(p.total||p.valor_total||0)||0,
+            p.formaPagamento?.nome||null, p.transportador?.nome||null,
+            p.codigoRastreamento||null, p.canalVenda||null,
           ]);
           cnt++;
         }
         results.vendas = cnt;
       }
 
-      // 3. Sincronizar produtos/estoque
+      // 4. Sincronizar estoque/produtos
       if (modulos.includes('estoque')) {
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_estoque_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY, sku TEXT, nome TEXT, unidade TEXT,
           estoque_atual NUMERIC DEFAULT 0, estoque_minimo NUMERIC DEFAULT 0,
           preco_custo NUMERIC DEFAULT 0, preco_venda NUMERIC DEFAULT 0,
-          marca TEXT, categoria TEXT, ativo TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
+          marca TEXT, categoria TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
-        const prodList = await tinyV2Pages('produtos.pesquisa.php', { situacao: 'A' });
+        const produtos = await tinyPages('/produtos');
         let cnt = 0;
-        for (const wrapper of prodList) {
-          const p = wrapper.produto || wrapper;
+        for (const p of produtos) {
           await pool.query(`
-            INSERT INTO bd_estoque_tiny_${safeName}
-              (id_tiny,sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,ativo,atualizado_em)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
+            INSERT INTO bd_estoque_tiny_${safeName} (id_tiny,sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,atualizado_em)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())
             ON CONFLICT (id_tiny) DO UPDATE SET
               nome=EXCLUDED.nome, estoque_atual=EXCLUDED.estoque_atual,
               estoque_minimo=EXCLUDED.estoque_minimo, preco_venda=EXCLUDED.preco_venda, atualizado_em=NOW()
           `, [
             String(p.id||p.codigo||''), p.codigo||null, p.nome||null, p.unidade||null,
-            parseFloat(p.estoqueAtual||p.estoque_atual||0)||0,
-            parseFloat(p.estoqueMinimo||p.estoque_minimo||0)||0,
-            parseFloat(p.precoCusto||p.preco_custo||0)||0,
-            parseFloat(p.preco||p.preco_venda||0)||0,
-            p.marca||null, p.categoria||null, p.situacao||'A',
+            parseFloat(p.saldo?.total??p.estoqueAtual??0)||0,
+            parseFloat(p.saldo?.minimo??p.estoqueMinimo??0)||0,
+            parseFloat(p.precoCusto||0)||0, parseFloat(p.preco||0)||0,
+            p.marca||null, p.categoria?.nome||p.categoria||null,
           ]);
           cnt++;
         }
         results.estoque = cnt;
       }
 
-      // 4. Atualizar timestamp de sync
+      // 5. Atualizar timestamp de sync
       await pool.query(
         `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`,
         [company, account + '_token_sync', new Date().toLocaleString('pt-BR')]
