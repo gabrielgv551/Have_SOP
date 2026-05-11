@@ -1162,7 +1162,8 @@ module.exports = async (req, res) => {
       }
 
       const safeName  = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
-      const batchSize = parseInt(req.query.batch || '50');
+      const batchSize = parseInt(req.query.batch || '200');
+      const delayMs   = parseInt(req.query.delay || '600');
       const TINY_API  = 'https://erp.tiny.com.br/public-api/v3';
 
       // 1. Garantir colunas financeiras existem
@@ -1196,7 +1197,7 @@ module.exports = async (req, res) => {
       for (const id of ids) {
         try {
           const r = await fetch(`${TINY_API}/pedidos/${id}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
-          if (r.status === 429) { rateLimited++; if (rateLimited >= 3) break; await new Promise(res => setTimeout(res, 2000)); continue; }
+          if (r.status === 429) { rateLimited++; if (rateLimited >= 5) break; await new Promise(res => setTimeout(res, 5000)); continue; }
           if (!r.ok) { await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET financeiro_ok=TRUE WHERE id_tiny=$1`, [id]); continue; }
           rateLimited = 0;
           const d = await r.json();
@@ -1235,6 +1236,7 @@ module.exports = async (req, res) => {
             WHERE id_tiny=$1
           `, [id, totalProdutos, totalDesconto, totalFrete, totalImpostos, totalOutras, fretePago, custoProdutos, margem, margemPct, qtdItens]);
           enriched++;
+          await new Promise(res => setTimeout(res, delayMs));
         } catch { /* pula este pedido */ }
       }
 
