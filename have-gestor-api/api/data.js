@@ -1124,6 +1124,25 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
+  // ── tiny-skip-old: marca pedidos antes de uma data como financeiro_ok para não enriquecer ──
+  if (req.query.module === 'tiny-skip-old') {
+    try {
+      const account  = req.query.account;
+      const before   = req.query.before; // ex: 2026-01-01
+      if (!account || !before) return res.status(400).json({ error: 'account e before obrigatórios' });
+      const company  = payload.company || 'lanzi';
+      const pool     = getPool(company);
+      const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+      await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS financeiro_ok BOOLEAN DEFAULT FALSE`).catch(()=>{});
+      const r = await pool.query(
+        `UPDATE bd_pedidos_tiny_${safeName} SET financeiro_ok=TRUE WHERE (data_criacao < $1 OR data_criacao IS NULL) AND financeiro_ok IS NOT TRUE`,
+        [before]
+      );
+      const pending = await pool.query(`SELECT COUNT(*) AS c FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE`);
+      return res.json({ ok: true, skipped: r.rowCount, pending_to_enrich: parseInt(pending.rows[0].c) });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
   // ── tiny-enrich: enriquece pedidos com dados financeiros do endpoint de detalhe ──
   if (req.query.module === 'tiny-enrich') {
     try {
@@ -1183,10 +1202,16 @@ module.exports = async (req, res) => {
       for (const [col, type] of financialCols)
         await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
 
-      // 2. Buscar pedidos sem dados financeiros ainda
+      // 2. Buscar pedidos sem dados financeiros ainda (com filtro de data opcional)
+      const enrichFrom = req.query.from || null;
+      const enrichTo   = req.query.to   || null;
+      let dateClause = '';
+      const dateParams = [batchSize];
+      if (enrichFrom) { dateParams.push(enrichFrom); dateClause += ` AND data_criacao >= $${dateParams.length}`; }
+      if (enrichTo)   { dateParams.push(enrichTo);   dateClause += ` AND data_criacao <= $${dateParams.length}`; }
       const pendentes = await pool.query(
-        `SELECT id_tiny FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE ORDER BY data_criacao DESC LIMIT $1`,
-        [batchSize]
+        `SELECT id_tiny FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE${dateClause} ORDER BY data_criacao DESC LIMIT $1`,
+        dateParams
       );
       const ids = pendentes.rows.map(r => r.id_tiny);
       if (ids.length === 0) return res.json({ ok: true, account, enriched: 0, pending: 0, message: 'Todos os pedidos já enriquecidos!' });
