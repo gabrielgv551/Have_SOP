@@ -857,14 +857,32 @@ module.exports = async (req, res) => {
       // Testa conta/info (endpoint mais simples)
       const ccFetch = ccToken ? await tinyFetch(`${TINY_API}/conta/info`, ccToken) : null;
 
+      // Testa múltiplos formatos de auth
+      async function tinyFetchFull(url, tok, scheme) {
+        const r = await fetch(url, { headers: { 'Authorization': (scheme||'Bearer') + ' ' + (tok||accessToken) } });
+        const text = await r.text();
+        let body; try { body = JSON.parse(text); } catch { body = text.substring(0, 200) || null; }
+        const wwwAuth = r.headers.get('www-authenticate');
+        return { status: r.status, body, wwwAuth };
+      }
+
+      const endpoint = `${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`;
       return res.json({
-        token_exp_original: cfg[account + '_exp'],
+        token_roles_count: tokenClaims?.roles?.['tiny-api']?.length || 0,
+        token_email: tokenClaims?.email,
+        token_email_verified: tokenClaims?.email_verified,
+        token_sub: tokenClaims?.sub,
         refresh: refreshResult,
-        token_claims: tokenClaims || 'not-jwt',
-        pedidos_user_token:  await tinyFetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=3`),
-        produtos_user_token: await tinyFetch(`${TINY_API}/produtos?pagina=1&limite=3`),
-        client_credentials: ccResult,
-        conta_info_cc: ccFetch,
+        tests: {
+          bearer: await tinyFetchFull(endpoint),
+          bearer_conta: await tinyFetchFull(`${TINY_API}/conta/info`),
+          query_token: await (async () => {
+            const r = await fetch(`${endpoint}&access_token=${accessToken}`);
+            const text = await r.text();
+            let body; try { body = JSON.parse(text); } catch { body = text.substring(0,200)||null; }
+            return { status: r.status, body };
+          })(),
+        },
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
