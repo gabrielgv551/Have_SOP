@@ -25,6 +25,18 @@ const TABELAS_PERMITIDAS = [
   'dashboard_filters',
 ];
 
+const CANAL_COL = `COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text))`;
+const CANAL_GRUPO_SQL = `CASE
+  WHEN ${CANAL_COL} ILIKE '%amazon%' THEN 'Amazon'
+  WHEN TRIM("Canal de venda"::text) ILIKE 'ml full%' THEN TRIM("Canal de venda"::text)
+  WHEN ${CANAL_COL} ILIKE '%mercado livre%' OR ${CANAL_COL} ILIKE 'melibr%' THEN 'Mercado Livre'
+  WHEN ${CANAL_COL} ILIKE '%shopee%' THEN 'Shopee'
+  WHEN ${CANAL_COL} ILIKE '%magalu%' THEN 'Magalu'
+  WHEN ${CANAL_COL} ILIKE '%tiktok%' THEN 'TikTok Shop'
+  WHEN ${CANAL_COL} ILIKE '%loja integrada%' THEN 'Loja Integrada'
+  ELSE ${CANAL_COL}
+END`;
+
 // Cache simples de pools por empresa (evita criar nova conexão a cada request)
 const pools = {};
 
@@ -81,13 +93,81 @@ async function lerEstoqueFullMap(pool, tableName) {
   } catch { return {}; }
 }
 // ──────────────────────────────────────────────────────────────
+// ML TOKEN HELPER — lê access_token do DB e renova se expirado
+// ──────────────────────────────────────────────────────────────
+async function getMlToken(pool, company, accountId) {
+  const chave = accountId + '_token';
+  const r = await pool.query(
+    `SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`,
+    [company, accountId + '%']
+  );
+  const cfg = {};
+  r.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
+
+  const accessToken  = cfg[chave];
+  const refreshToken = cfg[chave + '_refresh'];
+  const expAt        = cfg[chave + '_exp'];
+
+  if (!accessToken || !refreshToken) throw new Error(`Conta ${accountId} não autenticada`);
+
+  const expired = expAt ? new Date(expAt).getTime() - 5 * 60 * 1000 < Date.now() : true;
+  if (!expired) return accessToken;
+
+  const ML_CLIENT_ID     = process.env.ML_CLIENT_ID     || '2803787506623043';
+  const ML_CLIENT_SECRET = process.env.ML_CLIENT_SECRET || 'y7HAmpTr8wWjWwTL55pJiwq3y1MNxCkE';
+  const tokenRes = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ grant_type: 'refresh_token', client_id: ML_CLIENT_ID, client_secret: ML_CLIENT_SECRET, refresh_token: refreshToken }),
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenRes.ok) throw new Error('Falha ao renovar token ML: ' + (tokenData.message || tokenRes.status));
+
+  const newExpAt = new Date(Date.now() + (tokenData.expires_in || 21600) * 1000).toISOString();
+  for (const [k, v] of [
+    [chave,             tokenData.access_token],
+    [chave + '_refresh', tokenData.refresh_token],
+    [chave + '_exp',     newExpAt],
+  ]) {
+    await pool.query(
+      `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW())
+       ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`,
+      [company, k, v]
+    );
+  }
+  return tokenData.access_token;
+}
+// ──────────────────────────────────────────────────────────────
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // PATCH — atualizar campo empresa de um título de contas_pagar
+  if (req.method === 'PATCH') {
+    const auth2 = (req.headers.authorization || '').split(' ')[1];
+    if (!auth2) return res.status(401).json({ error: 'Token não fornecido' });
+    let p2;
+    try { p2 = jwt.verify(auth2, process.env.JWT_SECRET); }
+    catch { return res.status(401).json({ error: 'Token inválido' }); }
+    const pool2 = getPool(p2.company || 'lanzi');
+    const { id, empresa } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id obrigatorio' });
+    try {
+      await pool2.query('UPDATE contas_pagar SET empresa=$1 WHERE id=$2', [empresa || null, String(id)]);
+      return res.json({ ok: true });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // Módulo público — sem autenticação (só expõe client IDs, nunca secrets)
+  if (req.query.module === 'public-config') {
+    return res.json({
+      tiny_client_id: (process.env.TINY_CLIENT_ID || '').trim(),
+    });
+  }
 
   // 1. Verificar token JWT
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -117,7 +197,7 @@ module.exports = async (req, res) => {
         return res.json({ meses: r.rows });
       }
       if (todos_meses === 'true') {
-        const [rMeses, rbMeses, rSkus] = await Promise.all([
+        const [rMeses, rbMeses, rSkus, rSkusMes] = await Promise.all([
           pool.query(`
             SELECT
               "Mes"::int AS mes,
@@ -125,6 +205,10 @@ module.exports = async (req, res) => {
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS receita_liquida,
               SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END) AS repasse_financeiro,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Frete Pago Prod"::numeric,0) ELSE 0 END) AS frete_pago_prod,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Comissao Produto"::numeric,0) ELSE 0 END) AS comissao_produto,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Imposto Produto"::numeric,0) ELSE 0 END) AS imposto_produto,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END) AS qtd_liquida
             FROM bd_vendas
             WHERE "Ano"::int = $1
@@ -151,6 +235,7 @@ module.exports = async (req, res) => {
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
               SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END) AS repasse_financeiro,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
               ROUND(
                 (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
@@ -164,6 +249,25 @@ module.exports = async (req, res) => {
             GROUP BY "Sku"
             HAVING SUM("Total Venda") > 0
             ORDER BY receita_liquida DESC
+          `, [parseInt(ano)]),
+          pool.query(`
+            SELECT
+              "Sku"            AS sku,
+              "Mes"::int       AS mes,
+              SUM("Total Venda")                                                                                AS receita_bruta,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"    ELSE 0 END)      AS receita_liquida,
+              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"    ELSE 0 END)      AS devolucoes,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END) AS repasse_financeiro,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Frete Pago Prod"::numeric,0) ELSE 0 END) AS frete_pago_prod,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Comissao Produto"::numeric,0) ELSE 0 END) AS comissao_produto,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Imposto Produto"::numeric,0) ELSE 0 END) AS imposto_produto,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END)  AS qtd_liquida
+            FROM bd_vendas
+            WHERE "Ano"::int = $1
+              AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''
+            GROUP BY "Sku", "Mes"
+            ORDER BY "Mes"::int
           `, [parseInt(ano)])
         ]);
         const rbMap = {};
@@ -174,9 +278,13 @@ module.exports = async (req, res) => {
           receita_liquida:     parseFloat(r.receita_liquida)     || 0,
           devolucoes:          parseFloat(r.devolucoes)          || 0,
           margem_contribuicao: parseFloat(r.margem_contribuicao) || 0,
+          repasse_financeiro:  parseFloat(r.repasse_financeiro)  || 0,
+          frete_pago_prod:     parseFloat(r.frete_pago_prod)     || 0,
+          comissao_produto:    parseFloat(r.comissao_produto)    || 0,
+          imposto_produto:     parseFloat(r.imposto_produto)     || 0,
           qtd_liquida:         parseFloat(r.qtd_liquida)         || 0,
         }));
-        return res.json({ meses_dre, skus_ano: rSkus.rows });
+        return res.json({ meses_dre, skus_ano: rSkus.rows, skus_mes: rSkusMes.rows });
       }
       const [r, rbRow] = await Promise.all([
         pool.query(`
@@ -271,7 +379,10 @@ module.exports = async (req, res) => {
       if (req.method === 'GET') {
         const r = await pool.query(`
           SELECT m.marca,
-                 f.lead_time_dias
+                 f.lead_time_dias,
+                 COALESCE(f.frequencia_tipo, 'mensal') AS frequencia_tipo,
+                 COALESCE(f.dia_semana_preferido, 5) AS dia_semana_preferido,
+                 COALESCE(f.intervalo_dias, 30) AS intervalo_dias
           FROM (
             SELECT DISTINCT "Marca" AS marca FROM cadastros_sku
             WHERE "Marca" IS NOT NULL AND TRIM("Marca") <> ''
@@ -282,7 +393,7 @@ module.exports = async (req, res) => {
         return res.json({ marcas: r.rows });
       }
       if (req.method === 'POST') {
-        const { marca, lead_time_dias } = req.body || {};
+        const { marca, lead_time_dias, frequencia_tipo, dia_semana_preferido, intervalo_dias } = req.body || {};
         if (!marca || lead_time_dias == null) {
           return res.status(400).json({ error: 'marca e lead_time_dias são obrigatórios' });
         }
@@ -290,11 +401,18 @@ module.exports = async (req, res) => {
         if (isNaN(dias) || dias < 1) {
           return res.status(400).json({ error: 'lead_time_dias deve ser inteiro >= 1' });
         }
+        const freqTipo = ['semanal','quinzenal','mensal','custom'].includes(frequencia_tipo) ? frequencia_tipo : 'mensal';
+        const diaSem = Math.max(0, Math.min(6, parseInt(dia_semana_preferido) || 5));
+        const intervalo = Math.max(1, parseInt(intervalo_dias) || 30);
         await pool.query(`
-          INSERT INTO fornecedores_config (empresa, marca, lead_time_dias)
-          VALUES ($1, $2, $3)
-          ON CONFLICT (empresa, marca) DO UPDATE SET lead_time_dias = EXCLUDED.lead_time_dias
-        `, [company, marca, dias]);
+          INSERT INTO fornecedores_config (empresa, marca, lead_time_dias, frequencia_tipo, dia_semana_preferido, intervalo_dias)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (empresa, marca) DO UPDATE SET
+            lead_time_dias = EXCLUDED.lead_time_dias,
+            frequencia_tipo = EXCLUDED.frequencia_tipo,
+            dia_semana_preferido = EXCLUDED.dia_semana_preferido,
+            intervalo_dias = EXCLUDED.intervalo_dias
+        `, [company, marca, dias, freqTipo, diaSem, intervalo]);
         return res.json({ ok: true });
       }
     } catch(e) {
@@ -390,22 +508,436 @@ module.exports = async (req, res) => {
       await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
       if (req.method === 'GET') {
         const r = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
-        const cfg = {};
-        r.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
-        return res.json({ gefinance_email: cfg['gefinance_email'] || null, gefinance_password_set: !!cfg['gefinance_password'] });
+        const result = {};
+        r.rows.forEach(({ chave, valor }) => {
+          const sensitive = chave.endsWith('_token') || chave.endsWith('_refresh') || chave === 'gefinance_password';
+          result[chave] = sensitive ? (valor ? '***' : null) : valor;
+        });
+        result.gefinance_password_set = !!result.gefinance_password;
+        return res.json(result);
       }
       if (req.method === 'POST') {
-        const body = req.body || {};
-        const allowed = ['gefinance_email', 'gefinance_password'];
-        const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
+        const body = (typeof req.body === 'string') ? JSON.parse(req.body) : (req.body || {});
+        const updates = Object.entries(body).filter(([k, v]) => typeof k === 'string' && k.length > 0);
         if (!updates.length) return res.status(400).json({ error: 'Nenhum campo válido enviado.' });
         for (const [chave, valor] of updates) {
-          await pool.query(`INSERT INTO configuracoes (empresa, chave, valor, atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa, chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`, [company, chave, String(valor)]);
+          if (valor === '' || valor === null) {
+            await pool.query(`DELETE FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`, [company, chave.replace(/_token$/, '') + '%']);
+          } else {
+            await pool.query(`INSERT INTO configuracoes (empresa, chave, valor, atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa, chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`, [company, chave, String(valor)]);
+          }
         }
         return res.json({ ok: true, saved: updates.map(([k]) => k) });
       }
       return res.status(405).json({ error: 'Method not allowed' });
     } catch(e) { console.error('[CONFIGURACOES]', e.message); return res.status(500).json({ error: e.message }); }
+  }
+
+  // Módulo ML OAuth — troca code por tokens
+  if (req.query.module === 'ml-oauth') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    const _mlBody = (typeof req.body === 'string') ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const { code, state } = _mlBody;
+    if (!code || !state) return res.status(400).json({ error: 'code e state são obrigatórios', debug: { bodyType: typeof req.body, keys: Object.keys(_mlBody), hasCode: !!code, hasState: !!state } });
+    const ML_CLIENT_ID     = process.env.ML_CLIENT_ID     || '2803787506623043';
+    const ML_CLIENT_SECRET = process.env.ML_CLIENT_SECRET || 'y7HAmpTr8wWjWwTL55pJiwq3y1MNxCkE';
+    const ML_REDIRECT_URI  = 'https://have-gestor-frontend.vercel.app/ml-callback';
+    try {
+      const tokenRes = await fetch('https://api.mercadolibre.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ grant_type: 'authorization_code', client_id: ML_CLIENT_ID, client_secret: ML_CLIENT_SECRET, code, redirect_uri: ML_REDIRECT_URI }),
+      });
+      const tokenData = await tokenRes.json();
+      if (!tokenRes.ok) return res.status(400).json({ error: tokenData.message || 'Erro ao trocar código ML' });
+      let nick = state;
+      try {
+        const uRes = await fetch('https://api.mercadolibre.com/users/me', { headers: { 'Authorization': 'Bearer ' + tokenData.access_token } });
+        const uData = await uRes.json();
+        nick = uData.nickname || uData.email || state;
+      } catch {}
+      const company = payload.company || 'lanzi';
+      const pool = getPool(company);
+      const chave = state + '_token';
+      const expAt = new Date(Date.now() + (tokenData.expires_in || 21600) * 1000).toISOString();
+      await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
+      for (const [k, v] of [[chave, tokenData.access_token],[chave+'_refresh', tokenData.refresh_token],[chave+'_nick', nick],[chave+'_user_id', String(tokenData.user_id||'')],[chave+'_exp', expAt]]) {
+        await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+      }
+      // ── Disparar ETL Worker (await necessário no Vercel serverless) ──
+      const ETL_WORKER_URL = process.env.ETL_WORKER_URL;
+      const ETL_SECRET     = process.env.ETL_SECRET;
+      let etl_debug = { url: ETL_WORKER_URL || null, account_id: state, triggered: false, error: null };
+      if (ETL_WORKER_URL) {
+        try {
+          const etlRes = await fetch(`${ETL_WORKER_URL}/etl/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company, account_id: state, secret: ETL_SECRET || '' }),
+            signal: AbortSignal.timeout(8000),
+          });
+          const etlData = await etlRes.json();
+          console.log('[ETL Worker] trigger:', etlData);
+          etl_debug.triggered = true;
+          etl_debug.job_id = etlData.job_id || null;
+        } catch(err) {
+          console.error('[ETL Worker] trigger failed:', err.message);
+          etl_debug.error = err.message;
+        }
+      }
+      return res.json({ ok: true, nick, etl: etl_debug });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // Módulo ML Remove — desconectar conta ML (apaga tokens + tabela via worker)
+  if (req.query.module === 'ml-remove') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    const _body = (typeof req.body === 'string') ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const { account_id } = _body;
+    if (!account_id) return res.status(400).json({ error: 'account_id é obrigatório' });
+
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+
+    try {
+      // 1. Apagar tokens da conta em configuracoes
+      const del = await pool.query(
+        `DELETE FROM configuracoes WHERE chave LIKE $1`,
+        [`${account_id}%`]
+      );
+
+      // 2. Notificar worker para dropar a tabela
+      const ETL_WORKER_URL = process.env.ETL_WORKER_URL;
+      const ETL_SECRET     = process.env.ETL_SECRET;
+      let worker_result = { triggered: false };
+      if (ETL_WORKER_URL) {
+        try {
+          const wRes = await fetch(`${ETL_WORKER_URL}/etl/remove-account`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company, account_id, secret: ETL_SECRET || '' }),
+            signal: AbortSignal.timeout(10000),
+          });
+          worker_result = await wRes.json();
+        } catch(e) {
+          worker_result = { triggered: false, error: e.message };
+        }
+      }
+
+      return res.json({
+        ok: true,
+        chaves_removidas: del.rowCount,
+        worker: worker_result,
+      });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // Módulo Tiny OAuth — conectar conta Tiny ERP v3
+  if (req.query.module === 'tiny-oauth') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    const _tBody = (typeof req.body === 'string') ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const { code, state, modules } = _tBody;
+    if (!code || !state) return res.status(400).json({ error: 'code e state são obrigatórios' });
+
+    const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
+    const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
+    const TINY_REDIRECT_URI  = 'https://have-gestor-frontend.vercel.app/tiny-callback';
+    const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
+    const TINY_API_BASE  = 'https://api.tiny.com.br/public-api/v3';
+
+    if (!TINY_CLIENT_ID) return res.status(500).json({ error: 'TINY_CLIENT_ID não configurado no servidor' });
+
+    try {
+      // 1. Trocar code por tokens
+      const tokenRes = await fetch(TINY_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: TINY_CLIENT_ID,
+          client_secret: TINY_CLIENT_SECRET,
+          code,
+          redirect_uri: TINY_REDIRECT_URI,
+        }).toString(),
+      });
+      const tokenData = await tokenRes.json();
+      if (!tokenRes.ok) return res.status(400).json({
+        error: tokenData.error_description || tokenData.error || 'Erro ao trocar código Tiny',
+        _debug: { status: tokenRes.status, body: tokenData, client_id_len: TINY_CLIENT_ID.length, redirect_uri: TINY_REDIRECT_URI }
+      });
+
+      const apiToken = tokenData.access_token;
+
+      // 2. Obter nome da empresa no Tiny
+      let nick = state;
+      try {
+        const uRes = await fetch(`${TINY_API_BASE}/empresas`, {
+          headers: { 'Authorization': 'Bearer ' + apiToken },
+        });
+        const uData = await uRes.json();
+        const emp = (uData.itens || uData.data || [])[0];
+        if (emp) nick = emp.nomeFantasia || emp.razaoSocial || emp.nome || state;
+      } catch {}
+
+      // 3. Salvar tokens em configuracoes
+      const company = payload.company || 'lanzi';
+      const pool    = getPool(company);
+      const expAt   = new Date(Date.now() + (tokenData.expires_in || 21600) * 1000).toISOString();
+      const modsStr = modules || 'vendas,estoque,pedidos';
+      await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
+      for (const [k, v] of [
+        [`${state}_token`,   apiToken],
+        [`${state}_refresh`, tokenData.refresh_token],
+        [`${state}_nick`,    nick],
+        [`${state}_exp`,     expAt],
+        [`${state}_modulos`, modsStr],
+      ]) {
+        await pool.query(
+          `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`,
+          [company, k, v]
+        );
+      }
+
+      // 4. Criar tabelas no banco conforme módulos selecionados
+      const mods = modsStr.split(',').map(m => m.trim());
+      const safeName = state.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+
+      if (mods.includes('vendas')) {
+        await pool.query(`CREATE TABLE IF NOT EXISTS bd_vendas_tiny_${safeName} (
+          numero_pedido      TEXT NOT NULL,
+          numero_ecommerce   TEXT,
+          data_pedido        DATE,
+          situacao           TEXT,
+          canal_venda        TEXT,
+          plataforma         TEXT,
+          cliente_nome       TEXT,
+          cliente_cpf_cnpj   TEXT,
+          cliente_uf         TEXT,
+          sku                TEXT NOT NULL,
+          nome_produto       TEXT,
+          quantidade         NUMERIC,
+          preco_unitario     NUMERIC,
+          preco_custo        NUMERIC,
+          preco_final        NUMERIC,
+          desconto_item      NUMERIC,
+          total_produtos     NUMERIC,
+          valor_frete        NUMERIC,
+          valor_desconto     NUMERIC,
+          total_pedido       NUMERIC,
+          forma_pagamento    TEXT,
+          numero_parcelas    INT,
+          transportadora     TEXT,
+          codigo_rastreamento TEXT,
+          atualizado_em      TIMESTAMP DEFAULT NOW(),
+          PRIMARY KEY (numero_pedido, sku)
+        )`);
+      }
+
+      if (mods.includes('estoque')) {
+        await pool.query(`CREATE TABLE IF NOT EXISTS bd_estoque_tiny_${safeName} (
+          sku            TEXT PRIMARY KEY,
+          nome           TEXT,
+          unidade        TEXT,
+          estoque_atual  NUMERIC DEFAULT 0,
+          estoque_minimo NUMERIC DEFAULT 0,
+          preco_custo    NUMERIC DEFAULT 0,
+          preco_venda    NUMERIC DEFAULT 0,
+          marca          TEXT,
+          categoria      TEXT,
+          atualizado_em  TIMESTAMP DEFAULT NOW()
+        )`);
+      }
+
+      if (mods.includes('pedidos')) {
+        await pool.query(`CREATE TABLE IF NOT EXISTS po_tiny_${safeName} (
+          numero_pedido   TEXT NOT NULL,
+          sku             TEXT NOT NULL,
+          fornecedor      TEXT,
+          data_pedido     DATE,
+          data_prevista   DATE,
+          situacao        TEXT,
+          nome_produto    TEXT,
+          quantidade      NUMERIC,
+          preco_unitario  NUMERIC,
+          total_pedido    NUMERIC,
+          atualizado_em   TIMESTAMP DEFAULT NOW(),
+          PRIMARY KEY (numero_pedido, sku)
+        )`);
+      }
+
+      // 5. Disparar ETL Worker
+      const ETL_WORKER_URL = process.env.ETL_WORKER_URL;
+      const ETL_SECRET     = process.env.ETL_SECRET;
+      let etl_debug = { triggered: false, error: null };
+      if (ETL_WORKER_URL) {
+        try {
+          const etlRes = await fetch(`${ETL_WORKER_URL}/etl/trigger-tiny`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company, account_id: state, modules: modsStr, secret: ETL_SECRET || '' }),
+            signal: AbortSignal.timeout(8000),
+          });
+          const etlData = await etlRes.json();
+          etl_debug = { triggered: true, job_id: etlData.job_id || null };
+        } catch(err) {
+          etl_debug = { triggered: false, error: err.message };
+        }
+      }
+
+      return res.json({ ok: true, nick, modulos: mods, etl: etl_debug });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // Módulo Tiny Sync — sincroniza pedidos e estoque do Tiny ERP para o banco
+  if (req.query.module === 'tiny-sync') {
+    const account = req.query.account; // ex: 'tiny_lanzi'
+    if (!account) return res.status(400).json({ error: 'account é obrigatório. Ex: ?account=tiny_lanzi' });
+
+    const company = payload.company || 'lanzi';
+    const pool    = getPool(company);
+    const TINY_API      = 'https://api.tiny.com.br/public-api/v3';
+    const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
+    const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
+    const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
+
+    try {
+      // 1. Buscar credenciais no banco
+      const cfgRes = await pool.query(
+        `SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`,
+        [company, account + '%']
+      );
+      const cfg = {};
+      cfgRes.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
+
+      let accessToken  = cfg[account + '_token'];
+      const refreshToken = cfg[account + '_refresh'];
+      const expAt        = cfg[account + '_exp'];
+      const modulos      = (cfg[account + '_modulos'] || 'vendas,estoque').split(',').map(m => m.trim());
+
+      if (!accessToken) return res.status(400).json({ error: `Conta ${account} não autenticada. Conecte via OAuth primeiro.` });
+
+      // 2. Renovar token se expirado
+      const expired = !expAt || new Date(expAt) < new Date(Date.now() + 5 * 60 * 1000);
+      if (expired && refreshToken && TINY_CLIENT_ID) {
+        const rr = await fetch(TINY_TOKEN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'refresh_token', client_id: TINY_CLIENT_ID, client_secret: TINY_CLIENT_SECRET, refresh_token: refreshToken }).toString(),
+        });
+        if (rr.ok) {
+          const nt = await rr.json();
+          accessToken = nt.access_token;
+          const newExp = new Date(Date.now() + (nt.expires_in || 21600) * 1000).toISOString();
+          for (const [k, v] of [[account+'_token', nt.access_token],[account+'_refresh', nt.refresh_token||refreshToken],[account+'_exp', newExp]]) {
+            await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+          }
+        }
+      }
+
+      const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+      const results  = {};
+
+      // Helper: fetch paginado da Tiny API
+      async function tinyPages(endpoint, params = {}) {
+        const items = [];
+        let pagina  = 1;
+        while (true) {
+          const qs = new URLSearchParams({ ...params, pagina: String(pagina), limite: '100' }).toString();
+          const r  = await fetch(`${TINY_API}${endpoint}?${qs}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+          if (!r.ok) break;
+          const d   = await r.json();
+          const pg  = d.itens || d.data || [];
+          items.push(...pg);
+          if (pagina >= (d.totalPaginas || 1) || pg.length === 0) break;
+          pagina++;
+        }
+        return items;
+      }
+
+      // 3. Sincronizar vendas (últimos 90 dias)
+      if (modulos.includes('vendas')) {
+        await pool.query(`CREATE TABLE IF NOT EXISTS bd_vendas_tiny_${safeName} (
+          numero_pedido TEXT NOT NULL, numero_ecommerce TEXT, data_pedido DATE,
+          situacao TEXT, canal_venda TEXT, plataforma TEXT,
+          cliente_nome TEXT, cliente_cpf_cnpj TEXT, cliente_uf TEXT,
+          sku TEXT NOT NULL, nome_produto TEXT, quantidade NUMERIC,
+          preco_unitario NUMERIC, preco_custo NUMERIC, preco_final NUMERIC,
+          desconto_item NUMERIC, total_produtos NUMERIC, valor_frete NUMERIC,
+          valor_desconto NUMERIC, total_pedido NUMERIC,
+          forma_pagamento TEXT, numero_parcelas INT,
+          transportadora TEXT, codigo_rastreamento TEXT,
+          atualizado_em TIMESTAMP DEFAULT NOW(),
+          PRIMARY KEY (numero_pedido, sku)
+        )`);
+        const dataFinal   = new Date().toISOString().split('T')[0];
+        const dataInicial = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
+        const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
+        let cnt = 0;
+        for (const p of pedidos) {
+          for (const item of (p.itens || [])) {
+            await pool.query(`
+              INSERT INTO bd_vendas_tiny_${safeName}
+                (numero_pedido,numero_ecommerce,data_pedido,situacao,canal_venda,plataforma,
+                 cliente_nome,cliente_cpf_cnpj,cliente_uf,sku,nome_produto,quantidade,
+                 preco_unitario,preco_custo,preco_final,desconto_item,total_produtos,
+                 valor_frete,valor_desconto,total_pedido,forma_pagamento,numero_parcelas,
+                 transportadora,codigo_rastreamento,atualizado_em)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW())
+              ON CONFLICT (numero_pedido,sku) DO UPDATE SET
+                situacao=EXCLUDED.situacao,quantidade=EXCLUDED.quantidade,preco_final=EXCLUDED.preco_final,atualizado_em=NOW()
+            `, [
+              String(p.numero||p.id), p.numero_ecommerce||null,
+              p.data_criacao ? p.data_criacao.split('T')[0] : null,
+              p.situacao||null, p.canal_venda||p.origem||null, p.plataforma||null,
+              p.cliente?.nome||null, p.cliente?.cpf_cnpj||null, p.cliente?.uf||null,
+              item.sku||item.codigo||String(item.id||''), item.nome||item.descricao||null,
+              item.quantidade||0, item.valor_unitario||item.preco||0,
+              item.valor_custo||0, item.valor_final||item.valor_unitario||0,
+              item.desconto||0, p.total_produtos||0, p.valor_frete||0,
+              p.valor_desconto||0, p.valor_total||p.total||0,
+              p.forma_pagamento?.nome||null, p.forma_pagamento?.parcelas||null,
+              p.transportador?.nome||null, p.codigo_rastreamento||null,
+            ]);
+            cnt++;
+          }
+        }
+        results.vendas = cnt;
+      }
+
+      // 4. Sincronizar estoque
+      if (modulos.includes('estoque')) {
+        await pool.query(`CREATE TABLE IF NOT EXISTS bd_estoque_tiny_${safeName} (
+          sku TEXT PRIMARY KEY, nome TEXT, unidade TEXT,
+          estoque_atual NUMERIC DEFAULT 0, estoque_minimo NUMERIC DEFAULT 0,
+          preco_custo NUMERIC DEFAULT 0, preco_venda NUMERIC DEFAULT 0,
+          marca TEXT, categoria TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
+        )`);
+        const produtos = await tinyPages('/produtos');
+        let cnt = 0;
+        for (const p of produtos) {
+          await pool.query(`
+            INSERT INTO bd_estoque_tiny_${safeName} (sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,atualizado_em)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+            ON CONFLICT (sku) DO UPDATE SET nome=EXCLUDED.nome,estoque_atual=EXCLUDED.estoque_atual,estoque_minimo=EXCLUDED.estoque_minimo,preco_venda=EXCLUDED.preco_venda,atualizado_em=NOW()
+          `, [
+            p.codigo||String(p.id), p.nome||null, p.unidade||null,
+            p.saldo?.total ?? p.estoque ?? 0, p.saldo?.minimo ?? p.estoque_minimo ?? 0,
+            p.preco_custo||0, p.preco||p.preco_venda||0,
+            p.marca||null, p.categoria?.nome||p.categoria||null,
+          ]);
+          cnt++;
+        }
+        results.estoque = cnt;
+      }
+
+      // 5. Atualizar timestamp de sync
+      await pool.query(
+        `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`,
+        [company, account + '_token_sync', new Date().toLocaleString('pt-BR')]
+      );
+
+      return res.json({ ok: true, account, synced_at: new Date().toISOString(), results });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
   // Módulo Vendas
@@ -927,7 +1459,7 @@ module.exports = async (req, res) => {
     if (tabela === 'dashboard_filters') {
       const [canalRes, marcaRes, mesesRes] = await Promise.all([
         pool.query(`
-          SELECT DISTINCT COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text)) AS canal
+          SELECT DISTINCT (${CANAL_GRUPO_SQL}) AS canal
           FROM bd_vendas
           WHERE "Canal de venda" IS NOT NULL AND TRIM("Canal de venda") != ''
           ORDER BY 1
@@ -955,11 +1487,11 @@ module.exports = async (req, res) => {
       const filterClauses = [];
       if (canalFiltro) {
         params.push(canalFiltro);
-        filterClauses.push(`COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text)) = $${params.length}`);
+        filterClauses.push(`(${CANAL_GRUPO_SQL}) = $${params.length}`);
       }
       if (marcaFiltro) {
         params.push(marcaFiltro);
-        filterClauses.push(`"Sku" IN (SELECT "Sku Anterior" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
+        filterClauses.push(`"Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
       }
       const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
       let lmSQL;
@@ -1001,7 +1533,8 @@ module.exports = async (req, res) => {
     if (tabela === 'contas_pagar') {
       result = await pool.query(`
         SELECT id, situacao, token_origem, numero_doc, historico, fornecedor,
-               valor, saldo, data_vencimento, data_emissao, atualizado_em, data_calculo
+               valor, saldo, data_vencimento, data_emissao, atualizado_em, data_calculo,
+               empresa
         FROM contas_pagar
         ORDER BY data_vencimento ASC NULLS LAST, id ASC
       `);
@@ -1013,11 +1546,11 @@ module.exports = async (req, res) => {
       const filterClauses = [];
       if (canalFiltro) {
         params.push(canalFiltro);
-        filterClauses.push(`COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"::text)) = $${params.length}`);
+        filterClauses.push(`(${CANAL_GRUPO_SQL}) = $${params.length}`);
       }
       if (marcaFiltro) {
         params.push(marcaFiltro);
-        filterClauses.push(`"Sku" IN (SELECT "Sku Anterior" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
+        filterClauses.push(`"Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
       }
       const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
       result = await pool.query(`
@@ -1054,7 +1587,7 @@ module.exports = async (req, res) => {
       return res.json(result.rows);
     }
     if (tabela === 'pmv') {
-      const { mes_prev, ano_prev, mes_curr, ano_curr, dia_ini_prev, dia_fim_prev, dia_ini_curr, dia_fim_curr } = req.query;
+      const { mes_prev, ano_prev, mes_curr, ano_curr, dia_ini_prev, dia_fim_prev, dia_ini_curr, dia_fim_curr, canal } = req.query;
       if (!mes_prev || !ano_prev || !mes_curr || !ano_curr)
         return res.status(400).json({ error: 'Parâmetros mes_prev, ano_prev, mes_curr, ano_curr são obrigatórios.' });
       const pad = n => String(n).padStart(2, '0');
@@ -1067,31 +1600,41 @@ module.exports = async (req, res) => {
       const datePrevFim = `${ano_prev}-${pad(mes_prev)}-${pad(dFimPrev)}`;
       const dateCurrIni = `${ano_curr}-${pad(mes_curr)}-${pad(dIniCurr)}`;
       const dateCurrFim = `${ano_curr}-${pad(mes_curr)}-${pad(dFimCurr)}`;
+      const pmvParams = [datePrevIni, datePrevFim, dateCurrIni, dateCurrFim];
+      let pmvCanalWhere = '';
+      if (canal) {
+        pmvParams.push(canal);
+        pmvCanalWhere = ` AND (${CANAL_GRUPO_SQL}) = $${pmvParams.length}`;
+      }
       result = await pool.query(`
         SELECT
-          "Sku" AS sku,
-          MAX("Nome Produto") AS nome_produto,
-          MAX("Categoria") AS categoria,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Total Venda" ELSE 0 END) AS rev_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) AS rev_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_curr
-        FROM bd_vendas
-        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
+          v."Sku" AS sku,
+          MAX(v."Nome Produto") AS nome_produto,
+          MAX(v."Categoria") AS categoria,
+          COALESCE(NULLIF(TRIM(MAX(cs."Marca")), ''), '–') AS marca,
+          COALESCE(MAX(pp.estoque_atual::numeric), 0) AS estoque_atual,
+          SUM(CASE WHEN v."Data"::date BETWEEN $1::date AND $2::date THEN v."Quantidade Vendida" ELSE 0 END) AS qtd_prev,
+          SUM(CASE WHEN v."Data"::date BETWEEN $1::date AND $2::date THEN v."Total Venda" ELSE 0 END) AS rev_prev,
+          SUM(CASE WHEN v."Data"::date BETWEEN $1::date AND $2::date THEN COALESCE(v."Margem Produto",0) ELSE 0 END) AS mar_prev,
+          SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN v."Quantidade Vendida" ELSE 0 END) AS qtd_curr,
+          SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN v."Total Venda" ELSE 0 END) AS rev_curr,
+          SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN COALESCE(v."Margem Produto",0) ELSE 0 END) AS mar_curr
+        FROM bd_vendas v
+        LEFT JOIN cadastros_sku cs ON TRIM(cs."Sku"::text) = TRIM(v."Sku"::text)
+        LEFT JOIN ponto_pedido pp ON TRIM(pp.sku::text) = TRIM(v."Sku"::text)
+        WHERE v."Status" !~* '(cancel|devol|n[aã]o.?pago)'
           AND (
-            "Data"::date BETWEEN $1::date AND $2::date OR
-            "Data"::date BETWEEN $3::date AND $4::date
-          )
-        GROUP BY "Sku"
-        HAVING SUM("Quantidade Vendida") > 0
-        ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) DESC
-      `, [datePrevIni, datePrevFim, dateCurrIni, dateCurrFim]);
+            v."Data"::date BETWEEN $1::date AND $2::date OR
+            v."Data"::date BETWEEN $3::date AND $4::date
+          )${pmvCanalWhere}
+        GROUP BY v."Sku"
+        HAVING SUM(v."Quantidade Vendida") > 0
+        ORDER BY SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN v."Total Venda" ELSE 0 END) DESC
+      `, pmvParams);
       return res.json(result.rows);
     }
     if (tabela === 'pmv_canais') {
-      const { mes_prev, ano_prev, mes_curr, ano_curr, dia_ini_prev, dia_fim_prev, dia_ini_curr, dia_fim_curr, sku } = req.query;
+      const { mes_prev, ano_prev, mes_curr, ano_curr, dia_ini_prev, dia_fim_prev, dia_ini_curr, dia_fim_curr, sku, canal } = req.query;
       if (!mes_prev || !ano_prev || !mes_curr || !ano_curr || !sku)
         return res.status(400).json({ error: 'Parâmetros obrigatórios ausentes.' });
       const pad = n => String(n).padStart(2, '0');
@@ -1104,6 +1647,12 @@ module.exports = async (req, res) => {
       const datePrevFim = `${ano_prev}-${pad(mes_prev)}-${pad(dFimPrev)}`;
       const dateCurrIni = `${ano_curr}-${pad(mes_curr)}-${pad(dIniCurr)}`;
       const dateCurrFim = `${ano_curr}-${pad(mes_curr)}-${pad(dFimCurr)}`;
+      const canaisParams = [datePrevIni, datePrevFim, dateCurrIni, dateCurrFim, sku];
+      let canaisCanalWhere = '';
+      if (canal) {
+        canaisParams.push(canal);
+        canaisCanalWhere = ` AND (${CANAL_GRUPO_SQL}) = $${canaisParams.length}`;
+      }
       result = await pool.query(`
         SELECT
           COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal') AS canal,
@@ -1119,14 +1668,35 @@ module.exports = async (req, res) => {
           AND (
             "Data"::date BETWEEN $1::date AND $2::date OR
             "Data"::date BETWEEN $3::date AND $4::date
-          )
+          )${canaisCanalWhere}
         GROUP BY COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal')
         HAVING SUM("Quantidade Vendida") > 0
         ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) DESC
-      `, [datePrevIni, datePrevFim, dateCurrIni, dateCurrFim, sku]);
+      `, canaisParams);
       return res.json(result.rows);
     }
-    if (tabela === 'curva_abc' || tabela === 'ponto_pedido') {
+    if (tabela === 'ponto_pedido') {
+      const [ppRes, esRes, f1Map, f2Map] = await Promise.all([
+        pool.query(`SELECT * FROM ponto_pedido LIMIT 5000`),
+        pool.query(`SELECT sku, REPLACE(media_mensal::text,',','.')::numeric AS media_mensal FROM estoque_seguranca`).catch(() => ({ rows: [] })),
+        lerEstoqueFullMap(pool, 'full_1').catch(() => ({})),
+        lerEstoqueFullMap(pool, 'full_2').catch(() => ({})),
+      ]);
+      const mediaMap = {};
+      esRes.rows.forEach(r => { mediaMap[String(r.sku || '').trim()] = r.media_mensal; });
+      const fullMap = {};
+      Object.keys(f1Map).forEach(s => { fullMap[s] = (fullMap[s] || 0) + f1Map[s]; });
+      Object.keys(f2Map).forEach(s => { fullMap[s] = (fullMap[s] || 0) + f2Map[s]; });
+      return res.json(ppRes.rows.map(r => {
+        const sku = String(r.sku || '').trim();
+        return {
+          ...r,
+          media_mensal: mediaMap[sku] ?? null,
+          estoque_full: fullMap[sku] ?? (parseFloat(r.estoque_atual) || 0),
+        };
+      }));
+    }
+    if (tabela === 'curva_abc') {
       try {
         result = await pool.query(`
           SELECT * FROM ${tabela}
