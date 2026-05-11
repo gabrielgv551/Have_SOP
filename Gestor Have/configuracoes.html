@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações · Have Gestor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f0f4f8;
+      --border: rgba(50,48,49,0.12);
+      --text: #1a1a1a;
+      --muted: rgba(50,48,49,0.55);
+      --accent: #007CDC;
+      --accent2: #3BA5FF;
+      --green: #22c55e;
+      --red: #ef4444;
+      --sidebar-w: 220px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: #0F1523;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-header {
+      padding: 18px 16px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family:'Syne',sans-serif; font-weight:800; font-size:16px; color:#fff;
+      flex-shrink: 0;
+    }
+    .sidebar-logo-text .brand { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#fff; }
+    .sidebar-logo-text .company { font-size:11px; color:rgba(255,255,255,0.4); }
+
+    .sidebar-user-card {
+      margin: 6px 10px;
+      background: #1A2235;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .sidebar-user-avatar {
+      width:28px; height:28px; border-radius:50%;
+      background:#2B4A7A; color:#7EB8F7;
+      font-size:11px; font-weight:700;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .sidebar-user-name { font-size:12px; font-weight:500; color:#fff; }
+    .sidebar-user-role { font-size:10px; color:rgba(255,255,255,0.3); }
+
+    .sidebar-nav { flex:1; padding:8px 0; overflow-y:auto; }
+    .nav-section-label {
+      font-size:10px; font-weight:600; letter-spacing:0.08em;
+      text-transform:uppercase; color:rgba(255,255,255,0.25);
+      padding:12px 16px 4px;
+    }
+    .nav-item {
+      display:flex; align-items:center; gap:10px;
+      padding:9px 16px;
+      color:rgba(255,255,255,0.5);
+      font-size:13px;
+      text-decoration:none;
+      cursor:pointer;
+      position:relative;
+      transition:background 0.15s;
+    }
+    .nav-item:hover { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.85); }
+    .nav-item.active {
+      background:#1E3A6E; color:#fff; font-weight:500;
+    }
+    .nav-item.active::before {
+      content:''; position:absolute; left:0; top:4px; bottom:4px;
+      width:3px; background:#378ADD; border-radius:0 3px 3px 0;
+    }
+    .nav-item .nav-icon { font-size:15px; width:18px; text-align:center; opacity:0.5; }
+    .nav-item.active .nav-icon { opacity:1; color:#7EB8F7; }
+    .nav-item:hover .nav-icon { opacity:0.75; }
+    .nav-sep { border:none; border-top:1px solid rgba(255,255,255,0.06); margin:4px 0; }
+
+    .sidebar-footer {
+      padding:12px 10px;
+      border-top:1px solid rgba(255,255,255,0.06);
+    }
+    .logout-btn {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:8px;
+      color:rgba(255,255,255,0.4); font-size:12px;
+      cursor:pointer; border:none; background:none;
+      width:100%; transition:background 0.15s;
+    }
+    .logout-btn:hover { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.7); }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      background: #f5f7fa;
+    }
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px 0;
+    }
+    .topbar h1 { font-family:'Syne',sans-serif; font-size:22px; font-weight:700; margin-bottom:2px; }
+    .topbar p { font-size:13px; color:var(--muted); margin-bottom:16px; }
+    .tabs { display:flex; gap:0; }
+    .tab {
+      padding:10px 18px;
+      font-size:13px; font-weight:500;
+      cursor:pointer;
+      border-bottom:2px solid transparent;
+      color:var(--muted);
+      transition:all 0.15s;
+      white-space:nowrap;
+    }
+    .tab:hover { color:var(--text); }
+    .tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+
+    /* ── CONTENT ── */
+    .content { padding:28px 32px; max-width:1100px; }
+
+    .integracoes-banner {
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:20px 24px;
+      margin-bottom:24px;
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .integracoes-banner-icon { font-size:28px; }
+    .integracoes-banner h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; margin-bottom:3px; }
+    .integracoes-banner p { font-size:13px; color:var(--muted); line-height:1.5; }
+
+    .section { margin-bottom:28px; }
+    .section-header {
+      display:flex; align-items:center; gap:10px;
+      margin-bottom:14px;
+    }
+    .section-icon { font-size:18px; }
+    .section-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; }
+    .section-badge {
+      font-size:11px; font-weight:600;
+      background:rgba(0,124,220,0.1); color:var(--accent);
+      padding:2px 8px; border-radius:20px;
+    }
+    .section-add-btn {
+      margin-left:auto;
+      padding:6px 14px;
+      background:var(--accent); color:#fff;
+      border:none; border-radius:8px;
+      font-size:12px; font-weight:600;
+      cursor:pointer; transition:opacity 0.15s;
+    }
+    .section-add-btn:hover { opacity:0.85; }
+
+    .cards-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+      gap:12px;
+    }
+
+    /* ── INTEGRATION CARD ── */
+    .int-card {
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:16px;
+      transition:box-shadow 0.15s, border-color 0.15s;
+      position:relative;
+    }
+    .int-card:hover { box-shadow:0 2px 12px rgba(0,124,220,0.08); border-color:rgba(0,124,220,0.2); }
+    .int-card-header { display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; }
+    .int-logo {
+      width:40px; height:40px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; flex-shrink:0;
+      background:var(--surface);
+    }
+    .int-logo img { width:28px; height:28px; object-fit:contain; }
+    .int-info { flex:1; min-width:0; }
+    .int-name { font-size:13px; font-weight:600; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .int-delete {
+      width:28px; height:28px; border:none; background:none;
+      color:rgba(50,48,49,0.3); font-size:14px; cursor:pointer;
+      border-radius:6px; display:flex; align-items:center; justify-content:center;
+      transition:all 0.15s; flex-shrink:0;
+    }
+    .int-delete:hover { background:#fff0f0; color:var(--red); }
+
+    .badge {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:11px; font-weight:600;
+      padding:3px 9px; border-radius:20px;
+    }
+    .badge-ativo { background:#dcfce7; color:#15803d; }
+    .badge-ativo::before { content:'●'; font-size:8px; }
+    .badge-inativo { background:#f0f4f8; color:var(--muted); }
+    .badge-inativo::before { content:'○'; font-size:8px; }
+    .badge-warning { background:#fef9c3; color:#a16207; }
+    .badge-warning::before { content:'●'; font-size:8px; }
+
+    .int-card-footer {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-top:10px; padding-top:10px;
+      border-top:1px solid var(--border);
+    }
+    .int-sync { font-size:11px; color:var(--muted); }
+    .int-edit {
+      font-size:12px; font-weight:600; color:var(--accent);
+      cursor:pointer; border:none; background:none;
+      padding:0; transition:opacity 0.15s;
+    }
+    .int-edit:hover { opacity:0.7; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display:none;
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.45);
+      z-index:200;
+      align-items:center; justify-content:center;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:#fff;
+      border-radius:16px;
+      padding:28px;
+      width:100%; max-width:480px;
+      margin:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.15);
+      position:relative;
+    }
+    .modal-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+    .modal-logo { width:44px; height:44px; border-radius:10px; background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+    .modal-logo img { width:30px; height:30px; object-fit:contain; }
+    .modal-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; }
+    .modal-subtitle { font-size:12px; color:var(--muted); }
+    .modal-close {
+      position:absolute; top:16px; right:16px;
+      width:32px; height:32px; border-radius:8px;
+      border:none; background:var(--surface);
+      font-size:16px; cursor:pointer; color:var(--muted);
+      display:flex; align-items:center; justify-content:center;
+      transition:background 0.15s;
+    }
+    .modal-close:hover { background:var(--border); }
+    .form-group { margin-bottom:16px; }
+    .form-group label { display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text); }
+    .form-group input {
+      width:100%; padding:10px 12px;
+      border:1px solid var(--border); border-radius:8px;
+      font-size:13px; font-family:'DM Sans',sans-serif;
+      background:var(--surface);
+      transition:border-color 0.15s;
+    }
+    .form-group input:focus { outline:none; border-color:var(--accent); background:#fff; }
+    .form-group .hint { font-size:11px; color:var(--muted); margin-top:4px; }
+    .modal-footer { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+    .btn { padding:10px 20px; border-radius:8px; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover { background:#006bbf; }
+    .btn-ghost { background:var(--surface); color:var(--text); }
+    .btn-ghost:hover { background:var(--border); }
+    .btn-oauth {
+      width:100%; padding:12px;
+      background:#FFE600; color:#333;
+      border-radius:10px; border:none;
+      font-size:13px; font-weight:700;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:opacity 0.15s; margin-bottom:12px;
+    }
+    .btn-oauth:hover { opacity:0.85; }
+    .oauth-connected {
+      background:#dcfce7; border:1px solid #bbf7d0;
+      border-radius:10px; padding:12px 14px;
+      display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    }
+    .oauth-connected .check { color:#16a34a; font-size:18px; }
+    .oauth-connected .info { flex:1; }
+    .oauth-connected .nick { font-weight:600; font-size:13px; }
+    .oauth-connected .exp { font-size:11px; color:var(--muted); }
+    .oauth-reconnect { font-size:11px; color:var(--accent); cursor:pointer; border:none; background:none; padding:0; }
+    .sync-info {
+      font-size:12px; color:var(--muted);
+      margin-bottom:16px; padding:10px 12px;
+      background:var(--surface); border-radius:8px;
+    }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+
+    /* Empty state */
+    .empty-section {
+      background:#fff;
+      border:1px dashed var(--border);
+      border-radius:12px;
+      padding:24px;
+      text-align:center;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .empty-section .icon { font-size:28px; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">H</div>
+    <div class="sidebar-logo-text">
+      <div class="brand">Have</div>
+      <div class="company" id="sb-company">Marcon</div>
+    </div>
+  </div>
+
+  <div class="sidebar-user-card">
+    <div class="sidebar-user-avatar" id="sb-avatar">A</div>
+    <div>
+      <div class="sidebar-user-name" id="sb-name">Administrador</div>
+      <div class="sidebar-user-role">Admin</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Dashboard</div>
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+
+    <hr class="nav-sep">
+    <div class="nav-section-label">Sistema</div>
+    <a href="admin.html" class="nav-item">
+      <span class="nav-icon">👥</span> Usuários
+    </a>
+    <a href="configuracoes.html" class="nav-item active">
+      <span class="nav-icon">⚙️</span> Configurações
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()">
+      <span>🚪</span> Sair
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h1>Configurações</h1>
+    <p>Gerenciar integrações e variáveis do sistema</p>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('apis', this)">APIs</div>
+      <div class="tab" onclick="switchTab('sop', this)">S&amp;OP</div>
+      <div class="tab" onclick="switchTab('fornecedores', this)">Fornecedores</div>
+      <div class="tab" onclick="switchTab('canais', this)">Canais de Venda</div>
+      <div class="tab" onclick="switchTab('empresas', this)">Empresas</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB: APIs -->
+    <div id="tab-apis" class="tab-content active">
+
+      <div class="integracoes-banner">
+        <div class="integracoes-banner-icon">🔗</div>
+        <div>
+          <h2>Integrações</h2>
+          <p>Expanda suas possibilidades! Aproveite a flexibilidade e potencialize sua operação com as integrações que oferecemos.<br>Simplifique processos e aumente sua eficiência com apenas alguns cliques.</p>
+        </div>
+      </div>
+
+      <!-- MARKETPLACES -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon">🏪</span>
+          <span class="section-title">Meus Marketplaces</span>
+          <span class="section-badge" id="mp-count">0/99 Marketplaces criados</span>
+          <button class="section-add-btn" onclick="openAddModal('marketplace')">+ Adicionar</button>
+        </div>
+        <div class="cards-grid" id="mp-grid"></div>
+      </div>
+
+      <!-- ERPs -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon">📦</span>
+          <span class="section-title">Meus ERPs</span>
+          <span class="section-badge" id="erp-count">0/99 ERPs criados</span>
+          <button class="section-add-btn" onclick="openAddModal('erp')">+ Adicionar</button>
+        </div>
+        <div class="cards-grid" id="erp-grid"></div>
+      </div>
+
+      <!-- OUTRAS -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon">⚡</span>
+          <span class="section-title">Minhas outras integrações</span>
+        </div>
+        <div class="cards-grid" id="other-grid"></div>
+      </div>
+
+    </div>
+
+    <!-- TAB: S&OP (placeholder) -->
+    <div id="tab-sop" class="tab-content">
+      <div class="empty-section">
+        <div class="icon">📈</div>
+        Configurações de S&amp;OP em breve.
+      </div>
+    </div>
+
+    <!-- TAB: Fornecedores -->
+    <div id="tab-fornecedores" class="tab-content">
+      <div class="empty-section">
+        <div class="icon">🚚</div>
+        Gerenciamento de fornecedores em breve.
+      </div>
+    </div>
+
+    <!-- TAB: Canais de Venda -->
+    <div id="tab-canais" class="tab-content">
+      <div class="empty-section">
+        <div class="icon">🛒</div>
+        Configuração de canais de venda em breve.
+      </div>
+    </div>
+
+    <!-- TAB: Empresas -->
+    <div id="tab-empresas" class="tab-content">
+      <div class="empty-section">
+        <div class="icon">🏢</div>
+        Gerenciamento de empresas em breve.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL EDITAR INTEGRAÇÃO -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div class="modal-header">
+      <div class="modal-logo" id="modal-logo">🔗</div>
+      <div>
+        <div class="modal-title" id="modal-title">Editar Integração</div>
+        <div class="modal-subtitle" id="modal-subtitle">Configure as credenciais</div>
+      </div>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModalDirect()">Cancelar</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="salvarIntegracao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://have-gestor-api.vercel.app/api';
+const ML_LOGO_IMG = '<img src="/logo%20mercado%20livre.png" style="width:38px;height:38px;object-fit:contain" alt="ML">';
+const token = localStorage.getItem('have_token');
+let _currentInt = null;
+
+// ─── Auth guard ───────────────────────────────────────────────
+if (!token) { window.location.href = 'index.html'; }
+
+// ─── Integrations catalog ─────────────────────────────────────
+const INTEGRATIONS = {
+  marketplaces: [
+    { id: 'ml_marcon',   label: 'Mercado Livre - Marcon', logo: ML_LOGO_IMG, type: 'oauth_ml',  chave: 'ml_marcon_token' },
+    { id: 'ml_lanzi',    label: 'Mercado Livre - Lanzi',  logo: ML_LOGO_IMG, type: 'oauth_ml',  chave: 'ml_lanzi_token'  },
+    { id: 'shopee',      label: 'Shopee',                 logo: '🟠', type: 'token',     chave: 'shopee_token'    },
+    { id: 'amazon',      label: 'Amazon',                 logo: '🔵', type: 'token',     chave: 'amazon_token'    },
+    { id: 'magalu',      label: 'Magalu',                 logo: '🔴', type: 'token',     chave: 'magalu_token'    },
+  ],
+  erps: [
+    { id: 'tiny_marcon', label: 'Tiny ERP - Marcon', logo: '🟢', type: 'token', chave: 'tiny_token_marcon' },
+    { id: 'tiny_lanzi',  label: 'Tiny ERP - Lanzi',  logo: '🟢', type: 'token', chave: 'tiny_token_lanzi'  },
+  ],
+  outras: [
+    { id: 'gefinance', label: 'Gefinance', logo: '💙', type: 'email_senha', chave: 'gefinance_email', chave2: 'gefinance_password' },
+  ],
+};
+
+// Status em memória (carregado da API)
+let _cfg = {};
+
+// ─── Fetch config ─────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const r = await fetch(`${API_BASE}/data?module=configuracoes`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r.ok) {
+      const d = await r.json();
+      Object.assign(_cfg, d);
+      // Reconstrói catálogo ML a partir das chaves do banco
+      Object.keys(d)
+        .filter(k => k.endsWith('_token') && !k.includes('_token_') && k.startsWith('ml_'))
+        .forEach(chave => {
+          const id = chave.replace(/_token$/, '');
+          if (!INTEGRATIONS.marketplaces.find(i => i.id === id)) {
+            const nick = d[chave + '_nick'] || id.replace(/^ml_/, '');
+            INTEGRATIONS.marketplaces.push({ id, label: 'Mercado Livre - ' + nick, logo: ML_LOGO_IMG, type: 'oauth_ml', chave });
+          }
+        });
+      // Reconstrói catálogo Tiny a partir das chaves do banco (OAuth)
+      Object.keys(d)
+        .filter(k => k.endsWith('_token') && !k.includes('_token_') && k.startsWith('tiny_'))
+        .forEach(chave => {
+          const id = chave.replace(/_token$/, '');
+          if (!INTEGRATIONS.erps.find(i => i.id === id)) {
+            const nick = id.replace(/^tiny_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            INTEGRATIONS.erps.push({ id, label: 'Tiny ERP - ' + nick, logo: '🟢', type: 'oauth_tiny', chave });
+          }
+        });
+    }
+  } catch(e) { console.warn('loadConfig:', e); }
+}
+
+// ─── Render ───────────────────────────────────────────────────
+function renderCards() {
+  renderSection('mp-grid', INTEGRATIONS.marketplaces, 'mp-count', 'Marketplaces');
+  renderSection('erp-grid', INTEGRATIONS.erps,        'erp-count', 'ERPs');
+  renderSection('other-grid', INTEGRATIONS.outras,    null, '');
+}
+
+function renderSection(gridId, items, badgeId, label) {
+  const grid = document.getElementById(gridId);
+  if (badgeId) document.getElementById(badgeId).textContent = `${items.length}/99 ${label} criados`;
+
+  grid.innerHTML = items.map(int => {
+    const ativo = isAtivo(int);
+    const sync  = _cfg[`${int.chave}_sync`] ? `Última sync: ${_cfg[`${int.chave}_sync`]}` : 'Nunca sincronizado';
+    return `
+      <div class="int-card">
+        <div class="int-card-header">
+          <div class="int-logo">${int.logo}</div>
+          <div class="int-info">
+            <div class="int-name" title="${int.label}">${int.label}</div>
+            <span class="badge ${ativo ? 'badge-ativo' : 'badge-inativo'}">
+              ${ativo ? 'Integração ativa' : 'Não configurado'}
+            </span>
+          </div>
+          <button class="int-delete" title="Remover" onclick="removerIntegracao('${int.id}')">🗑</button>
+        </div>
+        <div class="int-card-footer">
+          <span class="int-sync">${sync}</span>
+          <button class="int-edit" onclick="abrirModal('${int.id}')">Editar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function isAtivo(int) {
+  if (int.type === 'email_senha') return !!_cfg[int.chave];
+  return !!_cfg[int.chave];
+}
+
+// ─── Modal ────────────────────────────────────────────────────
+function findInt(id) {
+  return [...INTEGRATIONS.marketplaces, ...INTEGRATIONS.erps, ...INTEGRATIONS.outras]
+    .find(i => i.id === id);
+}
+
+function abrirModal(id) {
+  _currentInt = findInt(id);
+  if (!_currentInt) return;
+
+  document.getElementById('modal-logo').innerHTML = _currentInt.logo;
+  document.getElementById('modal-title').textContent = _currentInt.label;
+  document.getElementById('modal-subtitle').textContent = 'Configure as credenciais de acesso';
+
+  const body = document.getElementById('modal-body');
+  const footer = document.getElementById('modal-footer');
+
+  if (_currentInt.type === 'oauth_ml') {
+    const nick = _cfg[`${_currentInt.chave}_nick`];
+    const exp  = _cfg[`${_currentInt.chave}_exp`];
+    body.innerHTML = nick ? `
+      <div class="oauth-connected">
+        <span class="check">✔</span>
+        <div class="info">
+          <div class="nick">${nick}</div>
+          <div class="exp">Token expira em: ${exp || 'N/A'}</div>
+        </div>
+      </div>
+      <button class="btn-oauth" onclick="conectarML('${_currentInt.id}')">
+        🔄 Reconectar ao Mercado Livre
+      </button>
+    ` : `
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+        Clique no botão abaixo para autorizar o acesso à sua conta do Mercado Livre.
+      </p>
+      <button class="btn-oauth" onclick="conectarML('${_currentInt.id}')">
+        🛒 Conectar ao Mercado Livre
+      </button>
+    `;
+    footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModalDirect()">Fechar</button>`;
+
+  } else if (_currentInt.type === 'oauth_tiny') {
+    const nick    = _currentInt.label.replace('Tiny ERP - ', '');
+    const exp     = _cfg[`${_currentInt.id}_exp`];
+    const lastSync = _cfg[`${_currentInt.id}_token_sync`] || 'Nunca sincronizado';
+    body.innerHTML = `
+      <div class="oauth-connected">
+        <span class="check">✔</span>
+        <div class="info">
+          <div class="nick">${nick}</div>
+          <div class="exp">Token expira em: ${exp ? new Date(exp).toLocaleString('pt-BR') : 'N/A'}</div>
+          <div class="exp">Última sync: ${lastSync}</div>
+        </div>
+      </div>
+      <button class="btn-oauth" id="btn-tiny-sync" onclick="sincronizarTiny('${_currentInt.id}')">
+        🔄 Sincronizar dados agora
+      </button>
+      <div id="tiny-sync-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    `;
+    footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModalDirect()">Fechar</button>`;
+
+  } else if (_currentInt.type === 'token') {
+    const val = _cfg[_currentInt.chave] || '';
+    body.innerHTML = `
+      <div class="form-group">
+        <label>Token de Acesso</label>
+        <input type="password" id="f-token" value="${val}" placeholder="Cole o token aqui">
+        <div class="hint">Encontre o token nas configurações da plataforma.</div>
+      </div>
+    `;
+    footer.innerHTML = `
+      <button class="btn btn-ghost" onclick="closeModalDirect()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarToken()">Salvar</button>
+    `;
+
+  } else if (_currentInt.type === 'email_senha') {
+    const email = _cfg[_currentInt.chave] || '';
+    body.innerHTML = `
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="f-email" value="${email}" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="f-senha" placeholder="••••••••">
+        <div class="hint">Deixe em branco para manter a senha atual.</div>
+      </div>
+    `;
+    footer.innerHTML = `
+      <button class="btn btn-ghost" onclick="closeModalDirect()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEmailSenha()">Salvar</button>
+    `;
+  }
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  _currentInt = null;
+}
+
+// ─── Salvar ───────────────────────────────────────────────────
+async function salvarToken() {
+  const val = document.getElementById('f-token').value.trim();
+  if (!val) { alert('Informe o token.'); return; }
+  await salvarConfig({ [_currentInt.chave]: val });
+}
+
+async function salvarEmailSenha() {
+  const email = document.getElementById('f-email').value.trim();
+  const senha = document.getElementById('f-senha').value;
+  const payload = {};
+  if (email) payload[_currentInt.chave] = email;
+  if (senha) payload[_currentInt.chave2] = senha;
+  if (!Object.keys(payload).length) { closeModalDirect(); return; }
+  await salvarConfig(payload);
+}
+
+async function salvarConfig(payload) {
+  try {
+    const r = await fetch(`${API_BASE}/data?module=configuracoes`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error('Erro ao salvar');
+    Object.assign(_cfg, payload);
+    closeModalDirect();
+    renderCards();
+    showToast('✔ Salvo com sucesso!');
+  } catch(e) { alert('Erro ao salvar: ' + e.message); }
+}
+
+function salvarIntegracao() {}  // delegado por tipo no modal
+
+// ─── ML OAuth ─────────────────────────────────────────────────
+function conectarML(id) {
+  const ML_CLIENT_ID  = '2803787506623043';
+  const REDIRECT_URI  = encodeURIComponent('https://have-gestor-frontend.vercel.app/ml-callback');
+  const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${ML_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${id}`;
+  const openUrl = 'https://www.mercadolivre.com.br/jms/mlb/lgz/logout?go=' + encodeURIComponent(authUrl);
+  window.open(openUrl, '_blank', 'width=620,height=720');
+}
+
+// ─── Remover ──────────────────────────────────────────────────
+async function removerIntegracao(id) {
+  const int = findInt(id);
+  if (!int) return;
+  if (!confirm(`Remover integração "${int.label}"?`)) return;
+  await salvarConfig({ [int.chave]: '' });
+}
+
+// ─── Tab switch ───────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// ─── Toast ────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#323031;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ─── Logout ───────────────────────────────────────────────────
+function logout() {
+  localStorage.removeItem('have_token');
+  window.location.href = 'index.html';
+}
+
+// ─── Sidebar user ─────────────────────────────────────────────
+function initUser() {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const nome = payload.nome || payload.email || 'Usuário';
+    document.getElementById('sb-name').textContent = nome;
+    document.getElementById('sb-avatar').textContent = nome[0].toUpperCase();
+    document.getElementById('sb-company').textContent = payload.company ? payload.company.charAt(0).toUpperCase() + payload.company.slice(1) : 'Have';
+  } catch(e) {}
+}
+
+// ─── Tiny Sync ────────────────────────────────────────────────
+async function sincronizarTiny(accountId) {
+  const btn = document.getElementById('btn-tiny-sync');
+  const status = document.getElementById('tiny-sync-status');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Sincronizando...'; }
+  if (status) status.textContent = 'Buscando dados no Tiny ERP...';
+  try {
+    const r = await fetch(`${API_BASE}/data?module=tiny-sync&account=${accountId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro desconhecido');
+    const res = d.results || {};
+    const msg = [
+      res.vendas != null ? `${res.vendas} pedidos` : null,
+      res.estoque != null ? `${res.estoque} produtos` : null,
+    ].filter(Boolean).join(' · ');
+    if (status) status.innerHTML = `<span style="color:#16a34a">✔ Sincronizado: ${msg || 'OK'}</span>`;
+    await loadConfig();
+    renderCards();
+  } catch(e) {
+    if (status) status.innerHTML = `<span style="color:#dc2626">✕ Erro: ${e.message}</span>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Sincronizar dados agora'; }
+  }
+}
+
+// Expõe para o popup ml-callback.html / tiny-callback.html
+window.intLoadCfg = async function() { await loadConfig(); renderCards(); };
+
+// ─── Init ─────────────────────────────────────────────────────
+(async () => {
+  initUser();
+  await loadConfig();
+  renderCards();
+})();
+</script>
+</body>
+</html>

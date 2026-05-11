@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conectar Mercado Livre</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 36px 32px;
+      max-width: 420px;
+      width: 100%;
+      margin: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .logo { font-size: 44px; margin-bottom: 14px; }
+    h2 { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-bottom: 10px; }
+    .steps {
+      background: #f0f6ff;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin: 18px 0 22px;
+      text-align: left;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: #323031;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .step:last-child { margin-bottom: 0; }
+    .step-num {
+      background: #007CDC;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .btn-open {
+      display: block;
+      width: 100%;
+      padding: 11px 0;
+      background: #fff;
+      color: #007CDC;
+      border: 1.5px solid #007CDC;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-decoration: none;
+    }
+    .btn-open:hover { background: #f0f6ff; }
+    .btn-connect {
+      display: block;
+      width: 100%;
+      padding: 12px 0;
+      background: #007CDC;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-connect:hover { background: #0069b8; }
+    .note { font-size: 11px; color: #999; margin-top: 14px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🟡</div>
+    <h2>Conectar conta do Mercado Livre</h2>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <span>Clique em <strong>"Abrir Mercado Livre"</strong> e faça login com a conta que deseja conectar</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span>Volte aqui e clique em <strong>"Já estou logado — Conectar"</strong></span>
+      </div>
+    </div>
+
+    <a id="btn-open" class="btn-open" href="https://www.mercadolivre.com.br" target="_blank">
+      🔗 Abrir Mercado Livre
+    </a>
+    <button class="btn-connect" id="btn-connect">
+      ✓ Já estou logado — Conectar
+    </button>
+    <p class="note">Você será redirecionado para a tela de autorização do Mercado Livre.</p>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+
+    document.getElementById('btn-connect').addEventListener('click', function() {
+      if (next) {
+        window.location.href = decodeURIComponent(next);
+      } else {
+        window.close();
+      }
+    });
+  </script>
+</body>
+</html>

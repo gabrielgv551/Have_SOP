@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conectando ao Mercado Livre...</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      max-width: 420px;
+      width: 100%;
+      margin: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .logo { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+    p  { font-size: 13px; color: #666; line-height: 1.5; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e0e7ef;
+      border-top-color: #007CDC;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .success { color: #15803d; font-size: 42px; margin-bottom: 12px; }
+    .error   { color: #dc2626; font-size: 42px; margin-bottom: 12px; }
+    .badge {
+      display: inline-block;
+      background: #dcfce7; color: #15803d;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px;
+      margin-top: 12px;
+    }
+    .badge-err {
+      background: #fee2e2; color: #dc2626;
+    }
+    .close-btn {
+      margin-top: 20px;
+      padding: 10px 24px;
+      background: #007CDC; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="logo">🟡</div>
+    <h2>Conectando ao Mercado Livre...</h2>
+    <p>Aguarde enquanto autorizamos sua conta.</p>
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+  (async function() {
+    const card = document.getElementById('card');
+    const params = new URLSearchParams(window.location.search);
+    const code  = params.get('code');
+    const state = params.get('state');
+
+    function showError(msg) {
+      card.innerHTML = `
+        <div class="error">✕</div>
+        <h2>Erro na autorização</h2>
+        <p>${msg}</p>
+        <span class="badge badge-err">Falhou</span>
+        <br><button class="close-btn" onclick="window.close()">Fechar</button>`;
+    }
+
+    function showSuccess(nick) {
+      card.innerHTML = `
+        <div class="success">✔</div>
+        <h2>Conta conectada!</h2>
+        <p>Mercado Livre autorizado com sucesso.</p>
+        <span class="badge">${nick}</span>
+        <br><p style="font-size:12px;color:#999;margin-top:14px">Esta janela vai fechar automaticamente...</p>`;
+    }
+
+    if (!code) {
+      const error = params.get('error') || 'código de autorização não encontrado';
+      return showError('Autorização cancelada ou negada: ' + error);
+    }
+
+    // Pega o token JWT da janela principal ou do localStorage
+    const openerLS = window.opener && window.opener.localStorage;
+    const token = openerLS ? openerLS.getItem('have_token') : localStorage.getItem('have_token');
+    if (!token) {
+      return showError('Sessão expirada. Faça login novamente na janela principal.');
+    }
+
+    try {
+      const r = await fetch('https://have-gestor-api.vercel.app/api/data?module=ml-oauth', {
+        method:  'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ code, state }),
+      });
+
+      const data = await r.json();
+      if (!r.ok) return showError(data.error || 'Erro desconhecido');
+
+      showSuccess(data.nick || state);
+
+      // Atualiza as integrações na janela principal
+      if (window.opener && typeof window.opener.intLoadCfg === 'function') {
+        window.opener.intLoadCfg();
+      }
+      if (window.opener && typeof window.opener.mlHideAuthBar === 'function') {
+        window.opener.mlHideAuthBar();
+      }
+
+      setTimeout(() => {
+        try { window.close(); } catch {}
+      }, 2500);
+
+    } catch(e) {
+      showError('Erro de rede: ' + e.message);
+    }
+  })();
+  </script>
+</body>
+</html>
