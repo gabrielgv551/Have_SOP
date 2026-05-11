@@ -860,7 +860,7 @@ module.exports = async (req, res) => {
       return res.json({
         token_exp_original: cfg[account + '_exp'],
         refresh: refreshResult,
-        token_claims: tokenClaims ? { scope: tokenClaims.scope, aud: tokenClaims.aud, azp: tokenClaims.azp, exp: tokenClaims.exp } : 'not-jwt',
+        token_claims: tokenClaims || 'not-jwt',
         pedidos_user_token:  await tinyFetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=3`),
         produtos_user_token: await tinyFetch(`${TINY_API}/produtos?pagina=1&limite=3`),
         client_credentials: ccResult,
