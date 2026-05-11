@@ -788,6 +788,35 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
+  // Módulo Tiny Debug — inspeciona resposta bruta da Tiny API
+  if (req.query.module === 'tiny-debug') {
+    const account = req.query.account;
+    if (!account) return res.status(400).json({ error: 'account obrigatório' });
+    const company = payload.company || 'lanzi';
+    const pool = getPool(company);
+    try {
+      const cfgRes = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`, [company, account + '%']);
+      const cfg = {};
+      cfgRes.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
+      const accessToken = cfg[account + '_token'];
+      if (!accessToken) return res.status(400).json({ error: 'Conta não autenticada' });
+      const TINY_API = 'https://api.tiny.com.br/public-api/v3';
+      const dataFinal   = new Date().toISOString().split('T')[0];
+      const dataInicial = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+      const [rEmp, rPed, rProd] = await Promise.all([
+        fetch(`${TINY_API}/empresas`, { headers: { 'Authorization': 'Bearer ' + accessToken } }),
+        fetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=5`, { headers: { 'Authorization': 'Bearer ' + accessToken } }),
+        fetch(`${TINY_API}/produtos?pagina=1&limite=5`, { headers: { 'Authorization': 'Bearer ' + accessToken } }),
+      ]);
+      return res.json({
+        token_exp: cfg[account + '_exp'],
+        empresas:  { status: rEmp.status,  body: await rEmp.json().catch(e => e.message) },
+        pedidos:   { status: rPed.status,  body: await rPed.json().catch(e => e.message) },
+        produtos:  { status: rProd.status, body: await rProd.json().catch(e => e.message) },
+      });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
   // Módulo Tiny Sync — sincroniza pedidos e estoque do Tiny ERP para o banco
   if (req.query.module === 'tiny-sync') {
     const account = req.query.account; // ex: 'tiny_lanzi'
