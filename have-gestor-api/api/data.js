@@ -901,16 +901,16 @@ module.exports = async (req, res) => {
         refresh: refreshResult,
         db: dbCounts,
         endpoints: {
-          pedidos:        await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
-          pedido_detalhe: req.query.pedido_id ? await tinyFetchFull(`${TINY_API}/pedidos/${req.query.pedido_id}`) : '(passe ?pedido_id=xxx)',
-          margem_v1:      await tinyFetchFull(`${TINY_API}/pedidos/${req.query.pedido_id || ''}/margem-contribuicao`),
-          margem_v2:      await tinyFetchFull(`https://api.tiny.com.br/public-api/v3/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
-          margem_v3:      await tinyFetchFull(`https://erp.olist.com/api/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
-          margem_v4:      await tinyFetchFull(`https://erp.olist.com/api/v1/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
-          margem_v5:      await tinyFetchFull(`https://api.erp.olist.com/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
-          margem_v6:      await tinyFetchFull(`https://erp.tiny.com.br/api/margem-contribuicao?dataInicial=${dataInicial}&dataFinal=${dataFinal}&limit=1`),
-          produtos:       await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
-          estoque:        await tinyFetchFull(`${TINY_API}/estoque/posicao?pagina=1&limite=1`),
+          pedidos:           await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
+          // Testa Bearer token com serviços internos do erp.olist.com (PHP)
+          auth_ping:         await tinyFetchFull(`https://erp.olist.com/services/auth.services.php?a=ping`),
+          svc_margem_lista:  await tinyFetchFull(`https://erp.olist.com/services/margem_contribuicao.services.php?a=listar&dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1`),
+          svc_relat_margem:  await tinyFetchFull(`https://erp.olist.com/services/relatorio.services.php?a=margem_contribuicao&dataInicial=${dataInicial}&dataFinal=${dataFinal}`),
+          svc_pedido_margem: await tinyFetchFull(`https://erp.olist.com/services/pedido.services.php?a=margem&dataInicial=${dataInicial}&dataFinal=${dataFinal}`),
+          svc_export_margem: await tinyFetchFull(`https://erp.olist.com/services/exportar.services.php?a=margem_contribuicao&dataInicial=${dataInicial}&dataFinal=${dataFinal}`),
+          // Tenta exchange do Bearer por sessão PHP
+          sso_exchange:      await tinyFetchFull(`https://erp.olist.com/sso/token?access_token=${encodeURIComponent(accessToken)}`),
+          sso_login:         await tinyFetchFull(`https://erp.olist.com/login?token=${encodeURIComponent(accessToken)}`),
         },
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
