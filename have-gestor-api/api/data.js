@@ -962,6 +962,7 @@ module.exports = async (req, res) => {
 
       // 3. Sincronizar pedidos (últimos 90 dias)
       if (modulos.includes('vendas')) {
+        await pool.query(`DROP TABLE IF EXISTS bd_pedidos_tiny_${safeName}`);
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY,
           numero TEXT, numero_ecommerce TEXT, data_pedido DATE,
@@ -1004,6 +1005,7 @@ module.exports = async (req, res) => {
 
       // 4. Sincronizar estoque/produtos
       if (modulos.includes('estoque')) {
+        await pool.query(`DROP TABLE IF EXISTS bd_estoque_tiny_${safeName}`);
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_estoque_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY, sku TEXT, nome TEXT, unidade TEXT,
           estoque_atual NUMERIC DEFAULT 0, estoque_minimo NUMERIC DEFAULT 0,
