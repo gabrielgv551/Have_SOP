@@ -866,22 +866,17 @@ module.exports = async (req, res) => {
         return { status: r.status, body, wwwAuth };
       }
 
-      const endpoint = `${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`;
       return res.json({
         token_roles_count: tokenClaims?.roles?.['tiny-api']?.length || 0,
-        token_email: tokenClaims?.email,
         token_email_verified: tokenClaims?.email_verified,
-        token_sub: tokenClaims?.sub,
         refresh: refreshResult,
-        tests: {
-          bearer: await tinyFetchFull(endpoint),
-          bearer_conta: await tinyFetchFull(`${TINY_API}/conta/info`),
-          query_token: await (async () => {
-            const r = await fetch(`${endpoint}&access_token=${accessToken}`);
-            const text = await r.text();
-            let body; try { body = JSON.parse(text); } catch { body = text.substring(0,200)||null; }
-            return { status: r.status, body };
-          })(),
+        endpoints: {
+          pedidos:  await tinyFetchFull(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=1`),
+          produtos: await tinyFetchFull(`${TINY_API}/produtos?pagina=1&limite=1`),
+          contatos: await tinyFetchFull(`${TINY_API}/contatos?pagina=1&limite=1`),
+          estoque:  await tinyFetchFull(`${TINY_API}/estoque/posicao?pagina=1&limite=1`),
+          conta:    await tinyFetchFull(`${TINY_API}/conta`),
+          info:     await tinyFetchFull(`${TINY_API}/informacoes-conta`),
         },
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
