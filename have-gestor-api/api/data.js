@@ -1122,6 +1122,139 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
+  // ── cron-tiny: sync + enrich automático (chamado pelo cron ou cron-job.org) ──
+  if (req.query.module === 'cron-tiny') {
+    try {
+      const company = payload.company || 'lanzi';
+      const pool    = getPool(company);
+      const cfgRes  = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
+      const cfg = {};
+      for (const r of cfgRes.rows) cfg[r.chave] = r.valor;
+
+      const accounts = Object.keys(cfg)
+        .filter(k => k.endsWith('_token') && !k.includes('_refresh') && !k.includes('_exp'))
+        .map(k => k.replace(/_token$/, ''))
+        .filter(k => k.startsWith('tiny'));
+
+      const log = [];
+      const today      = new Date().toISOString().split('T')[0];
+      const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0];
+      const TINY_API_BASE = 'https://erp.tiny.com.br/public-api/v3';
+
+      for (const account of accounts) {
+        let accessToken = cfg[account + '_token'];
+        if (!accessToken) continue;
+
+        // Refresh token se expirado
+        const exp = cfg[account + '_exp'] ? new Date(cfg[account + '_exp']) : null;
+        if (exp && new Date() >= exp) {
+          const tr = await fetch('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token', {
+            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'refresh_token', client_id: cfg['tiny_client_id'] || '', client_secret: cfg['tiny_client_secret'] || '', refresh_token: cfg[account + '_refresh'] || '' }),
+          });
+          if (tr.ok) {
+            const nt = await tr.json();
+            accessToken = nt.access_token;
+            const newExp = new Date(Date.now() + (nt.expires_in || 300) * 1000).toISOString();
+            for (const [k, v] of [[account + '_token', accessToken], [account + '_refresh', nt.refresh_token || cfg[account + '_refresh']], [account + '_exp', newExp]])
+              await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+          }
+        }
+
+        const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+
+        // 1. Sync pedidos últimos 2 dias (reutiliza tinyPages já definido dentro do tiny-sync — chama API diretamente)
+        const items = [];
+        let offset = 0;
+        while (true) {
+          const qs = new URLSearchParams({ dataInicial: twoDaysAgo, dataFinal: today, limit: '100', offset: String(offset) }).toString();
+          const pr = await fetch(`${TINY_API_BASE}/pedidos?${qs}`, { headers: { Authorization: 'Bearer ' + accessToken } });
+          if (!pr.ok) break;
+          const pd = await pr.json();
+          const pg = pd.itens || pd.data || [];
+          items.push(...pg);
+          const tot = pd.paginacao?.total ?? pd.total ?? 0;
+          offset += pg.length;
+          if (pg.length === 0 || offset >= tot) break;
+        }
+
+        if (items.length > 0) {
+          const rows = items.map(p => [
+            String(p.id||''), p.numeroPedido?String(p.numeroPedido):null,
+            p.ecommerce?.numeroPedidoEcommerce||null, p.ecommerce?.numeroPedidoCanalVenda||null,
+            p.dataCriacao?p.dataCriacao.split('T')[0]:null, p.dataPrevisao?p.dataPrevisao.split('T')[0]:null,
+            typeof p.situacao==='number'?p.situacao:null,
+            p.cliente?.nome||null, p.cliente?.cpfCnpj||null, p.cliente?.tipoPessoa||null,
+            p.cliente?.email||null, p.cliente?.telefone||null, p.cliente?.celular||null,
+            p.cliente?.codigo?String(p.cliente.codigo):null,
+            p.cliente?.endereco?.uf||null, p.cliente?.endereco?.municipio||null,
+            p.cliente?.endereco?.bairro||null, p.cliente?.endereco?.cep||null, p.cliente?.endereco?.endereco||null,
+            parseFloat(p.valor||0)||0, p.ecommerce?.nome||null, p.ecommerce?.canalVenda||null,
+            p.transportador?.nome||null, p.transportador?.formaEnvio?.nome||null, p.transportador?.fretePorConta||null,
+            p.transportador?.codigoRastreamento||null, p.transportador?.urlRastreamento||null,
+            p.vendedor?.nome||null, typeof p.origemPedido==='number'?p.origemPedido:null,
+          ]);
+          await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
+            id_tiny TEXT PRIMARY KEY, numero TEXT, numero_ecommerce TEXT, numero_canal_venda TEXT,
+            data_criacao DATE, data_previsao DATE, situacao INT,
+            nome_cliente TEXT, cpf_cnpj TEXT, tipo_pessoa TEXT, email_cliente TEXT, telefone_cliente TEXT, celular_cliente TEXT, codigo_cliente TEXT,
+            uf TEXT, municipio TEXT, bairro TEXT, cep TEXT, endereco TEXT,
+            total_pedido NUMERIC DEFAULT 0, marketplace TEXT, canal_venda TEXT,
+            transportadora TEXT, forma_envio TEXT, frete_por_conta TEXT, codigo_rastreamento TEXT, url_rastreamento TEXT,
+            vendedor TEXT, origem_pedido INT, atualizado_em TIMESTAMP DEFAULT NOW()
+          )`);
+          await pool.query(`
+            INSERT INTO bd_pedidos_tiny_${safeName}
+              (id_tiny,numero,numero_ecommerce,numero_canal_venda,data_criacao,data_previsao,situacao,
+               nome_cliente,cpf_cnpj,tipo_pessoa,email_cliente,telefone_cliente,celular_cliente,codigo_cliente,
+               uf,municipio,bairro,cep,endereco,total_pedido,marketplace,canal_venda,
+               transportadora,forma_envio,frete_por_conta,codigo_rastreamento,url_rastreamento,vendedor,origem_pedido,atualizado_em)
+            SELECT * FROM UNNEST($1::text[],$2::text[],$3::text[],$4::text[],$5::date[],$6::date[],$7::int[],
+              $8::text[],$9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],
+              $15::text[],$16::text[],$17::text[],$18::text[],$19::text[],
+              $20::numeric[],$21::text[],$22::text[],$23::text[],$24::text[],$25::text[],$26::text[],$27::text[],
+              $28::text[],$29::int[],(SELECT array_agg(NOW()) FROM generate_series(1,$30)))
+            ON CONFLICT (id_tiny) DO UPDATE SET situacao=EXCLUDED.situacao,total_pedido=EXCLUDED.total_pedido,
+              data_previsao=EXCLUDED.data_previsao,codigo_rastreamento=EXCLUDED.codigo_rastreamento,atualizado_em=NOW()
+          `, [rows.map(r=>r[0]),rows.map(r=>r[1]),rows.map(r=>r[2]),rows.map(r=>r[3]),rows.map(r=>r[4]),rows.map(r=>r[5]),rows.map(r=>r[6]),
+              rows.map(r=>r[7]),rows.map(r=>r[8]),rows.map(r=>r[9]),rows.map(r=>r[10]),rows.map(r=>r[11]),rows.map(r=>r[12]),rows.map(r=>r[13]),
+              rows.map(r=>r[14]),rows.map(r=>r[15]),rows.map(r=>r[16]),rows.map(r=>r[17]),rows.map(r=>r[18]),
+              rows.map(r=>r[19]),rows.map(r=>r[20]),rows.map(r=>r[21]),rows.map(r=>r[22]),rows.map(r=>r[23]),rows.map(r=>r[24]),rows.map(r=>r[25]),rows.map(r=>r[26]),
+              rows.map(r=>r[27]),rows.map(r=>r[28]),rows.length]);
+        }
+
+        // 2. Enrich: novos pedidos últimos 3 dias
+        for (const [col, type] of [['financeiro_ok','BOOLEAN DEFAULT FALSE'],['total_produtos','NUMERIC'],['total_desconto','NUMERIC'],['total_frete','NUMERIC'],['total_impostos','NUMERIC'],['total_outras_despesas','NUMERIC'],['frete_pago','NUMERIC'],['custo_produtos','NUMERIC'],['margem_contribuicao','NUMERIC'],['margem_pct','NUMERIC'],['qtd_itens','INT'],['comissoes','NUMERIC'],['taxas_tarifas','NUMERIC']])
+          await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS ${col} ${type}`).catch(()=>{});
+
+        const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0];
+        const toEnrich = await pool.query(`SELECT id_tiny FROM bd_pedidos_tiny_${safeName} WHERE financeiro_ok IS NOT TRUE AND data_criacao >= $1 ORDER BY data_criacao DESC LIMIT 40`, [threeDaysAgo]);
+        let enriched = 0;
+        for (const { id_tiny } of toEnrich.rows) {
+          const er = await fetch(`${TINY_API_BASE}/pedidos/${id_tiny}`, { headers: { Authorization: 'Bearer ' + accessToken } });
+          if (er.status === 429) { await new Promise(r => setTimeout(r, 5000)); continue; }
+          if (!er.ok) { await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET financeiro_ok=TRUE WHERE id_tiny=$1`, [id_tiny]); continue; }
+          const ed = await er.json(); const ep = ed.data || ed;
+          const tp=parseFloat(ep.totalProdutos||0)||0, td=parseFloat(ep.totalDesconto||0)||0, tf=parseFloat(ep.totalFrete||0)||0;
+          const ti=parseFloat(ep.totalImpostos||0)||0, to2=parseFloat(ep.totalOutrasDespesas||0)||0, fp=parseFloat(ep.fretePago||ep.transportador?.valorFrete||0)||0;
+          const com=parseFloat(ep.comissao||ep.comissoes||ep.totalComissoes||0)||0;
+          const tax=parseFloat(ep.taxasETarifas||ep.taxas||0)||0;
+          let custo=0, qtd=0;
+          if (Array.isArray(ep.itens)) for (const it of ep.itens) { custo+=(parseFloat(it.precoCusto||it.produto?.precoCusto||0)||0)*(parseFloat(it.quantidade||1)||1); qtd+=parseFloat(it.quantidade||1)||1; }
+          const receita=tp-td+tf; const margem=receita-custo-fp-ti-to2-com-tax;
+          await pool.query(`UPDATE bd_pedidos_tiny_${safeName} SET total_produtos=$2,total_desconto=$3,total_frete=$4,total_impostos=$5,total_outras_despesas=$6,frete_pago=$7,custo_produtos=$8,margem_contribuicao=$9,margem_pct=$10,qtd_itens=$11,comissoes=$12,taxas_tarifas=$13,financeiro_ok=TRUE,atualizado_em=NOW() WHERE id_tiny=$1`,
+            [id_tiny,tp,td,tf,ti,to2,fp,custo,margem,receita>0?Math.round(margem/receita*10000)/100:0,qtd,com,tax]);
+          enriched++;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+
+        await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, account + '_token_sync', new Date().toLocaleString('pt-BR')]);
+        log.push({ account, synced: items.length, enriched });
+      }
+      return res.json({ ok: true, ran_at: new Date().toISOString(), log });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
   // ── tiny-skip-old: marca pedidos antes de uma data como financeiro_ok para não enriquecer ──
   if (req.query.module === 'tiny-skip-old') {
     try {
@@ -1191,6 +1324,8 @@ module.exports = async (req, res) => {
         ['total_impostos',       'NUMERIC'],
         ['total_outras_despesas','NUMERIC'],
         ['frete_pago',           'NUMERIC'],
+        ['comissoes',            'NUMERIC'],
+        ['taxas_tarifas',        'NUMERIC'],
         ['custo_produtos',       'NUMERIC'],
         ['margem_contribuicao',  'NUMERIC'],
         ['margem_pct',           'NUMERIC'],
@@ -1232,6 +1367,8 @@ module.exports = async (req, res) => {
           const totalImpostos  = parseFloat(p.totalImpostos   || p.total_impostos   || 0) || 0;
           const totalOutras    = parseFloat(p.totalOutrasDespesas || p.total_outras  || 0) || 0;
           const fretePago      = parseFloat(p.fretePago       || p.freteValorFrete  || p.transportador?.valorFrete || 0) || 0;
+          const comissoes      = parseFloat(p.comissao        || p.comissoes        || p.totalComissoes || 0) || 0;
+          const taxasTarifas   = parseFloat(p.taxasETarifas   || p.taxas            || 0) || 0;
 
           // Custo dos produtos (soma dos itens)
           let custoProdutos = 0;
@@ -1245,19 +1382,19 @@ module.exports = async (req, res) => {
             }
           }
 
-          // Margem de Contribuição = Receita - CMV - Frete Pago - Impostos
+          // Margem de Contribuição = Receita - CMV - Frete Pago - Impostos - Comissões - Taxas
           const receita = totalProdutos - totalDesconto + totalFrete;
-          const margem  = receita - custoProdutos - fretePago - totalImpostos - totalOutras;
+          const margem  = receita - custoProdutos - fretePago - totalImpostos - totalOutras - comissoes - taxasTarifas;
           const margemPct = receita > 0 ? Math.round((margem / receita) * 10000) / 100 : 0;
 
           await pool.query(`
             UPDATE bd_pedidos_tiny_${safeName} SET
               total_produtos=$2, total_desconto=$3, total_frete=$4, total_impostos=$5,
-              total_outras_despesas=$6, frete_pago=$7, custo_produtos=$8,
-              margem_contribuicao=$9, margem_pct=$10, qtd_itens=$11,
+              total_outras_despesas=$6, frete_pago=$7, comissoes=$8, taxas_tarifas=$9,
+              custo_produtos=$10, margem_contribuicao=$11, margem_pct=$12, qtd_itens=$13,
               financeiro_ok=TRUE, atualizado_em=NOW()
             WHERE id_tiny=$1
-          `, [id, totalProdutos, totalDesconto, totalFrete, totalImpostos, totalOutras, fretePago, custoProdutos, margem, margemPct, qtdItens]);
+          `, [id, totalProdutos, totalDesconto, totalFrete, totalImpostos, totalOutras, fretePago, comissoes, taxasTarifas, custoProdutos, margem, margemPct, qtdItens]);
           enriched++;
           await new Promise(res => setTimeout(res, delayMs));
         } catch { /* pula este pedido */ }
