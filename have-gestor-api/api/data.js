@@ -828,8 +828,8 @@ module.exports = async (req, res) => {
 
       const dataFinal   = new Date().toISOString().split('T')[0];
       const dataInicial = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-      async function tinyFetch(url) {
-        const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+      async function tinyFetch(url, tok) {
+        const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + (tok || accessToken) } });
         const text = await r.text();
         let body; try { body = JSON.parse(text); } catch { body = text.substring(0, 300); }
         return { status: r.status, body };
@@ -841,12 +841,30 @@ module.exports = async (req, res) => {
         if (parts.length === 3) tokenClaims = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
       } catch {}
 
+      // Testa client_credentials flow
+      let ccToken = null, ccResult = null;
+      if (TINY_CLIENT_ID && TINY_CLIENT_SECRET) {
+        const ccRes = await fetch(TINY_TOKEN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'client_credentials', client_id: TINY_CLIENT_ID, client_secret: TINY_CLIENT_SECRET }).toString(),
+        });
+        const ccData = await ccRes.json().catch(() => ({}));
+        ccResult = { status: ccRes.status, ok: ccRes.ok, scope: ccData.scope, expires_in: ccData.expires_in };
+        if (ccRes.ok && ccData.access_token) ccToken = ccData.access_token;
+      }
+
+      // Testa conta/info (endpoint mais simples)
+      const ccFetch = ccToken ? await tinyFetch(`${TINY_API}/conta/info`, ccToken) : null;
+
       return res.json({
         token_exp_original: cfg[account + '_exp'],
         refresh: refreshResult,
         token_claims: tokenClaims ? { scope: tokenClaims.scope, aud: tokenClaims.aud, azp: tokenClaims.azp, exp: tokenClaims.exp } : 'not-jwt',
-        pedidos:  await tinyFetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=3`),
-        produtos: await tinyFetch(`${TINY_API}/produtos?pagina=1&limite=3`),
+        pedidos_user_token:  await tinyFetch(`${TINY_API}/pedidos?dataInicial=${dataInicial}&dataFinal=${dataFinal}&pagina=1&limite=3`),
+        produtos_user_token: await tinyFetch(`${TINY_API}/produtos?pagina=1&limite=3`),
+        client_credentials: ccResult,
+        conta_info_cc: ccFetch,
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
