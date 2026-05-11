@@ -982,51 +982,93 @@ module.exports = async (req, res) => {
       // 3. Sincronizar pedidos
       if (modulos.includes('vendas')) {
         const lastSync = cfg[account + '_token_sync'];
-        if (!lastSync) await pool.query(`DROP TABLE IF EXISTS bd_pedidos_tiny_${safeName}`);
+        const forceReset = req.query.force === 'true';
+        if (!lastSync || forceReset) await pool.query(`DROP TABLE IF EXISTS bd_pedidos_tiny_${safeName}`);
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
           id_tiny TEXT PRIMARY KEY,
-          numero TEXT, numero_ecommerce TEXT, data_pedido DATE,
-          situacao INT, nome_cliente TEXT, cpf_cnpj TEXT, uf TEXT,
-          total_pedido NUMERIC DEFAULT 0, canal_venda TEXT,
-          transportadora TEXT, codigo_rastreamento TEXT,
+          numero TEXT, numero_ecommerce TEXT, numero_canal_venda TEXT,
+          data_criacao DATE, data_previsao DATE,
+          situacao INT,
+          nome_cliente TEXT, cpf_cnpj TEXT, tipo_pessoa TEXT,
+          email_cliente TEXT, telefone_cliente TEXT, celular_cliente TEXT, codigo_cliente TEXT,
+          uf TEXT, municipio TEXT, bairro TEXT, cep TEXT, endereco TEXT,
+          total_pedido NUMERIC DEFAULT 0,
+          marketplace TEXT, canal_venda TEXT,
+          transportadora TEXT, forma_envio TEXT, frete_por_conta TEXT,
+          codigo_rastreamento TEXT, url_rastreamento TEXT,
+          vendedor TEXT, origem_pedido INT,
           atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
         const dataFinal   = req.query.to   || new Date().toISOString().split('T')[0];
         const daysParam   = parseInt(req.query.days || '0');
-        const days        = daysParam > 0 ? daysParam : (lastSync ? 2 : 30);
+        const days        = daysParam > 0 ? daysParam : (lastSync && !forceReset ? 2 : 30);
         const dataInicial = req.query.from || new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
         const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
         if (pedidos.length > 0) {
           const rows = pedidos.map(p => [
-            String(p.id||''),
-            p.numeroPedido ? String(p.numeroPedido) : null,
-            p.ecommerce?.numeroPedidoEcommerce||null,
-            p.dataCriacao ? p.dataCriacao.split('T')[0] : null,
-            typeof p.situacao === 'number' ? p.situacao : null,
-            p.cliente?.nome||null,
-            p.cliente?.cpfCnpj||null,
-            p.cliente?.endereco?.uf||null,
-            parseFloat(p.valor||0)||0,
-            p.ecommerce?.nome||null,
-            p.transportador?.nome||null,
-            p.transportador?.codigoRastreamento||null,
+            String(p.id||''),                                          // $1  id_tiny
+            p.numeroPedido ? String(p.numeroPedido) : null,            // $2  numero
+            p.ecommerce?.numeroPedidoEcommerce||null,                  // $3  numero_ecommerce
+            p.ecommerce?.numeroPedidoCanalVenda||null,                 // $4  numero_canal_venda
+            p.dataCriacao ? p.dataCriacao.split('T')[0] : null,        // $5  data_criacao
+            p.dataPrevisao ? p.dataPrevisao.split('T')[0] : null,      // $6  data_previsao
+            typeof p.situacao === 'number' ? p.situacao : null,        // $7  situacao
+            p.cliente?.nome||null,                                     // $8  nome_cliente
+            p.cliente?.cpfCnpj||null,                                  // $9  cpf_cnpj
+            p.cliente?.tipoPessoa||null,                               // $10 tipo_pessoa
+            p.cliente?.email||null,                                    // $11 email_cliente
+            p.cliente?.telefone||null,                                 // $12 telefone_cliente
+            p.cliente?.celular||null,                                  // $13 celular_cliente
+            p.cliente?.codigo ? String(p.cliente.codigo) : null,       // $14 codigo_cliente
+            p.cliente?.endereco?.uf||null,                             // $15 uf
+            p.cliente?.endereco?.municipio||null,                      // $16 municipio
+            p.cliente?.endereco?.bairro||null,                         // $17 bairro
+            p.cliente?.endereco?.cep||null,                            // $18 cep
+            p.cliente?.endereco?.endereco||null,                       // $19 endereco
+            parseFloat(p.valor||0)||0,                                 // $20 total_pedido
+            p.ecommerce?.nome||null,                                   // $21 marketplace
+            p.ecommerce?.canalVenda||null,                             // $22 canal_venda
+            p.transportador?.nome||null,                               // $23 transportadora
+            p.transportador?.formaEnvio?.nome||null,                   // $24 forma_envio
+            p.transportador?.fretePorConta||null,                      // $25 frete_por_conta
+            p.transportador?.codigoRastreamento||null,                 // $26 codigo_rastreamento
+            p.transportador?.urlRastreamento||null,                    // $27 url_rastreamento
+            p.vendedor?.nome||null,                                    // $28 vendedor
+            typeof p.origemPedido === 'number' ? p.origemPedido : null,// $29 origem_pedido
           ]);
           await pool.query(`
             INSERT INTO bd_pedidos_tiny_${safeName}
-              (id_tiny,numero,numero_ecommerce,data_pedido,situacao,nome_cliente,cpf_cnpj,uf,
-               total_pedido,canal_venda,transportadora,codigo_rastreamento,atualizado_em)
+              (id_tiny,numero,numero_ecommerce,numero_canal_venda,
+               data_criacao,data_previsao,situacao,
+               nome_cliente,cpf_cnpj,tipo_pessoa,email_cliente,telefone_cliente,celular_cliente,codigo_cliente,
+               uf,municipio,bairro,cep,endereco,
+               total_pedido,marketplace,canal_venda,
+               transportadora,forma_envio,frete_por_conta,codigo_rastreamento,url_rastreamento,
+               vendedor,origem_pedido,atualizado_em)
             SELECT * FROM UNNEST(
-              $1::text[],$2::text[],$3::text[],$4::date[],$5::int[],$6::text[],$7::text[],$8::text[],
-              $9::numeric[],$10::text[],$11::text[],$12::text[],
-              (SELECT array_agg(NOW()) FROM generate_series(1,$13))
+              $1::text[],$2::text[],$3::text[],$4::text[],
+              $5::date[],$6::date[],$7::int[],
+              $8::text[],$9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],
+              $15::text[],$16::text[],$17::text[],$18::text[],$19::text[],
+              $20::numeric[],$21::text[],$22::text[],
+              $23::text[],$24::text[],$25::text[],$26::text[],$27::text[],
+              $28::text[],$29::int[],
+              (SELECT array_agg(NOW()) FROM generate_series(1,$30))
             )
             ON CONFLICT (id_tiny) DO UPDATE SET
               situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido,
-              codigo_rastreamento=EXCLUDED.codigo_rastreamento, atualizado_em=NOW()
+              data_previsao=EXCLUDED.data_previsao, marketplace=EXCLUDED.marketplace,
+              codigo_rastreamento=EXCLUDED.codigo_rastreamento, url_rastreamento=EXCLUDED.url_rastreamento,
+              forma_envio=EXCLUDED.forma_envio, vendedor=EXCLUDED.vendedor, atualizado_em=NOW()
           `, [
-            rows.map(r=>r[0]), rows.map(r=>r[1]), rows.map(r=>r[2]), rows.map(r=>r[3]),
-            rows.map(r=>r[4]), rows.map(r=>r[5]), rows.map(r=>r[6]), rows.map(r=>r[7]),
-            rows.map(r=>r[8]), rows.map(r=>r[9]), rows.map(r=>r[10]), rows.map(r=>r[11]),
+            rows.map(r=>r[0]),  rows.map(r=>r[1]),  rows.map(r=>r[2]),  rows.map(r=>r[3]),
+            rows.map(r=>r[4]),  rows.map(r=>r[5]),  rows.map(r=>r[6]),
+            rows.map(r=>r[7]),  rows.map(r=>r[8]),  rows.map(r=>r[9]),  rows.map(r=>r[10]),
+            rows.map(r=>r[11]), rows.map(r=>r[12]), rows.map(r=>r[13]),
+            rows.map(r=>r[14]), rows.map(r=>r[15]), rows.map(r=>r[16]), rows.map(r=>r[17]), rows.map(r=>r[18]),
+            rows.map(r=>r[19]), rows.map(r=>r[20]), rows.map(r=>r[21]),
+            rows.map(r=>r[22]), rows.map(r=>r[23]), rows.map(r=>r[24]), rows.map(r=>r[25]), rows.map(r=>r[26]),
+            rows.map(r=>r[27]), rows.map(r=>r[28]),
             rows.length,
           ]);
         }
