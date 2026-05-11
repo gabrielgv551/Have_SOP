@@ -851,20 +851,17 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
-  // Módulo Tiny Sync — sincroniza pedidos e estoque do Tiny ERP para o banco
+  // Módulo Tiny Sync — sincroniza pedidos e estoque via API v2 (token estático)
   if (req.query.module === 'tiny-sync') {
-    const account = req.query.account; // ex: 'tiny_lanzi'
-    if (!account) return res.status(400).json({ error: 'account é obrigatório. Ex: ?account=tiny_lanzi' });
+    const account = req.query.account; // ex: 'tiny_marcon'
+    if (!account) return res.status(400).json({ error: 'account é obrigatório. Ex: ?account=tiny_marcon' });
 
     const company = payload.company || 'lanzi';
     const pool    = getPool(company);
-    const TINY_API      = 'https://api.tiny.com.br/public-api/v3';
-    const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
-    const TINY_CLIENT_ID     = (process.env.TINY_CLIENT_ID     || '').trim();
-    const TINY_CLIENT_SECRET = (process.env.TINY_CLIENT_SECRET || '').trim();
+    const TINY_V2 = 'https://api.tiny.com.br/api2';
 
     try {
-      // 1. Buscar credenciais no banco
+      // 1. Buscar api_token estático no banco
       const cfgRes = await pool.query(
         `SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`,
         [company, account + '%']
@@ -872,128 +869,117 @@ module.exports = async (req, res) => {
       const cfg = {};
       cfgRes.rows.forEach(({ chave, valor }) => { cfg[chave] = valor; });
 
-      let accessToken  = cfg[account + '_token'];
-      const refreshToken = cfg[account + '_refresh'];
-      const expAt        = cfg[account + '_exp'];
-      const modulos      = (cfg[account + '_modulos'] || 'vendas,estoque').split(',').map(m => m.trim());
+      const apiToken = cfg[account + '_api_token'];
+      const modulos  = (cfg[account + '_modulos'] || 'vendas,estoque').split(',').map(m => m.trim());
 
-      if (!accessToken) return res.status(400).json({ error: `Conta ${account} não autenticada. Conecte via OAuth primeiro.` });
-
-      // 2. Renovar token se expirado
-      const expired = !expAt || new Date(expAt) < new Date(Date.now() + 5 * 60 * 1000);
-      if (expired && refreshToken && TINY_CLIENT_ID) {
-        const rr = await fetch(TINY_TOKEN_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ grant_type: 'refresh_token', client_id: TINY_CLIENT_ID, client_secret: TINY_CLIENT_SECRET, refresh_token: refreshToken }).toString(),
-        });
-        if (rr.ok) {
-          const nt = await rr.json();
-          accessToken = nt.access_token;
-          const newExp = new Date(Date.now() + (nt.expires_in || 21600) * 1000).toISOString();
-          for (const [k, v] of [[account+'_token', nt.access_token],[account+'_refresh', nt.refresh_token||refreshToken],[account+'_exp', newExp]]) {
-            await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
-          }
-        }
-      }
+      if (!apiToken) return res.status(400).json({ error: `Token de API não encontrado para ${account}. Salve via configuracoes?module=configuracoes com chave=${account}_api_token.` });
 
       const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
       const results  = {};
 
-      // Helper: fetch paginado da Tiny API
-      async function tinyPages(endpoint, params = {}) {
+      // Helper: fetch paginado da API v2 do Tiny
+      async function tinyV2Pages(endpoint, extraParams = {}) {
         const items = [];
         let pagina  = 1;
         while (true) {
-          const qs = new URLSearchParams({ ...params, pagina: String(pagina), limite: '100' }).toString();
-          const r  = await fetch(`${TINY_API}${endpoint}?${qs}`, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+          const qs = new URLSearchParams({ token: apiToken, formato: 'json', ...extraParams, pagina: String(pagina) }).toString();
+          const r  = await fetch(`${TINY_V2}/${endpoint}?${qs}`);
           if (!r.ok) break;
-          const d   = await r.json();
-          const pg  = d.itens || d.data || [];
+          const d  = await r.json();
+          const ret = d.retorno || {};
+          if (ret.status !== 'OK' && ret.status !== 'Ok') break;
+          const key = Object.keys(ret).find(k => Array.isArray(ret[k]));
+          if (!key) break;
+          const pg = ret[key];
           items.push(...pg);
-          if (pagina >= (d.totalPaginas || 1) || pg.length === 0) break;
+          const totalPages = parseInt(ret.numero_paginas || ret.totalPaginas || '1');
+          if (pagina >= totalPages || pg.length === 0) break;
           pagina++;
         }
         return items;
       }
 
-      // 3. Sincronizar vendas (últimos 90 dias)
+      // 2. Sincronizar pedidos (últimos 90 dias)
       if (modulos.includes('vendas')) {
-        await pool.query(`CREATE TABLE IF NOT EXISTS bd_vendas_tiny_${safeName} (
-          numero_pedido TEXT NOT NULL, numero_ecommerce TEXT, data_pedido DATE,
-          situacao TEXT, canal_venda TEXT, plataforma TEXT,
-          cliente_nome TEXT, cliente_cpf_cnpj TEXT, cliente_uf TEXT,
-          sku TEXT NOT NULL, nome_produto TEXT, quantidade NUMERIC,
-          preco_unitario NUMERIC, preco_custo NUMERIC, preco_final NUMERIC,
-          desconto_item NUMERIC, total_produtos NUMERIC, valor_frete NUMERIC,
-          valor_desconto NUMERIC, total_pedido NUMERIC,
-          forma_pagamento TEXT, numero_parcelas INT,
-          transportadora TEXT, codigo_rastreamento TEXT,
-          atualizado_em TIMESTAMP DEFAULT NOW(),
-          PRIMARY KEY (numero_pedido, sku)
+        await pool.query(`CREATE TABLE IF NOT EXISTS bd_pedidos_tiny_${safeName} (
+          id_tiny TEXT PRIMARY KEY,
+          numero TEXT, numero_ecommerce TEXT, data_pedido DATE,
+          situacao TEXT, nome_cliente TEXT, cpf_cnpj TEXT, uf TEXT,
+          valor_produtos NUMERIC DEFAULT 0, valor_frete NUMERIC DEFAULT 0,
+          valor_desconto NUMERIC DEFAULT 0, total_pedido NUMERIC DEFAULT 0,
+          forma_pagamento TEXT, transportadora TEXT, codigo_rastreamento TEXT,
+          canal_venda TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
-        const dataFinal   = new Date().toISOString().split('T')[0];
-        const dataInicial = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
-        const pedidos = await tinyPages('/pedidos', { dataInicial, dataFinal });
+
+        const fmtDate = (d) => {
+          if (!d) return null;
+          const [day, month, year] = d.split('/');
+          return year && month && day ? `${year}-${month}-${day}` : null;
+        };
+
+        const dataFim   = new Date().toLocaleDateString('pt-BR');
+        const dataIni   = new Date(Date.now() - 90 * 86400000).toLocaleDateString('pt-BR');
+        const pedidosList = await tinyV2Pages('pedidos.pesquisa.php', { dataInicial: dataIni, dataFinal: dataFim });
         let cnt = 0;
-        for (const p of pedidos) {
-          for (const item of (p.itens || [])) {
-            await pool.query(`
-              INSERT INTO bd_vendas_tiny_${safeName}
-                (numero_pedido,numero_ecommerce,data_pedido,situacao,canal_venda,plataforma,
-                 cliente_nome,cliente_cpf_cnpj,cliente_uf,sku,nome_produto,quantidade,
-                 preco_unitario,preco_custo,preco_final,desconto_item,total_produtos,
-                 valor_frete,valor_desconto,total_pedido,forma_pagamento,numero_parcelas,
-                 transportadora,codigo_rastreamento,atualizado_em)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW())
-              ON CONFLICT (numero_pedido,sku) DO UPDATE SET
-                situacao=EXCLUDED.situacao,quantidade=EXCLUDED.quantidade,preco_final=EXCLUDED.preco_final,atualizado_em=NOW()
-            `, [
-              String(p.numero||p.id), p.numero_ecommerce||null,
-              p.data_criacao ? p.data_criacao.split('T')[0] : null,
-              p.situacao||null, p.canal_venda||p.origem||null, p.plataforma||null,
-              p.cliente?.nome||null, p.cliente?.cpf_cnpj||null, p.cliente?.uf||null,
-              item.sku||item.codigo||String(item.id||''), item.nome||item.descricao||null,
-              item.quantidade||0, item.valor_unitario||item.preco||0,
-              item.valor_custo||0, item.valor_final||item.valor_unitario||0,
-              item.desconto||0, p.total_produtos||0, p.valor_frete||0,
-              p.valor_desconto||0, p.valor_total||p.total||0,
-              p.forma_pagamento?.nome||null, p.forma_pagamento?.parcelas||null,
-              p.transportador?.nome||null, p.codigo_rastreamento||null,
-            ]);
-            cnt++;
-          }
+        for (const wrapper of pedidosList) {
+          const p = wrapper.pedido || wrapper;
+          await pool.query(`
+            INSERT INTO bd_pedidos_tiny_${safeName}
+              (id_tiny,numero,numero_ecommerce,data_pedido,situacao,nome_cliente,cpf_cnpj,uf,
+               valor_produtos,valor_frete,valor_desconto,total_pedido,forma_pagamento,
+               transportadora,codigo_rastreamento,canal_venda,atualizado_em)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())
+            ON CONFLICT (id_tiny) DO UPDATE SET
+              situacao=EXCLUDED.situacao, total_pedido=EXCLUDED.total_pedido, atualizado_em=NOW()
+          `, [
+            String(p.id||p.numero||''), p.numero||null, p.numero_ecommerce||null,
+            fmtDate(p.data_pedido)||null, p.situacao||null,
+            p.nome||p.nome_contato||null, p.cpf_cnpj||null, p.uf||null,
+            parseFloat(p.valor||p.total_produtos||0)||0,
+            parseFloat(p.frete||p.valor_frete||0)||0,
+            parseFloat(p.desconto||p.valor_desconto||0)||0,
+            parseFloat(p.valor||p.total||0)||0,
+            p.forma_pagamento||null, p.transportadora||null,
+            p.codigo_rastreamento||null, p.canal_venda||null,
+          ]);
+          cnt++;
         }
         results.vendas = cnt;
       }
 
-      // 4. Sincronizar estoque
+      // 3. Sincronizar produtos/estoque
       if (modulos.includes('estoque')) {
         await pool.query(`CREATE TABLE IF NOT EXISTS bd_estoque_tiny_${safeName} (
-          sku TEXT PRIMARY KEY, nome TEXT, unidade TEXT,
+          id_tiny TEXT PRIMARY KEY, sku TEXT, nome TEXT, unidade TEXT,
           estoque_atual NUMERIC DEFAULT 0, estoque_minimo NUMERIC DEFAULT 0,
           preco_custo NUMERIC DEFAULT 0, preco_venda NUMERIC DEFAULT 0,
-          marca TEXT, categoria TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
+          marca TEXT, categoria TEXT, ativo TEXT, atualizado_em TIMESTAMP DEFAULT NOW()
         )`);
-        const produtos = await tinyPages('/produtos');
+        const prodList = await tinyV2Pages('produtos.pesquisa.php', { situacao: 'A' });
         let cnt = 0;
-        for (const p of produtos) {
+        for (const wrapper of prodList) {
+          const p = wrapper.produto || wrapper;
           await pool.query(`
-            INSERT INTO bd_estoque_tiny_${safeName} (sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,atualizado_em)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
-            ON CONFLICT (sku) DO UPDATE SET nome=EXCLUDED.nome,estoque_atual=EXCLUDED.estoque_atual,estoque_minimo=EXCLUDED.estoque_minimo,preco_venda=EXCLUDED.preco_venda,atualizado_em=NOW()
+            INSERT INTO bd_estoque_tiny_${safeName}
+              (id_tiny,sku,nome,unidade,estoque_atual,estoque_minimo,preco_custo,preco_venda,marca,categoria,ativo,atualizado_em)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
+            ON CONFLICT (id_tiny) DO UPDATE SET
+              nome=EXCLUDED.nome, estoque_atual=EXCLUDED.estoque_atual,
+              estoque_minimo=EXCLUDED.estoque_minimo, preco_venda=EXCLUDED.preco_venda, atualizado_em=NOW()
           `, [
-            p.codigo||String(p.id), p.nome||null, p.unidade||null,
-            p.saldo?.total ?? p.estoque ?? 0, p.saldo?.minimo ?? p.estoque_minimo ?? 0,
-            p.preco_custo||0, p.preco||p.preco_venda||0,
-            p.marca||null, p.categoria?.nome||p.categoria||null,
+            String(p.id||p.codigo||''), p.codigo||null, p.nome||null, p.unidade||null,
+            parseFloat(p.estoqueAtual||p.estoque_atual||0)||0,
+            parseFloat(p.estoqueMinimo||p.estoque_minimo||0)||0,
+            parseFloat(p.precoCusto||p.preco_custo||0)||0,
+            parseFloat(p.preco||p.preco_venda||0)||0,
+            p.marca||null, p.categoria||null, p.situacao||'A',
           ]);
           cnt++;
         }
         results.estoque = cnt;
       }
 
-      // 5. Atualizar timestamp de sync
+      // 4. Atualizar timestamp de sync
       await pool.query(
         `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`,
         [company, account + '_token_sync', new Date().toLocaleString('pt-BR')]
