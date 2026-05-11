@@ -1583,7 +1583,7 @@ module.exports = async (req, res) => {
         sessionCookie = cfg[account+'_olist_cookie'];
         csrfToken     = cfg[account+'_olist_csrf'] || '';
       }
-      if (!sessionCookie) return res.status(400).json({ error: 'Sem sessão Olist. Envie sessionCookie no body ou rode sync-margem-tiny.js primeiro.' });
+      // Permite tentar sem cookie se tiver Bearer token do Keycloak disponível
 
       // Parâmetros de data
       const from = req.query.from || req.body?.from || new Date(Date.now() - 30*86400000).toISOString().split('T')[0];
