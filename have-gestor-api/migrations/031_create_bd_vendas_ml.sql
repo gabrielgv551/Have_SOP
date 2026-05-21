@@ -56,6 +56,11 @@ CREATE TABLE IF NOT EXISTS bd_vendas_ml (
     status_pagamento    TEXT,
     -- Canal
     canal               TEXT,
+    -- Vendedor
+    seller_id           BIGINT,
+    seller_nickname     TEXT,
+    -- Impostos
+    taxes_amount        NUMERIC,
 
     PRIMARY KEY (order_id, produto_id)
 );

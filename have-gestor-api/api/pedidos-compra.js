@@ -1,19 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 const crypto = require('crypto');
-const companies = require('../lib/companies');
-
-const pools = {};
-function getPool(company) {
-  if (pools[company]) return pools[company];
-  const key = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
-  pools[company] = new Pool({
-    host: process.env[`${key}_HOST`], port: parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`], user: process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`], ssl: { rejectUnauthorized: false }, max: 5,
-  });
-  return pools[company];
-}
+const { getPool } = require('../lib/db');
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];

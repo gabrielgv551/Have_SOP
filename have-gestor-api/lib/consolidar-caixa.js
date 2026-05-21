@@ -132,7 +132,7 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
   const dpR = await pool.query(
     "SELECT palavra_chave, razao_social, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
     [company]
-  );
+  ).catch(() => ({ rows: [] }));
   const depara = dpR.rows;
 
   const extFiltro = fonte === 'manual' ? ' AND e.belvo_tx_id IS NULL'
@@ -143,7 +143,7 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
   const extR = await pool.query(
     `SELECT e.dia, e.descricao, e.razao_social, e.valor FROM caixa_extrato e LEFT JOIN caixa_bancos b ON e.banco_id = b.id WHERE e.empresa=$1 AND e.ano=$2 AND e.mes=$3${extFiltro}${extSubFilter}`,
     [company, a, m]
-  );
+  ).catch(() => ({ rows: [] }));
 
   const valores = {};
   for (const extRow of extR.rows) {
@@ -182,7 +182,7 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
   const cpDpR = await pool.query(
     "SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='contas_pagar'",
     [company]
-  );
+  ).catch(() => ({ rows: [] }));
   const cpDepara = cpDpR.rows;
 
   const valores_previsao = {};
@@ -228,7 +228,7 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
     const pcDpR = await pool.query(
       "SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='pedidos_compra'",
       [company]
-    );
+    ).catch(() => ({ rows: [] }));
     const pcDepara = pcDpR.rows;
 
     let pcQuery = `SELECT fornecedor, valor, vencimento, vencimento_ajustado, linha_fluxo
@@ -243,7 +243,7 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
       pcParams.push(today);
     }
 
-    const pcR = await pool.query(pcQuery, pcParams);
+    const pcR = await pool.query(pcQuery, pcParams).catch(() => ({ rows: [] }));
     for (const row of pcR.rows) {
       let catNome = row.linha_fluxo;
       if (!catNome && pcDepara.length > 0) {
@@ -267,7 +267,7 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
     const vdpR = await pool.query(
       `SELECT palavra_chave, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='vendas'`,
       [company]
-    );
+    ).catch(() => ({ rows: [] }));
     const vendasDepara = vdpR.rows;
 
     if (vendasDepara.length > 0) {

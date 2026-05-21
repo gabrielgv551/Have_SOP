@@ -23,14 +23,6 @@ const companies = {
     user:     process.env.LANZI_USER,
     password: process.env.LANZI_PASSWORD,
   },
-  marcon: {
-    name: 'Marcon',
-    host:     process.env.MARCON_HOST,
-    port:     parseInt(process.env.MARCON_PORT || '5432'),
-    database: process.env.MARCON_DB,
-    user:     process.env.MARCON_USER,
-    password: process.env.MARCON_PASSWORD,
-  },
 };
 
 const UNIVERSAL_USER = {

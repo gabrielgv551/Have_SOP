@@ -8,28 +8,17 @@ const TINY_MODULES  = ['tiny-oauth','tiny-debug','tiny-sync','cron-tiny','tiny-s
 const VENDAS_MODULES = ['margens','vendas','forecast-canais','forecast-recebimentos','forecast-diario'];
 const SOPC_MODULES  = ['sopc-config','fornecedores-config','sku-desativadas'];
 
+function parseBody(raw) {
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
+  return raw || {};
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  // PATCH — atualizar campo empresa de um título de contas_pagar
-  if (req.method === 'PATCH') {
-    const auth2 = (req.headers.authorization || '').split(' ')[1];
-    if (!auth2) return res.status(401).json({ error: 'Token não fornecido' });
-    let p2;
-    try { p2 = jwt.verify(auth2, process.env.JWT_SECRET); }
-    catch { return res.status(401).json({ error: 'Token inválido' }); }
-    const pool2 = getPool(p2.company || 'lanzi');
-    const { id, empresa } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id obrigatorio' });
-    try {
-      await pool2.query('UPDATE contas_pagar SET empresa=$1 WHERE id=$2', [empresa || null, String(id)]);
-      return res.json({ ok: true });
-    } catch(e) { return res.status(500).json({ error: e.message }); }
-  }
 
   // Módulo público — sem autenticação (só expõe client IDs, nunca secrets)
   if (req.query.module === 'public-config') {
@@ -53,6 +42,17 @@ module.exports = async (req, res) => {
     payload = jwt.verify(auth, process.env.JWT_SECRET);
   } catch {
     return res.status(401).json({ error: 'Token inválido ou expirado. Faça login novamente.' });
+  }
+
+  // PATCH — atualizar campo empresa de um título de contas_pagar
+  if (req.method === 'PATCH') {
+    const pool = getPool(payload.company || 'lanzi');
+    const { id, empresa } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id obrigatorio' });
+    try {
+      await pool.query('UPDATE contas_pagar SET empresa=$1 WHERE id=$2', [empresa || null, String(id)]);
+      return res.json({ ok: true });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
   }
 
   const mod = req.query.module;
@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
         return res.json(result);
       }
       if (req.method === 'POST') {
-        const body = (typeof req.body === 'string') ? JSON.parse(req.body) : (req.body || {});
+        const body = parseBody(req.body);
         const updates = Object.entries(body).filter(([k, v]) => typeof k === 'string' && k.length > 0);
         if (!updates.length) return res.status(400).json({ error: 'Nenhum campo válido enviado.' });
         for (const [chave, valor] of updates) {
@@ -112,7 +112,7 @@ module.exports = async (req, res) => {
   // Módulo ML OAuth — troca code por tokens
   if (mod === 'ml-oauth') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-    const _mlBody = (typeof req.body === 'string') ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const _mlBody = parseBody(req.body);
     const { code, state } = _mlBody;
     if (!code || !state) return res.status(400).json({ error: 'code e state são obrigatórios', debug: { bodyType: typeof req.body, keys: Object.keys(_mlBody), hasCode: !!code, hasState: !!state } });
     const ML_CLIENT_ID     = process.env.ML_CLIENT_ID     || '2803787506623043';
@@ -136,7 +136,6 @@ module.exports = async (req, res) => {
       const pool = getPool(company);
       const chave = state + '_token';
       const expAt = new Date(Date.now() + (tokenData.expires_in || 21600) * 1000).toISOString();
-      await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
       for (const [k, v] of [[chave, tokenData.access_token],[chave+'_refresh', tokenData.refresh_token],[chave+'_nick', nick],[chave+'_user_id', String(tokenData.user_id||'')],[chave+'_exp', expAt]]) {
         await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
       }
@@ -147,7 +146,7 @@ module.exports = async (req, res) => {
   // Módulo ML Remove — desconectar conta ML (apaga tokens + tabela via worker)
   if (mod === 'ml-remove') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-    const _body = (typeof req.body === 'string') ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const _body = parseBody(req.body);
     const { account_id } = _body;
     if (!account_id) return res.status(400).json({ error: 'account_id é obrigatório' });
 

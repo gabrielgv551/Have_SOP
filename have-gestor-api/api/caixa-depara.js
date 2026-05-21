@@ -1,18 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-const companies = require('../lib/companies');
-
-const pools = {};
-function getPool(company) {
-  if (pools[company]) return pools[company];
-  const key = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
-  pools[company] = new Pool({
-    host: process.env[`${key}_HOST`], port: parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`], user: process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`], ssl: { rejectUnauthorized: false }, max: 5,
-  });
-  return pools[company];
-}
+const { getPool } = require('../lib/db');
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -44,7 +31,7 @@ module.exports = async (req, res) => {
         const params = ano && mes ? [company, parseInt(ano), parseInt(mes)] : [company];
         const r = await pool.query(query, params);
         const dpR = await pool.query(
-          "SELECT palavra_chave, razao_social FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
+          "SELECT palavra_chave, razao_social, cnpj FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
           [company]
         );
         const rules = dpR.rows;
@@ -71,6 +58,8 @@ module.exports = async (req, res) => {
         const isGroupClassified = (g) => {
           const rsLower = (g.razao_social || '').toLowerCase();
           return rules.some(dp => {
+            const dpCNPJ = (dp.cnpj || '').replace(/\D/g, '');
+            if (dpCNPJ) return false; // cnpj rules only match via openfinance source
             if (dp.razao_social) {
               return rsLower && rsLower.includes(dp.razao_social.toLowerCase());
             }
@@ -81,6 +70,50 @@ module.exports = async (req, res) => {
 
         const naoClassificadas = groups.filter(g => !isGroupClassified(g));
         return res.json({ nao_classificadas: naoClassificadas });
+      }
+
+      // Return unclassified Open Finance (Pluggy) transactions grouped by CNPJ/RS
+      if (source === 'openfinance') {
+        const r = await pool.query(
+          `SELECT DISTINCT counterparty_document, razao_social, descricao
+           FROM caixa_extrato
+           WHERE empresa=$1 AND belvo_tx_id IS NOT NULL
+           ORDER BY razao_social NULLS LAST, descricao`,
+          [company]
+        );
+        const dpR = await pool.query(
+          "SELECT palavra_chave, razao_social, cnpj FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",
+          [company]
+        );
+        const rules = dpR.rows;
+
+        // Group by CNPJ (primary) or RS (secondary) or description
+        const groupMap = new Map();
+        for (const row of r.rows) {
+          const cnpjRaw = (row.counterparty_document || '').replace(/\D/g, '');
+          const rs = row.razao_social || '';
+          const key = cnpjRaw ? `__CNPJ__${cnpjRaw}` : rs ? `__RS__${rs}` : `__D__${row.descricao}`;
+          if (!groupMap.has(key)) {
+            groupMap.set(key, { cnpj: cnpjRaw || null, razao_social: rs || null, descricoes: [] });
+          }
+          const g = groupMap.get(key);
+          if (!g.descricoes.includes(row.descricao)) g.descricoes.push(row.descricao);
+        }
+        const groups = [...groupMap.values()];
+
+        const isClassified = (g) => {
+          const rsLower = (g.razao_social || '').toLowerCase();
+          const cnpjDoc = (g.cnpj || '').replace(/\D/g, '');
+          return rules.some(dp => {
+            const dpCNPJ = (dp.cnpj || '').replace(/\D/g, '');
+            if (dpCNPJ && cnpjDoc) return cnpjDoc === dpCNPJ;
+            if (dp.razao_social) return rsLower && rsLower.includes(dp.razao_social.toLowerCase());
+            return dp.palavra_chave && g.descricoes.some(d =>
+              d.toLowerCase().includes(dp.palavra_chave.toLowerCase()));
+          });
+        };
+
+        return res.json({ nao_classificadas: groups.filter(g => !isClassified(g)) });
       }
 
       // Return groups + ungrouped canals for mapping (tipo='vendas')
@@ -163,27 +196,28 @@ module.exports = async (req, res) => {
       const tipoFilter = tipo ? ' AND tipo=$2' : '';
       const params = tipo ? [company, tipo] : [company];
       const r = await pool.query(
-        `SELECT id, palavra_chave, razao_social, categoria_nome, tipo FROM caixa_de_para WHERE empresa=$1${tipoFilter} ORDER BY tipo, categoria_nome, palavra_chave`,
+        `SELECT id, palavra_chave, razao_social, cnpj, categoria_nome, tipo FROM caixa_de_para WHERE empresa=$1${tipoFilter} ORDER BY tipo, categoria_nome, palavra_chave`,
         params
       );
       return res.json({ mappings: r.rows });
     }
 
     if (req.method === 'POST') {
-      const { palavra_chave, razao_social, categoria_nome, tipo } = req.body;
-      const pkVal = palavra_chave ? String(palavra_chave).trim().substring(0, 500) : null;
-      const rsVal = razao_social ? String(razao_social).trim().substring(0, 300) : null;
-      if ((!pkVal && !rsVal) || !categoria_nome)
-        return res.status(400).json({ error: 'Informe palavra_chave ou razao_social, e categoria_nome' });
+      const { palavra_chave, razao_social, cnpj, categoria_nome, tipo } = req.body;
+      const pkVal   = palavra_chave ? String(palavra_chave).trim().substring(0, 500) : null;
+      const rsVal   = razao_social  ? String(razao_social).trim().substring(0, 300)  : null;
+      const cnpjVal = cnpj          ? String(cnpj).replace(/\D/g, '').substring(0, 20) || null : null;
+      if ((!pkVal && !rsVal && !cnpjVal) || !categoria_nome)
+        return res.status(400).json({ error: 'Informe palavra_chave, razao_social ou cnpj, e categoria_nome' });
       const tipoVal = (tipo === 'contas_pagar') ? 'contas_pagar' : (tipo === 'vendas') ? 'vendas' : (tipo === 'pedidos_compra') ? 'pedidos_compra' : 'extrato';
       const r = await pool.query(
-        `INSERT INTO caixa_de_para (empresa, palavra_chave, razao_social, categoria_nome, tipo)
-         VALUES ($1,$2,$3,$4,$5)
-         ON CONFLICT (empresa, tipo, COALESCE(razao_social,''), COALESCE(palavra_chave,'')) DO UPDATE
+        `INSERT INTO caixa_de_para (empresa, palavra_chave, razao_social, cnpj, categoria_nome, tipo)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (empresa, tipo, COALESCE(razao_social,''), COALESCE(palavra_chave,''), COALESCE(cnpj,'')) DO UPDATE
            SET categoria_nome=EXCLUDED.categoria_nome, razao_social=EXCLUDED.razao_social,
-               palavra_chave=EXCLUDED.palavra_chave
-         RETURNING id, palavra_chave, razao_social, categoria_nome, tipo`,
-        [company, pkVal, rsVal, categoria_nome.substring(0, 100), tipoVal]
+               palavra_chave=EXCLUDED.palavra_chave, cnpj=EXCLUDED.cnpj
+         RETURNING id, palavra_chave, razao_social, cnpj, categoria_nome, tipo`,
+        [company, pkVal, rsVal, cnpjVal, categoria_nome.substring(0, 100), tipoVal]
       );
       return res.json({ ok: true, mapping: r.rows[0] });
     }

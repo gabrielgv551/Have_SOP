@@ -1,26 +1,20 @@
-const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const companies = require('../lib/companies');
+const { getPool } = require('../lib/db');
 
-// Cache simple de pools
-const pools = {};
-function getPool(companySlug) {
-  const company = companySlug.toLowerCase();
-  if (pools[company]) return pools[company];
-
-  const key = (companies[company] && companies[company].dbEnvKey) || 'LANZI';
-  
-  pools[company] = new Pool({
-    host:     process.env[`${key}_HOST`],
-    port:     parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`],
-    user:     process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`],
-    ssl:      { rejectUnauthorized: false },
-    max:      2,
-  });
-  return pools[company];
+// Rate limiting em memória: máx 10 tentativas por IP em 15 minutos
+const loginAttempts = {};
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 15 * 60 * 1000;
+function checkRateLimit(ip) {
+  const now = Date.now();
+  if (!loginAttempts[ip] || now - loginAttempts[ip].firstAt > RATE_WINDOW_MS) {
+    loginAttempts[ip] = { count: 1, firstAt: now };
+    return true;
+  }
+  loginAttempts[ip].count++;
+  return loginAttempts[ip].count <= RATE_LIMIT;
 }
 
 module.exports = async (req, res) => {
@@ -30,6 +24,11 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' });
+  }
 
   let body = req.body || {};
   if (typeof body === 'string') {

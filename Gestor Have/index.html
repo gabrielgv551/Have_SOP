@@ -865,6 +865,11 @@
             .pp-pill-ok.active { background:#22c55e; }
             .pp-pill-semov { border-color:var(--border);color:var(--muted); }
             .pp-pill-semov.active { background:var(--muted);border-color:var(--muted); }
+            .pp-pill-excesso { border-color:#f59e0b;color:#f59e0b; }
+            .pp-pill-excesso.active { background:#f59e0b; }
+            #pp-table { border-collapse:separate !important; border-spacing:0; }
+            #pp-table thead { position:sticky; top:0; z-index:10; background:var(--surface); }
+            #pp-table thead th { position:relative; top:auto; }
 
             .kpi-badge.up {
                 background: rgba(5, 150, 105, 0.10);
@@ -1948,6 +1953,25 @@
             #panel-caixa-openfinance .of-connect-btn:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,124,220,0.4); }
             #panel-caixa-openfinance .of-info-box { background:rgba(0,124,220,0.05); border:1px solid rgba(0,124,220,0.15); border-radius:10px; padding:14px 18px; font-size:12px; color:var(--text); line-height:1.7; }
 
+            /* Open Finance Tabs */
+            #panel-caixa-openfinance .of-tab-bar { display:flex; gap:4px; background:#f1f5f9; border-radius:10px; padding:4px; width:fit-content; margin-bottom:20px; }
+            #panel-caixa-openfinance .of-tab-btn { padding:6px 20px; border:none; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; background:transparent; color:#64748b; transition:all .15s; }
+            #panel-caixa-openfinance .of-tab-btn.active { background:#fff; color:#1c2d4a; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+            #panel-caixa-openfinance .of-ext-filters { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:16px; }
+            #panel-caixa-openfinance .of-ext-filters label { font-size:11px; color:var(--muted); display:block; margin-bottom:4px; }
+            #panel-caixa-openfinance .of-ext-filters select, #panel-caixa-openfinance .of-ext-filters input[type=number] { padding:5px 10px; border:1px solid var(--border); border-radius:7px; font-size:13px; background:#fff; }
+            #panel-caixa-openfinance .of-nav-btn { padding:4px 8px; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:pointer; font-size:14px; }
+            #panel-caixa-openfinance .of-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+            #panel-caixa-openfinance .of-sum-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+            #panel-caixa-openfinance .of-sum-val { font-size:18px; font-weight:700; margin-top:4px; }
+            #panel-caixa-openfinance .of-sum-lbl { font-size:11px; color:var(--muted); }
+            #panel-caixa-openfinance .of-ext-table { width:100%; border-collapse:collapse; font-size:13px; }
+            #panel-caixa-openfinance .of-ext-table th { background:#f8fafc; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; padding:8px 12px; border-bottom:1px solid var(--border); text-align:left; }
+            #panel-caixa-openfinance .of-ext-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            #panel-caixa-openfinance .of-ext-table tr:hover td { background:#f8fafc; }
+            #panel-caixa-openfinance .val-pos { color:#059669; font-weight:600; }
+            #panel-caixa-openfinance .val-neg { color:#dc2626; font-weight:600; }
+
             /* PMV Table */
             #panel-dfs-pmv .pmv-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
             #panel-dfs-pmv .pmv-controls label { font-size:12px; color:var(--muted); font-weight:500; }
@@ -1987,6 +2011,10 @@
             #panel-dfs-pmv .pmv-col-input { width:100%; min-width:52px; padding:4px 6px; border:1px solid #2a3d5e; border-radius:5px; font-size:11px; background:#1c2d4a; color:#cdd8ea; outline:none; box-sizing:border-box; }
             #panel-dfs-pmv .pmv-col-input::placeholder { color:#4a6080; }
             #panel-dfs-pmv .pmv-col-input:focus { border-color:var(--accent); background:#1e3257; }
+            /* PMV sticky multi-row header — thead sticky como bloco único */
+            #panel-dfs-pmv table.pmv-table { border-collapse:separate !important; border-spacing:0; }
+            #panel-dfs-pmv table.pmv-table thead { position:sticky; top:0; z-index:11; }
+            #panel-dfs-pmv table.pmv-table thead th { position:relative; top:auto; }
             /* KPI Table */
             #panel-dfs-kpis .dfs-sheet-card { padding: 0; overflow: hidden; }
             #panel-dfs-kpis table.kpi-table { width: 100%; border-collapse: collapse; }
@@ -2612,6 +2640,9 @@
                     <div class="nav-item" onclick="showPanel('ponto-pedido')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>Pedido <span class="nav-badge" id="badge-ruptura">–</span>
                     </div>
+                    <div class="nav-item" onclick="showPanel('hist-vendas')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Histórico de Vendas
+                    </div>
                     <div class="nav-item" onclick="showPanel('ppr')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></span>PPR · Performance
                     </div>
@@ -2783,6 +2814,7 @@
                         <div style="display:flex;gap:8px;align-items:center">
                             <button onclick="showPanel('estoque-seguranca')" style="padding:7px 16px;border-radius:8px;border:1.5px solid #0f1b2d;background:#0f1b2d;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">◻ Estoque de Segurança</button>
                             <button onclick="showPanel('semana')" style="padding:7px 16px;border-radius:8px;border:1.5px solid #0f1b2d;background:#0f1b2d;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">▦ Lista Semanal <span id="badge-semana" style="background:#E24B4A;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px">–</span></button>
+                            <button onclick="showPanel('hist-vendas')" style="padding:7px 16px;border-radius:8px;border:1.5px solid #007cdc;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">📊 Histórico de Vendas</button>
                         </div>
                         <input class="search-input" id="pp-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('pp')" style="width:200px"><select class="filter-select" id="pp-filter-marca" onchange="filterTable('pp')" style="min-width:140px"><option value="">Todas as marcas</option></select>
                     </div>
@@ -2793,6 +2825,7 @@
                         <button id="pp-pill-pedir" class="pp-pill pp-pill-alerta" onclick="setPpFilter('PEDIR AGORA')">● Alerta (<span id="pp-cnt-pedir">–</span>)</button>
                         <button id="pp-pill-ok" class="pp-pill pp-pill-ok" onclick="setPpFilter('OK')">● OK (<span id="pp-cnt-ok">–</span>)</button>
                         <button id="pp-pill-semov" class="pp-pill pp-pill-semov" onclick="setPpFilter('SEM MOVIMENTO')">Sem mov (<span id="pp-cnt-semov">–</span>)</button>
+                        <button id="pp-pill-excesso" class="pp-pill pp-pill-excesso" onclick="setPpFilter('EXCESSO')">● Excesso (<span id="pp-cnt-excesso">–</span>)</button>
                         <button id="pp-disc-toggle" onclick="togglePpDiscontinued()" class="pp-pill pp-pill-semov"><span id="pp-disc-icon">○</span> Descontinuados</button>
                         <button onclick="downloadTableCSV('pp-table','ponto-pedido.csv')" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1px solid rgba(79,127,255,0.3);background:transparent;color:#4f7fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s" title="Baixar CSV"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button><button id="pp-valor-toggle" onclick="togglePpValorView()" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1.5px solid rgba(0,124,220,0.4);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s" title="Alternar entre quantidades e valores R$"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg># Qtd</button><span id="pp-sku-count" style="margin-left:auto;color:var(--muted);font-size:12px;font-weight:500">– SKUs</span>
                     </div>
@@ -2967,6 +3000,42 @@
                             </table>
                         </div>
                         <div class="pagination" id="sw-pagination"></div>
+                    </div>
+                </div><!-- HISTÓRICO DE VENDAS -->
+                <div class="panel" id="panel-hist-vendas">
+                    <div class="section-header">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                            <div class="section-title">Histórico de Vendas</div>
+                            <button onclick="showPanel('ponto-pedido')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid #0f1b2d;background:#0f1b2d;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap">⬡ Pedido <span class="nav-badge" style="margin-left:4px" id="badge-ruptura-hv">–</span></button>
+                            <button onclick="showPanel('semana')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid #0f1b2d;background:#0f1b2d;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap">▦ Lista Semanal</button>
+                        </div>
+                        <div class="section-actions">
+                            <input class="search-input" id="hv-search" placeholder="🔍  Buscar SKU..." oninput="renderHistoricoVendas(state.hv||[])" style="width:180px">
+                            <select class="filter-select" id="hv-filter-marca" onchange="renderHistoricoVendas(state.hv||[])" style="min-width:130px"><option value="">Todas as marcas</option></select>
+                            <select class="filter-select" id="hv-filter-trend" onchange="renderHistoricoVendas(state.hv||[])" style="min-width:120px">
+                                <option value="">Todas tendências</option>
+                                <option value="up">↑ Crescendo</option>
+                                <option value="stable">→ Estável</option>
+                                <option value="down">↓ Caindo</option>
+                            </select>
+                            <button id="hv-valor-toggle" onclick="state.hvValorView=!state.hvValorView;this.textContent=state.hvValorView?'# Qtd':'R$';renderHistoricoVendas(state.hv||[])" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1.5px solid rgba(0,124,220,0.4);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">R$</button>
+                            <button onclick="downloadHvCSV()" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1px solid rgba(79,127,255,0.3);background:transparent;color:#4f7fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-scroll">
+                            <table id="hv-table" style="border-collapse:separate;border-spacing:0;width:auto;min-width:100%">
+                                <thead>
+                                    <tr id="hv-thead-row">
+                                        <th style="position:sticky;left:0;z-index:12;background:#007CDC;width:100px;min-width:100px">SKU</th>
+                                        <th style="position:sticky;left:100px;z-index:12;background:#007CDC;width:54px;min-width:54px">ABC</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hv-tbody">
+                                    <tr class="loading-row"><td colspan="14"><div class="loading-skeleton" style="width:100%"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div><!-- CONTROLE ESTOQUES -->
                 <div class="panel" id="panel-sopc-controle">
@@ -4372,6 +4441,10 @@
                             style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);">
                             Pedidos de Compra
                         </button>
+                        <button id="dp-tab-of" onclick="switchDeParaTab('openfinance')"
+                            style="padding:9px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);">
+                            Open Finance
+                        </button>
                     </div>
                     <!-- Extrato tab content -->
                     <div id="dp-tab-content-extrato" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -4439,32 +4512,86 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Open Finance tab content -->
+                    <div id="dp-tab-content-openfinance" style="display:none;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Transações não classificadas</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Transações Open Finance (Pluggy) sem categoria. Clique em "→ Mapear" para classificar por CNPJ, Razão Social ou Descrição.</div>
+                            <div id="cx-depara-of-nao-class">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                        <div class="table-card" style="padding:16px;">
+                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Mapeamentos salvos · Open Finance</div>
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">CNPJ / Razão Social / Descrição → categoria do Fluxo de Caixa</div>
+                            <div id="cx-depara-of-table">
+                                <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- CAIXA · OPEN FINANCE -->
                 <div class="panel" id="panel-caixa-openfinance">
                     <div class="section-header">
                         <div class="section-title">Caixa · Open Finance</div>
-                        <div class="section-actions">
+                        <div class="section-actions" id="of-actions-bancos">
                             <button class="refresh-btn" onclick="loadBelvoLinks()" style="font-size:12px;">↻ Atualizar</button>
                             <button class="btn-primary" onclick="conectarBancoBelvo()" style="font-size:13px;">＋ Conectar Banco</button>
                         </div>
+                        <div class="section-actions" id="of-actions-extratos" style="display:none;">
+                            <button class="refresh-btn" onclick="loadOfExtratos()" style="font-size:12px;">↻ Atualizar</button>
+                        </div>
                     </div>
 
-                    <div class="of-info-box" style="margin-bottom:20px;">
-                        <strong>Open Finance via Belvo</strong> — Conecte as contas bancárias da empresa para importar extratos automaticamente para o Fluxo de Caixa.<br>
-                        Os lançamentos serão salvos na Base de Dados e classificados pelo De-Para.
+                    <!-- Tabs -->
+                    <div class="of-tab-bar">
+                        <button class="of-tab-btn active" id="of-tab-btn-bancos" onclick="switchOfTab('bancos')">Bancos</button>
+                        <button class="of-tab-btn" id="of-tab-btn-extratos" onclick="switchOfTab('extratos')">Extratos</button>
                     </div>
 
-                    <div id="of-links-grid" class="of-grid">
-                        <div class="of-empty">Carregando contas conectadas...</div>
+                    <!-- Tab: Bancos -->
+                    <div id="of-tab-bancos">
+                        <div class="of-info-box" style="margin-bottom:20px;">
+                            <strong>Open Finance via Pluggy</strong> — Conecte as contas bancárias da empresa para importar extratos automaticamente para o Fluxo de Caixa.<br>
+                            Os lançamentos serão salvos na Base de Dados e classificados pelo De-Para.
+                        </div>
+                        <div id="of-links-grid" class="of-grid">
+                            <div class="of-empty">Carregando contas conectadas...</div>
+                        </div>
+                        <div class="of-connect-wrap">
+                            <button class="of-connect-btn" onclick="conectarBancoBelvo()">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                Conectar nova conta bancária
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="of-connect-wrap">
-                        <button class="of-connect-btn" onclick="conectarBancoBelvo()">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                            Conectar nova conta bancária
-                        </button>
+                    <!-- Tab: Extratos -->
+                    <div id="of-tab-extratos" style="display:none;">
+                        <div class="of-ext-filters">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <button class="of-nav-btn" onclick="ofNavMes(-1)">&#8249;</button>
+                                <div>
+                                    <label>Mês</label>
+                                    <select id="of-ext-mes"></select>
+                                </div>
+                                <div>
+                                    <label>Ano</label>
+                                    <input type="number" id="of-ext-ano" style="width:72px;">
+                                </div>
+                                <button class="of-nav-btn" onclick="ofNavMes(1)">&#8250;</button>
+                            </div>
+                            <div>
+                                <label>Banco</label>
+                                <select id="of-ext-banco"><option value="">Todos</option></select>
+                            </div>
+                        </div>
+                        <div id="of-ext-summary" class="of-summary" style="display:none;"></div>
+                        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+                            <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text);" id="of-ext-title">—</div>
+                            <div id="of-ext-table-wrap"><div class="of-empty">Selecione um período para carregar.</div></div>
+                        </div>
                     </div>
                 </div>
 
@@ -5069,6 +5196,11 @@
                             <select id="dre-periodo" onchange="loadDreGerencial()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px"><option value="">Carregando...</option></select>
                             <button onclick="loadDreGerencial()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">↺</button>
                             <button id="btn-dre-meses" onclick="toggleDreMesMode()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px">📅 Por Meses</button>
+                            <div style="display:flex;align-items:center;gap:4px">
+                                <input type="text" id="dre-sku-search" list="dre-sku-datalist" placeholder="🔍 SKU ou produto..." oninput="setDreSkuFilter(this.value)" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;min-width:180px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                                <datalist id="dre-sku-datalist"></datalist>
+                                <button id="btn-dre-sku-clear" onclick="clearDreSkuFilter()" title="Limpar filtro SKU" style="display:none;padding:6px 9px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">✕</button>
+                            </div>
                         </div>
                     </div>
                     <!-- Thresholds -->
@@ -6524,8 +6656,9 @@
             });
 
             const COMPANIES = [
-                { key: 'lanzi',  name: 'Lanzi',  tag: 'S&OP · PostgreSQL', color: 'var(--accent)' },
-                { key: 'marcon', name: 'Marcon', tag: 'S&OP · PostgreSQL', color: '#e85d2f' },
+                { key: 'lanzi',     name: 'Lanzi',     tag: 'S&OP · PostgreSQL', color: 'var(--accent)' },
+                { key: 'supershop', name: 'Supershop', tag: 'S&OP · PostgreSQL', color: '#9b27af' },
+                { key: 'marcon',    name: 'Marcon',    tag: 'S&OP · PostgreSQL', color: '#e67e22' },
             ];
 
             function renderCompanyDropdown() {
@@ -7820,8 +7953,8 @@
             async function loadOverview() {
                 try {
                     const [abcRaw, ppRaw, kpiData] = await Promise.all([
-                        queryDB('curva_abc'),
-                        queryDB('ponto_pedido'),
+                        queryDB('curva_abc').catch(() => []),
+                        queryDB('ponto_pedido').catch(() => []),
                         queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}))
                     ]);
 
@@ -7991,6 +8124,9 @@
                     cadData.forEach(r => { const _pv = +r['Preço de Venda'] || +r['Preco Venda'] || +r['preco_venda'] || +r['Preço Un'] || 0; if (_pv > 0) state.precoVendaMap[String(r.Sku || '').trim()] = _pv; });
                     state.marcaMap = {};
                     cadData.forEach(r => { state.marcaMap[String(r.Sku || '').trim()] = String(r.Marca || '').trim(); });
+                    state.nomeMap = {};
+                    if (cadData.length > 0) console.log('[debug] cadastros_sku cols:', Object.keys(cadData[0]));
+                    cadData.forEach(r => { state.nomeMap[String(r.Sku || '').trim()] = String(r.Nome || r.Descricao || r['Descrição'] || r.Produto || r.Titulo || r['Título'] || r['Nome Produto'] || r['Título do Item'] || r.descricao || r.produto || r.nome || '').trim(); });
                     populateMarcaDropdowns();
                     state.discontinuedSkus = new Set((discRes || []).map(s => String(s).trim()));
                     state.mediaMap = {};
@@ -8001,6 +8137,172 @@
                 } catch (e) {
                     console.error('pp', e);
                 }
+            }
+
+            async function loadHistoricoVendas() {
+                const tbody = document.getElementById('hv-tbody');
+                if (!tbody) return;
+                if (state.hv) { _hvPopulateMarca(); renderHistoricoVendas(state.hv); return; }
+                tbody.innerHTML = `<tr class="loading-row"><td colspan="14"><div class="loading-skeleton" style="width:100%"></div></td></tr>`;
+                try {
+                    const data = await queryDB('historico_vendas');
+                    state.hv = data;
+                    _hvPopulateMarca();
+                    renderHistoricoVendas(data);
+                } catch(e) {
+                    tbody.innerHTML = `<tr><td colspan="14" style="color:#ef4444;text-align:center;padding:20px">Erro ao carregar: ${e.message}</td></tr>`;
+                }
+            }
+
+            function _hvPopulateMarca() {
+                const sel = document.getElementById('hv-filter-marca');
+                if (!sel || !state.marcaMap) return;
+                const cur = sel.value;
+                const skus = [...new Set((state.hv||[]).map(r => String(r.sku||'').trim()))];
+                const marcas = [...new Set(skus.map(s => state.marcaMap[s]).filter(Boolean))].sort();
+                sel.innerHTML = '<option value="">Todas as marcas</option>' + marcas.map(m => `<option${cur===m?' selected':''}>${esc(m)}</option>`).join('');
+            }
+
+            function _hvTrend(vals) {
+                const last3 = vals.slice(-3).reduce((s,v)=>s+v,0) / 3;
+                const prev3 = vals.slice(-6,-3).reduce((s,v)=>s+v,0) / 3;
+                if (prev3 === 0) return last3 > 0 ? { pct: null, dir: 'up' } : { pct: null, dir: 'stable' };
+                const pct = Math.round(((last3 - prev3) / prev3) * 100);
+                return { pct, dir: pct > 8 ? 'up' : pct < -8 ? 'down' : 'stable' };
+            }
+
+            function hvSort(col) {
+                const cur = state.hvSort || { col: 'total', dir: 'desc' };
+                state.hvSort = { col, dir: cur.col === col && cur.dir === 'desc' ? 'asc' : 'desc' };
+                renderHistoricoVendas(state.hv || []);
+            }
+
+            function renderHistoricoVendas(rawData) {
+                const theadRow = document.getElementById('hv-thead-row');
+                const tbody    = document.getElementById('hv-tbody');
+                if (!tbody || !theadRow) return;
+
+                const search      = (document.getElementById('hv-search')?.value || '').toLowerCase();
+                const marcaFiltro = (document.getElementById('hv-filter-marca')?.value || '').trim();
+                const trendFilter = (document.getElementById('hv-filter-trend')?.value || '');
+                const isValor     = !!state.hvValorView;
+                const sortState   = state.hvSort || { col: 'total', dir: 'desc' };
+
+                // Build pivot: sku → { sortKey → {qtd, receita} }
+                const pivot    = {};
+                const monthSet = new Set();
+                const labelMap = {};
+
+                rawData.forEach(r => {
+                    const sku = String(r.sku || '').trim();
+                    const key = `${String(r.ano).padStart(4,'0')}-${String(r.mes).padStart(2,'0')}`;
+                    if (!pivot[sku]) pivot[sku] = {};
+                    pivot[sku][key] = { qtd: +r.qtd || 0, receita: +r.receita || 0 };
+                    monthSet.add(key);
+                    labelMap[key] = r.label;
+                });
+
+                const months = [...monthSet].sort();
+                const field  = isValor ? 'receita' : 'qtd';
+
+                const abcMap = {};
+                (state.pp || []).forEach(r => { abcMap[String(r.sku||'').trim()] = r.abc_cruzada || ''; });
+
+                // Build thead with sortable columns
+                const thB = `position:sticky;z-index:12;background:#007CDC;cursor:pointer;user-select:none`;
+                const si  = col => { const s = sortState; const ic = s.col===col?(s.dir==='asc'?' ↑':' ↓'):''; return `<span style="opacity:${s.col===col?'1':'0.35'};font-size:10px">${ic||' ⇅'}</span>`; };
+                const thM = `min-width:72px;text-align:right;font-size:12px;cursor:pointer;user-select:none`;
+                theadRow.innerHTML =
+                    `<th style="${thB};left:0;width:100px;min-width:100px" onclick="hvSort('sku')">SKU ${si('sku')}</th>` +
+                    `<th style="${thB};left:100px;width:54px;min-width:54px" onclick="hvSort('abc')">ABC ${si('abc')}</th>` +
+                    months.map(k => `<th style="${thM}" onclick="hvSort('${k}')">${labelMap[k]||k} ${si(k)}</th>`).join('') +
+                    `<th style="min-width:100px;text-align:center;font-weight:700;cursor:pointer;user-select:none" onclick="hvSort('trend')">Tend\u00eancia ${si('trend')}</th>` +
+                    `<th style="min-width:85px;text-align:right;font-weight:700;cursor:pointer;user-select:none" onclick="hvSort('total')">Total 12m ${si('total')}</th>`;
+
+                // Filter
+                let skus = Object.keys(pivot).filter(sku => {
+                    if (search && !sku.toLowerCase().includes(search)) return false;
+                    if (marcaFiltro && (state.marcaMap?.[sku] || '') !== marcaFiltro) return false;
+                    if (trendFilter) {
+                        const t = _hvTrend(months.map(k => pivot[sku][k]?.[field] || 0));
+                        if (t.dir !== trendFilter) return false;
+                    }
+                    return true;
+                });
+
+                if (!skus.length) {
+                    tbody.innerHTML = `<tr><td colspan="${months.length+5}" style="text-align:center;color:var(--muted);padding:24px">Nenhum SKU encontrado</td></tr>`;
+                    return;
+                }
+
+                // Sort
+                skus.sort((a, b) => {
+                    const d = sortState.dir === 'asc' ? 1 : -1;
+                    if (sortState.col === 'sku')   return d * a.localeCompare(b);
+                    if (sortState.col === 'abc')   return d * (abcMap[a]||'ZZ').localeCompare(abcMap[b]||'ZZ');
+                    if (sortState.col === 'trend') {
+                        const ta = _hvTrend(months.map(k=>pivot[a][k]?.[field]||0)).pct ?? 0;
+                        const tb = _hvTrend(months.map(k=>pivot[b][k]?.[field]||0)).pct ?? 0;
+                        return d * (ta - tb);
+                    }
+                    if (sortState.col === 'total') {
+                        const tA = months.reduce((s,k)=>s+(pivot[a][k]?.[field]||0),0);
+                        const tB = months.reduce((s,k)=>s+(pivot[b][k]?.[field]||0),0);
+                        return d * (tA - tB);
+                    }
+                    // sort by specific month key
+                    return d * ((pivot[a][sortState.col]?.[field]||0) - (pivot[b][sortState.col]?.[field]||0));
+                });
+
+                const rows = skus.map(sku => {
+                    const abc  = abcMap[sku] || '–';
+                    const vals = months.map(k => pivot[sku][k]?.[field] || 0);
+                    const total = vals.reduce((s,v) => s+v, 0);
+                    const maxV  = Math.max(...vals, 1);
+                    const trend = _hvTrend(vals);
+                    const trendIcon = trend.dir === 'up' ? '↑' : trend.dir === 'down' ? '↓' : '→';
+                    const trendColor = trend.dir === 'up' ? '#16a34a' : trend.dir === 'down' ? '#dc2626' : '#6b7280';
+                    const trendBg  = trend.dir === 'up' ? 'rgba(22,163,74,0.08)' : trend.dir === 'down' ? 'rgba(220,38,38,0.08)' : 'rgba(107,114,128,0.07)';
+                    const trendPct = trend.pct !== null ? ` ${trend.pct > 0 ? '+' : ''}${trend.pct}%` : '';
+
+                    const cells = vals.map(v => {
+                        const pct   = v / maxV;
+                        const bg    = v > 0 ? `background:rgba(0,124,220,${(0.07 + pct * 0.33).toFixed(2)});` : '';
+                        const muted = v === 0 ? 'color:var(--muted);' : '';
+                        const fmt   = isValor ? (v > 0 ? 'R$\u00a0' + fmtN(v) : '–') : (v > 0 ? fmtN(v) : '–');
+                        return `<td style="text-align:right;font-size:12px;${bg}${muted}">${fmt}</td>`;
+                    }).join('');
+
+                    const totFmt = isValor ? (total > 0 ? 'R$\u00a0' + fmtN(total) : '–') : fmtN(total);
+                    return `<tr>
+                        <td style="position:sticky;left:0;z-index:1;background:var(--bg,#fff);width:100px;min-width:100px"><span class="sku-code">${esc(sku)}</span></td>
+                        <td style="position:sticky;left:100px;z-index:1;background:var(--bg,#fff);width:54px;min-width:54px;text-align:center"><span class="abc-badge abc-${abc}">${esc(abc)}</span></td>
+                        ${cells}
+                        <td style="text-align:center;font-size:12px;font-weight:700;background:${trendBg};color:${trendColor};white-space:nowrap">${trendIcon}${trendPct}</td>
+                        <td style="text-align:right;font-weight:700;color:var(--accent)">${totFmt}</td>
+                    </tr>`;
+                });
+
+                tbody.innerHTML = rows.join('');
+            }
+
+            function downloadHvCSV() {
+                const data = state.hv;
+                if (!data || !data.length) return;
+                const months = [...new Set(data.map(r => `${String(r.ano).padStart(4,'0')}-${String(r.mes).padStart(2,'0')}`))].sort();
+                const labelMap = {}; data.forEach(r => { labelMap[`${String(r.ano).padStart(4,'0')}-${String(r.mes).padStart(2,'0')}`] = r.label; });
+                const pivot = {};
+                data.forEach(r => { const sku = String(r.sku||'').trim(); const k = `${String(r.ano).padStart(4,'0')}-${String(r.mes).padStart(2,'0')}`; if (!pivot[sku]) pivot[sku] = {}; pivot[sku][k] = { qtd: +r.qtd||0, receita: +r.receita||0 }; });
+                const isV = !!state.hvValorView;
+                const header = ['SKU', 'ABC', ...months.map(k => labelMap[k]||k), 'Total'].join(',');
+                const abcMap = {}; (state.pp||[]).forEach(r => { abcMap[String(r.sku||'').trim()] = r.abc_cruzada||''; });
+                const lines = Object.keys(pivot).map(sku => {
+                    const vals = months.map(k => pivot[sku][k]?.[isV?'receita':'qtd']||0);
+                    const tot  = vals.reduce((s,v)=>s+v,0);
+                    return [sku, abcMap[sku]||'', ...vals, tot].join(',');
+                });
+                const blob = new Blob([[header, ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'historico-vendas.csv'; a.click();
             }
 
             function renderPpKpis(data) {
@@ -8016,18 +8318,21 @@
                 if (el('pp-kpi-pedidos')) el('pp-kpi-pedidos').textContent = pedidosAbertos;
                 if (el('pp-kpi-custo')) el('pp-kpi-custo').textContent = custoTotal > 0 ? 'R$ ' + Math.round(custoTotal).toLocaleString('pt-BR') : '–';
                 if (el('pp-kpi-confianca')) el('pp-kpi-confianca').textContent = confPct + '%';
-                const cntMap = { ruptura: 0, pedir: 0, ok: 0, semov: 0 };
+                const cntMap = { ruptura: 0, pedir: 0, ok: 0, semov: 0, excesso: 0 };
                 data.forEach(r => {
                     if (r.alerta === 'RUPTURA IMINENTE') cntMap.ruptura++;
                     else if (r.alerta === 'PEDIR AGORA') cntMap.pedir++;
                     else if (r.alerta === 'OK') cntMap.ok++;
                     else if (r.alerta === 'SEM MOVIMENTO') cntMap.semov++;
+                    else if (r.alerta === 'EXCESSO') cntMap.excesso++;
                 });
                 if (el('pp-cnt-ruptura')) el('pp-cnt-ruptura').textContent = cntMap.ruptura;
                 if (el('pp-cnt-pedir')) el('pp-cnt-pedir').textContent = cntMap.pedir;
                 if (el('pp-cnt-ok')) el('pp-cnt-ok').textContent = cntMap.ok;
                 if (el('pp-cnt-semov')) el('pp-cnt-semov').textContent = cntMap.semov;
+                if (el('pp-cnt-excesso')) el('pp-cnt-excesso').textContent = cntMap.excesso;
             }
+
 
             function setPpFilter(value) {
                 const sel = document.getElementById('pp-filter');
@@ -8036,7 +8341,8 @@
                     'RUPTURA IMINENTE': 'pp-pill-ruptura',
                     'PEDIR AGORA': 'pp-pill-pedir',
                     'OK': 'pp-pill-ok',
-                    'SEM MOVIMENTO': 'pp-pill-semov'
+                    'SEM MOVIMENTO': 'pp-pill-semov',
+                    'EXCESSO': 'pp-pill-excesso'
                 };
                 Object.keys(pillMap).forEach(k => {
                     const btn = document.getElementById(pillMap[k]);
@@ -8628,7 +8934,7 @@
 
                     if (filter) {
                         if (key === 'abc') filterMatch = r.abc_cruzada === filter;
-                        else if (key === 'pp') filterMatch = r.alerta === filter;
+                        else if (key === 'pp') { filterMatch = r.alerta === filter; }
                         else if (key === 'es') filterMatch = r.confianca === filter;
                         else if (key === 'ppr') filterMatch = r.tendencia_curto_prazo === filter || r.tendencia_medio_prazo === filter;
                         else if (key === 'fc') filterMatch = r.metodo === filter;
@@ -8700,7 +9006,7 @@
             function rowHTML(key, r) {
                 if (key === 'abc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada)}</span></td><td>${fmtN(r.volume_total)}</td><td>R$ ${fmtN(r.margem_total)}</td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${esc(r.abc_volume)}</span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${esc(r.abc_margem)}</span></td><td>${fmtPct(r.nivel_servico)}</td></tr>`;
 
-                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
+                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _nome = (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span class="sku-code" title="${_nome}">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
 
                 if (key === 'es') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.desvio_padrao)}</td><td>${fmtN(r.lead_time)}</td><td>${fmtBR(r.fator_z)}</td><td>${fmtBR(r.es_estatistico)}</td><td>${fmtBR(r.es_teto)}</td><td><strong>${fmtN(r.estoque_seguranca)}</strong></td><td>${r.teto_aplicado === 'true' || r.teto_aplicado === true ? '<span style="color:var(--orange)">✓ Sim</span>' : '<span style="color:var(--muted)">Não</span>'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td></tr>`;
 
@@ -9246,6 +9552,7 @@ function filterTable(key) {
                 'ponto-pedido': 'Ponto de Pedido', 'estoque-seguranca': 'Estoque de Segurança',
                 'ppr': 'PPR · Performance de Vendas', 'forecast': 'Forecast 12 Meses',
                 'semana': 'Lista Semanal de Pedidos',
+                'hist-vendas': 'Histórico de Vendas · Mês a Mês',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
                 'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas', 'dfs-pmv': 'S&OP · PMV · Price Volume Mix',
                 'caixa-base': 'Caixa · Extratos Manuais', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance', 'caixa-contas-pagar': 'Caixa · Contas a Pagar', 'caixa-pedidos-compra': 'Caixa · Pedidos de Compra', 'caixa-config': 'Caixa · Configurações', 'caixa-vendas': 'Vendas', 'caixa-cenarios': 'Caixa · Cenários What-If',
@@ -9330,6 +9637,7 @@ if (id === 'dfs-kpis') {
                 if (id === 'caixa-cenarios') {
                     loadCenarios();
                 }
+                if (id === 'hist-vendas') { loadHistoricoVendas(); }
                 if (id === 'sopc-controle') { loadSopcControle(); }
                 if (id === 'sku-desativadas') { loadSkuAtividade(); }
                 if (id === 'margens-dre') { loadMargensMeses(); }
@@ -11107,9 +11415,9 @@ if (id === 'dfs-kpis') {
 
             function switchDeParaTab(tab) {
                 _deParaAbaAtiva = tab;
-                const tabs = ['extrato','contas_pagar','vendas','pedidos_compra'];
+                const tabs = ['extrato','contas_pagar','vendas','pedidos_compra','openfinance'];
                 tabs.forEach(t => {
-                    const id = t === 'contas_pagar' ? 'dp-tab-cp' : t === 'pedidos_compra' ? 'dp-tab-pc' : 'dp-tab-' + t;
+                    const id = t === 'contas_pagar' ? 'dp-tab-cp' : t === 'pedidos_compra' ? 'dp-tab-pc' : t === 'openfinance' ? 'dp-tab-of' : 'dp-tab-' + t;
                     const btn = document.getElementById(id);
                     const cont = document.getElementById('dp-tab-content-' + t);
                     const active = t === tab;
@@ -11120,12 +11428,14 @@ if (id === 'dfs-kpis') {
                 else if (tab === 'contas_pagar') loadCaixaDeParaCP();
                 else if (tab === 'vendas') loadCaixaDeParaVendas();
                 else if (tab === 'pedidos_compra') loadCaixaDeParaPC();
+                else if (tab === 'openfinance') loadCaixaDeParaOF();
             }
 
             function loadCaixaDeParaAtivo() {
                 if (_deParaAbaAtiva === 'contas_pagar') loadCaixaDeParaCP();
                 else if (_deParaAbaAtiva === 'vendas') loadCaixaDeParaVendas();
                 else if (_deParaAbaAtiva === 'pedidos_compra') loadCaixaDeParaPC();
+                else if (_deParaAbaAtiva === 'openfinance') loadCaixaDeParaOF();
                 else loadCaixaDepara();
             }
 
@@ -11133,6 +11443,7 @@ if (id === 'dfs-kpis') {
                 if (_deParaAbaAtiva === 'contas_pagar') addCaixaDeParaCpRow();
                 else if (_deParaAbaAtiva === 'vendas') addCaixaDeParaVendasRow();
                 else if (_deParaAbaAtiva === 'pedidos_compra') addCaixaDeParaPCRow();
+                else if (_deParaAbaAtiva === 'openfinance') addCaixaDeParaOFRow();
                 else addCaixaDeParaRow();
             }
 
@@ -11140,6 +11451,7 @@ if (id === 'dfs-kpis') {
                 if (_deParaAbaAtiva === 'contas_pagar') saveCaixaDeParaCP();
                 else if (_deParaAbaAtiva === 'vendas') saveCaixaDeParaVendas();
                 else if (_deParaAbaAtiva === 'pedidos_compra') saveCaixaDeParaPC();
+                else if (_deParaAbaAtiva === 'openfinance') saveCaixaDeParaOF();
                 else saveCaixaDepara();
             }
 
@@ -11496,6 +11808,138 @@ if (id === 'dfs-kpis') {
                 if (errors) showToast(`${saved} salvos, ${errors} erros`, 'error');
                 else showToast(`${saved} mapeamentos salvos`, 'success');
                 loadCaixaDeParaPC();
+            }
+
+            // ── Open Finance tab ─────────────────────────────────────────────────
+            let _cxDeParaOFPendentes = [];
+
+            function _fmtCNPJ(v) {
+                const d = (v||'').replace(/\D/g,'');
+                if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+                if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                return v || '';
+            }
+
+            async function loadCaixaDeParaOF() {
+                const token = localStorage.getItem('have_token');
+                await _ensureCategoriasModelo(); _injectCatDatalist();
+                const naoClassEl = document.getElementById('cx-depara-of-nao-class');
+                const tableEl    = document.getElementById('cx-depara-of-table');
+                try {
+                    const [mappingsRes, naoClassRes] = await Promise.all([
+                        fetch(API_BASE + '/caixa-depara?tipo=extrato', { headers:{'Authorization':'Bearer '+token} }),
+                        fetch(API_BASE + '/caixa-depara?source=openfinance', { headers:{'Authorization':'Bearer '+token} })
+                    ]);
+                    if (!mappingsRes.ok) { const e = await mappingsRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+mappingsRes.status); }
+                    if (!naoClassRes.ok) { const e = await naoClassRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+naoClassRes.status); }
+                    const mappingsData = await mappingsRes.json();
+                    const naoClassData = await naoClassRes.json();
+                    const naoClass = naoClassData.nao_classificadas || [];
+                    if (!naoClass.length) {
+                        naoClassEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Todas as transações estão classificadas ✓</div>';
+                    } else {
+                        naoClassEl.innerHTML = naoClass.map(item => {
+                            const cnpjFmt = item.cnpj ? _fmtCNPJ(item.cnpj) : null;
+                            const rs = item.razao_social || '';
+                            const label = cnpjFmt ? (rs ? cnpjFmt + ' · ' + rs : cnpjFmt) : (rs || (item.descricoes||[])[0] || '');
+                            const sub = cnpjFmt && rs ? null : (!cnpjFmt && rs ? (item.descricoes||[])[0] : null);
+                            const cnpjArg = item.cnpj ? `'${item.cnpj}'` : 'null';
+                            const rsArg = rs ? `'${esc(rs).replace(/'/g,"\\'")}'` : 'null';
+                            const descArg = `'${esc((item.descricoes||[])[0]||'').replace(/'/g,"\\'")}'`;
+                            return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(label)}">${esc(label)}</div>
+                                    ${sub ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(sub)}</div>` : ''}
+                                </div>
+                                <button onclick="usarOFDepara(${cnpjArg},${rsArg},${descArg})" style="flex-shrink:0;font-size:11px;padding:3px 8px;border:1px solid var(--accent);border-radius:6px;background:rgba(0,124,220,0.06);color:var(--accent);cursor:pointer;white-space:nowrap;">→ Mapear</button>
+                            </div>`;
+                        }).join('');
+                    }
+                    renderDeParaOFTable(mappingsData.mappings || []);
+                } catch(e) {
+                    const errHtml = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">Erro: ${esc(e.message)}</div>`;
+                    if (naoClassEl) naoClassEl.innerHTML = errHtml;
+                    if (tableEl)    tableEl.innerHTML    = errHtml;
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
+            function renderDeParaOFTable(mappings) {
+                const el = document.getElementById('cx-depara-of-table');
+                if (!el) return;
+                if (!mappings.length && !_cxDeParaOFPendentes.length) {
+                    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Nenhum mapeamento. Clique em "+ Adicionar" ou use "→ Mapear".</div>';
+                    return;
+                }
+                const allRows = [...mappings, ..._cxDeParaOFPendentes];
+                el.innerHTML = '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="background:var(--bg-alt,#f8f9fa);">' +
+                    '<th style="padding:8px;font-size:11px;text-align:left;border-bottom:1px solid var(--border);">CNPJ</th>' +
+                    '<th style="padding:8px;font-size:11px;text-align:left;border-bottom:1px solid var(--border);">Razão Social</th>' +
+                    '<th style="padding:8px;font-size:11px;text-align:left;border-bottom:1px solid var(--border);">Descrição (fallback)</th>' +
+                    '<th style="padding:8px;font-size:11px;text-align:left;border-bottom:1px solid var(--border);">Categoria</th>' +
+                    '<th style="width:36px;border-bottom:1px solid var(--border);"></th></tr></thead><tbody>' +
+                    allRows.map(m => `<tr style="border-bottom:1px solid var(--border);" data-mapping-id="${m.id||''}">
+                        <td style="padding:5px 6px;"><input value="${esc(m.cnpj||'')}" style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:monospace;" data-field="cnpj" placeholder="00.000.000/0000-00"></td>
+                        <td style="padding:5px 6px;"><input value="${esc(m.razao_social||'')}" style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;" data-field="rs" placeholder="Razão Social"></td>
+                        <td style="padding:5px 6px;"><input value="${esc(m.palavra_chave||'')}" style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;" data-field="chave" placeholder="Palavra-chave"></td>
+                        <td style="padding:5px 6px;"><input value="${esc(m.categoria_nome||'')}" list="cx-dp-cat-datalist" style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;" data-field="cat" placeholder="Categoria..."></td>
+                        <td style="padding:5px 6px;"><button onclick="removeCaixaDeParaOFRow(this,${m.id||'null'})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;">✕</button></td>
+                    </tr>`).join('') + '</tbody></table>';
+            }
+
+            function addCaixaDeParaOFRow() {
+                _cxDeParaOFPendentes.push({ id: null, cnpj: '', razao_social: '', palavra_chave: '', categoria_nome: '' });
+                loadCaixaDeParaOF();
+            }
+
+            function usarOFDepara(cnpj, razaoSocial, desc) {
+                _cxDeParaOFPendentes.push({
+                    id: null,
+                    cnpj: cnpj || '',
+                    razao_social: razaoSocial || '',
+                    palavra_chave: (!cnpj && !razaoSocial) ? (desc || '') : '',
+                    categoria_nome: ''
+                });
+                loadCaixaDeParaOF();
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#cx-depara-of-table [data-field="cat"]');
+                    if (inputs.length) inputs[inputs.length-1].focus();
+                }, 100);
+            }
+
+            async function removeCaixaDeParaOFRow(btn, id) {
+                if (id) {
+                    if (!confirm('Remover este mapeamento?')) return;
+                    const token = localStorage.getItem('have_token');
+                    const res = await fetch(`${API_BASE}/caixa-depara?id=${id}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                    if (!res.ok) { showToast('Erro ao remover','error'); return; }
+                }
+                btn.closest('tr').remove();
+            }
+
+            async function saveCaixaDeParaOF() {
+                const token = localStorage.getItem('have_token');
+                const rows = Array.from(document.querySelectorAll('#cx-depara-of-table tbody tr'));
+                let saved = 0, errors = 0;
+                for (const row of rows) {
+                    const cnpj  = row.querySelector('[data-field="cnpj"]')?.value.trim() || null;
+                    const rs    = row.querySelector('[data-field="rs"]')?.value.trim() || null;
+                    const chave = row.querySelector('[data-field="chave"]')?.value.trim() || null;
+                    const cat   = row.querySelector('[data-field="cat"]')?.value.trim();
+                    if ((!cnpj && !rs && !chave) || !cat) continue;
+                    try {
+                        const res = await fetch(API_BASE + '/caixa-depara', {
+                            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                            body: JSON.stringify({ cnpj, palavra_chave: chave, razao_social: rs, categoria_nome: cat, tipo: 'extrato' })
+                        });
+                        if (res.ok) saved++; else errors++;
+                    } catch { errors++; }
+                }
+                _cxDeParaOFPendentes = [];
+                if (errors) showToast(`${saved} salvos, ${errors} erros`, 'error');
+                else showToast(`${saved} mapeamentos salvos`, 'success');
+                loadCaixaDeParaOF();
             }
 
             // ── Canais de Venda tab ──────────────────────────────────────────────
@@ -12699,6 +13143,151 @@ if (id === 'dfs-kpis') {
                 }).join('');
             }
 
+            // ── Open Finance Tabs ──────────────────────────────────────
+            const _ofMeses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            let _ofMesesComDados = [];
+
+            function switchOfTab(tab) {
+                document.getElementById('of-tab-bancos').style.display   = tab === 'bancos'   ? '' : 'none';
+                document.getElementById('of-tab-extratos').style.display = tab === 'extratos' ? '' : 'none';
+                document.getElementById('of-actions-bancos').style.display   = tab === 'bancos'   ? '' : 'none';
+                document.getElementById('of-actions-extratos').style.display = tab === 'extratos' ? '' : 'none';
+                document.getElementById('of-tab-btn-bancos').classList.toggle('active',   tab === 'bancos');
+                document.getElementById('of-tab-btn-extratos').classList.toggle('active', tab === 'extratos');
+                if (tab === 'extratos') _initOfExtratos();
+            }
+
+            async function _initOfExtratos() {
+                const token = localStorage.getItem('have_token');
+                // Preenche meses disponíveis
+                try {
+                    const r = await fetch(API_BASE + '/caixa-extrato', { headers:{ 'Authorization':'Bearer '+token } });
+                    const d = await r.json();
+                    _ofMesesComDados = d.meses || [];
+                } catch(e) {}
+
+                const now = new Date();
+                const selMes = document.getElementById('of-ext-mes');
+                if (!selMes.options.length) {
+                    _ofMeses.forEach((m, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i + 1;
+                        opt.text  = m;
+                        selMes.appendChild(opt);
+                    });
+                }
+                selMes.value = now.getMonth() + 1;
+                document.getElementById('of-ext-ano').value = now.getFullYear();
+
+                // Preenche dropdown de bancos
+                try {
+                    const rb = await fetch(API_BASE + '/caixa-extrato?module=bancos', { headers:{ 'Authorization':'Bearer '+token } });
+                    const db = await rb.json();
+                    const sel = document.getElementById('of-ext-banco');
+                    sel.innerHTML = '<option value="">Todos os bancos</option>';
+                    (db.bancos || []).forEach(b => {
+                        const o = document.createElement('option');
+                        o.value = b.id; o.text = b.nome;
+                        sel.appendChild(o);
+                    });
+                } catch(e) {}
+
+                // Adiciona listener de mudança
+                document.getElementById('of-ext-mes').onchange   = loadOfExtratos;
+                document.getElementById('of-ext-ano').onchange   = loadOfExtratos;
+                document.getElementById('of-ext-banco').onchange = loadOfExtratos;
+
+                loadOfExtratos();
+            }
+
+            async function loadOfExtratos() {
+                const token   = localStorage.getItem('have_token');
+                const mes     = parseInt(document.getElementById('of-ext-mes')?.value || new Date().getMonth()+1);
+                const ano     = parseInt(document.getElementById('of-ext-ano')?.value || new Date().getFullYear());
+                const bancoId = document.getElementById('of-ext-banco')?.value || '';
+                const wrap    = document.getElementById('of-ext-table-wrap');
+                const sumDiv  = document.getElementById('of-ext-summary');
+                const title   = document.getElementById('of-ext-title');
+                if (!wrap) return;
+
+                wrap.innerHTML = '<div class="of-empty">Carregando...</div>';
+                sumDiv.style.display = 'none';
+
+                const mesNome = _ofMeses[mes-1] + ' ' + ano;
+                const qs = bancoId ? `&banco_id=${bancoId}` : '';
+                try {
+                    const r = await fetch(API_BASE + `/caixa-extrato?ano=${ano}&mes=${mes}${qs}`, { headers:{ 'Authorization':'Bearer '+token } });
+                    const d = await r.json();
+                    const rows = d.rows || [];
+
+                    title.textContent = mesNome + ' — ' + rows.length + ' lançamentos';
+
+                    if (!rows.length) {
+                        wrap.innerHTML = '<div class="of-empty">Nenhum lançamento neste período.</div>';
+                        return;
+                    }
+
+                    const entradas = rows.filter(r=>r.valor>0).reduce((s,r)=>s+r.valor,0);
+                    const saidas   = rows.filter(r=>r.valor<0).reduce((s,r)=>s+r.valor,0);
+                    const saldo    = entradas + saidas;
+                    const fmtBRL   = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Math.abs(v)/100);
+
+                    sumDiv.innerHTML = `
+                        <div class="of-sum-card"><div class="of-sum-lbl">Entradas</div><div class="of-sum-val val-pos">${fmtBRL(entradas)}</div></div>
+                        <div class="of-sum-card"><div class="of-sum-lbl">Saídas</div><div class="of-sum-val val-neg">${fmtBRL(saidas)}</div></div>
+                        <div class="of-sum-card"><div class="of-sum-lbl">Saldo</div><div class="of-sum-val ${saldo>=0?'val-pos':'val-neg'}">${saldo>=0?'+':''}${fmtBRL(saldo)}</div></div>
+                    `;
+                    sumDiv.style.display = 'grid';
+
+                    const fmtDoc = v => {
+                        const d = (v||'').replace(/\D/g,'');
+                        if (d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+                        if (d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+                        return v||'';
+                    };
+                    wrap.innerHTML = `
+                        <div style="overflow-x:auto;">
+                        <table class="of-ext-table">
+                            <thead><tr>
+                                <th style="width:40px;">Dia</th>
+                                <th>Descrição</th>
+                                <th>Razão Social</th>
+                                <th>CNPJ</th>
+                                <th>Banco</th>
+                                <th style="text-align:right;">Valor</th>
+                                <th style="color:#007cdc;background:rgba(0,124,220,0.06);border-left:2px solid rgba(0,124,220,0.15);">Categorização</th>
+                            </tr></thead>
+                            <tbody>
+                            ${rows.map(r => `<tr>
+                                <td style="color:var(--muted);">${String(r.dia).padStart(2,'0')}</td>
+                                <td title="${esc(r.descricao)}">${esc(r.descricao)}</td>
+                                <td style="color:var(--muted);font-size:12px;">${esc(r.razao_social||'—')}</td>
+                                <td style="color:var(--muted);font-size:11px;font-family:monospace;white-space:nowrap;">${esc(fmtDoc(r.counterparty_document)||'—')}</td>
+                                <td style="color:#888;font-size:12px;">${esc(r.banco_nome||'—')}</td>
+                                <td style="text-align:right;" class="${r.valor>=0?'val-pos':'val-neg'}">${r.valor>=0?'+':''}${fmtBRL(r.valor)}</td>
+                                <td style="font-size:11px;background:rgba(0,124,220,0.05);border-left:2px solid rgba(0,124,220,0.15);">${r.categoria ? `<span style="display:inline-block;padding:2px 8px;border-radius:20px;background:#007cdc;color:#fff;font-weight:600;">${esc(r.categoria)}</span>` : '<span style="color:#aac4e0;">—</span>'}</td>
+                            </tr>`).join('')}
+                            </tbody>
+                        </table>
+                        </div>`;
+                } catch(e) {
+                    wrap.innerHTML = `<div class="of-empty" style="color:var(--red);">Erro: ${esc(e.message)}</div>`;
+                }
+            }
+
+            function ofNavMes(dir) {
+                const selMes = document.getElementById('of-ext-mes');
+                const inpAno = document.getElementById('of-ext-ano');
+                let m = parseInt(selMes.value) + dir;
+                let a = parseInt(inpAno.value);
+                if (m < 1) { m = 12; a--; }
+                if (m > 12) { m = 1; a++; }
+                selMes.value = m;
+                inpAno.value = a;
+                loadOfExtratos();
+            }
+            // ──────────────────────────────────────────────────────────
+
             async function conectarBancoBelvo() {
                 const token = localStorage.getItem('have_token');
                 try {
@@ -12976,6 +13565,7 @@ if (id === 'dfs-kpis') {
             let _dreMesesSkus = [];
             let _dreMesesSkusMes = [];
             let _lastDreMesesAno = '';
+            let _dreSkuFilter = '';
 
             async function loadMargensMeses() {
                 const token = localStorage.getItem('have_token');
@@ -13024,6 +13614,7 @@ if (id === 'dfs-kpis') {
                     if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
                     _dreSkusData = data.skus || [];
                     _dreRbGlobal = parseFloat(data.receita_bruta_global) || 0;
+                    updateDreSkuDatalist();
                     renderDreGerencial();
                 } catch(e) {
                     resultEl.innerHTML = `<span style="color:var(--red);font-size:13px">Erro: ${e.message}</span>`;
@@ -13046,6 +13637,7 @@ if (id === 'dfs-kpis') {
                     _dreMesesSkus = data.skus_ano || [];
                     _dreMesesSkusMes = data.skus_mes || [];
                     _lastDreMesesAno = ano;
+                    updateDreSkuDatalist();
                     renderDreMeses(ano);
                 } catch(e) {
                     resultEl.innerHTML = `<span style="color:var(--red);font-size:13px">Erro: ${e.message}</span>`;
@@ -13064,14 +13656,20 @@ if (id === 'dfs-kpis') {
                 const medMin  = parseFloat(document.getElementById('dre-med-min')?.value  ?? 10);
                 const ruimMax = parseFloat(document.getElementById('dre-ruim-max')?.value ?? 10);
 
-                // When a category filter is active, rebuild monthly rows from per-SKU×month data
+                // When a filter is active, rebuild monthly rows from per-SKU×month data
                 let rows;
-                if (_dreView === 'todos' || !_dreMesesSkusMes.length) {
+                const _skuFilterActive = !!_dreSkuFilter;
+                if (!_skuFilterActive && (_dreView === 'todos' || !_dreMesesSkusMes.length)) {
                     rows = _dreMesesData;
-                } else {
+                } else if (_dreMesesSkusMes.length) {
+                    const q_filter = _dreSkuFilter.toLowerCase();
                     const filteredSkuIds = new Set(
                         _dreMesesSkus
-                            .filter(s => dreClassify(s.margem_pct) === _dreView)
+                            .filter(s => {
+                                const viewMatch = _dreView === 'todos' || dreClassify(s.margem_pct) === _dreView;
+                                const skuMatch = !_skuFilterActive || s.sku.toLowerCase().includes(q_filter) || (s.nome_produto||'').toLowerCase().includes(q_filter);
+                                return viewMatch && skuMatch;
+                            })
                             .map(s => s.sku)
                     );
                     const mesAgg = {};
@@ -13092,9 +13690,14 @@ if (id === 'dfs-kpis') {
                         });
                     rows = Object.values(mesAgg).sort((a, b) => a.mes - b.mes);
                     if (!rows.length) {
-                        resultEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Nenhum SKU com ' + _dreView + ' neste ano</div>';
+                        const _noResultMsg = _skuFilterActive
+                            ? 'Nenhum resultado para &ldquo;' + esc(_dreSkuFilter) + '&rdquo;'
+                            : 'Nenhum SKU com ' + _dreView + ' neste ano';
+                        resultEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' + _noResultMsg + '</div>';
                         return;
                     }
+                } else {
+                    rows = _dreMesesData;
                 }
 
                 const NOMES_MESES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -13294,12 +13897,17 @@ if (id === 'dfs-kpis') {
                 // SKU table for the full year — filtered by _dreView
                 const counts = { boa:0, media:0, ruim:0, negativa:0 };
                 _dreMesesSkus.forEach(s => { const c = dreClassify(s.margem_pct); if (counts[c] !== undefined) counts[c]++; });
-                const filteredSkus = _dreView === 'todos' ? _dreMesesSkus : _dreMesesSkus.filter(s => dreClassify(s.margem_pct) === _dreView);
+                const q_sku = _dreSkuFilter.toLowerCase();
+                const filteredSkus = _dreMesesSkus.filter(s => {
+                    const viewMatch = _dreView === 'todos' || dreClassify(s.margem_pct) === _dreView;
+                    const skuMatch = !_dreSkuFilter || s.sku.toLowerCase().includes(q_sku) || (s.nome_produto||'').toLowerCase().includes(q_sku);
+                    return viewMatch && skuMatch;
+                });
                 const viewLabelMap = { todos:'Todos os SKUs', boa:'SKUs Margem Boa', media:'SKUs Margem Média', ruim:'SKUs Margem Ruim', negativa:'SKUs Margem Negativa' };
                 const skuTableHTML = _dreMesesSkus.length ? `
                 <div class="dre-box" style="margin-top:16px">
                     <div class="dre-box-title">
-                        <span>SKUs — Ano ${ano} &mdash; ${viewLabelMap[_dreView]||'Todos'}</span>
+                        <span>SKUs — Ano ${ano} &mdash; ${_dreSkuFilter ? 'SKU: ' + esc(_dreSkuFilter) : (viewLabelMap[_dreView]||'Todos')}</span>
                         <span style="font-size:11px;color:var(--muted);font-weight:400">${filteredSkus.length} de ${_dreMesesSkus.length} SKUs</span>
                     </div>
                     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -13346,8 +13954,9 @@ if (id === 'dfs-kpis') {
                     </div>
                 </div>` : '';
 
+                const _skuBadge = _dreSkuFilter ? ' · <span style="background:rgba(0,124,220,0.12);color:var(--accent);padding:2px 9px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid rgba(0,124,220,0.2)">' + esc(_dreSkuFilter) + '</span>' : '';
                 resultEl.innerHTML = `
-                <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">DRE Gerencial — Todos os meses de <strong style="color:var(--text)">${ano}</strong> · ${rows.length} mese${rows.length > 1 ? 's' : ''} com dados</div>
+                <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">DRE Gerencial — Todos os meses de <strong style="color:var(--text)">${ano}</strong> · ${rows.length} mese${rows.length > 1 ? 's' : ''} com dados${_skuBadge}</div>
                 ${tableHTML}
                 ${skuTableHTML}`;
             }
@@ -13375,13 +13984,43 @@ if (id === 'dfs-kpis') {
                 return 'media';
             }
 
+            function updateDreSkuDatalist() {
+                const dl = document.getElementById('dre-sku-datalist');
+                if (!dl) return;
+                const skus = _dreMesesSkus.length ? _dreMesesSkus : _dreSkusData;
+                dl.innerHTML = skus.map(s =>
+                    `<option value="${esc(s.sku)}">${esc(s.nome_produto || '')} — ${esc(s.sku)}</option>`
+                ).join('');
+            }
+
+            function setDreSkuFilter(val) {
+                _dreSkuFilter = (val || '').trim();
+                const clearBtn = document.getElementById('btn-dre-sku-clear');
+                if (clearBtn) clearBtn.style.display = _dreSkuFilter ? '' : 'none';
+                if (_dreMesMode === 'meses') renderDreMeses(_lastDreMesesAno);
+                else renderDreGerencial();
+            }
+
+            function clearDreSkuFilter() {
+                _dreSkuFilter = '';
+                const inp = document.getElementById('dre-sku-search');
+                if (inp) inp.value = '';
+                const clearBtn = document.getElementById('btn-dre-sku-clear');
+                if (clearBtn) clearBtn.style.display = 'none';
+                if (_dreMesMode === 'meses') renderDreMeses(_lastDreMesesAno);
+                else renderDreGerencial();
+            }
+
             function renderDreGerencial() {
                 const resultEl = document.getElementById('dre-gerencial-result');
                 if (!resultEl || !_dreSkusData.length) return;
 
-                const filtered = _dreView === 'todos'
-                    ? _dreSkusData
-                    : _dreSkusData.filter(s => dreClassify(s.margem_pct) === _dreView);
+                const q_dre = _dreSkuFilter.toLowerCase();
+                const filtered = _dreSkusData.filter(s => {
+                    const viewMatch = _dreView === 'todos' || dreClassify(s.margem_pct) === _dreView;
+                    const skuMatch = !_dreSkuFilter || s.sku.toLowerCase().includes(q_dre) || (s.nome_produto||'').toLowerCase().includes(q_dre);
+                    return viewMatch && skuMatch;
+                });
 
                 const agg = filtered.reduce((acc, s) => {
                     acc.receita_bruta        += parseFloat(s.receita_bruta)        || 0;
@@ -15849,6 +16488,7 @@ if (id === 'dfs-kpis') {
                         <label>Empresa *</label>
                         <select id="admin-form-empresa" required>
                             <option value="lanzi">Lanzi</option>
+                            <option value="supershop">Supershop</option>
                             <option value="marcon">Marcon</option>
                         </select>
                     </div>

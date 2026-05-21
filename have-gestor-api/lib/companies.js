@@ -12,6 +12,15 @@ module.exports = {
       have:   process.env.LANZI_PASS_HAVE,
     }
   },
+  supershop: {
+    name: "Supershop",
+    dbEnvKey: "SUPERSHOP",
+    users: {
+      admin:  process.env.SUPERSHOP_PASS_ADMIN,
+      gestor: process.env.SUPERSHOP_PASS_GESTOR,
+      have:   process.env.SUPERSHOP_PASS_HAVE,
+    }
+  },
   marcon: {
     name: "Marcon",
     dbEnvKey: "MARCON",

@@ -1,20 +1,8 @@
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-const companies = require('../lib/companies');
+const { getPool } = require('../lib/db');
 
 const PLUGGY_BASE = 'https://api.pluggy.ai';
 
-const pools = {};
-function getPool(company) {
-  if (pools[company]) return pools[company];
-  const key = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
-  pools[company] = new Pool({
-    host: process.env[`${key}_HOST`], port: parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`], user: process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`], ssl: { rejectUnauthorized: false }, max: 5,
-  });
-  return pools[company];
-}
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -286,14 +274,53 @@ module.exports = async (req, res) => {
       const { ano, mes, banco_id } = req.query;
       if (ano && mes) {
         const bancoId = banco_id ? parseInt(banco_id) : null;
-        const r = await pool.query(
-          `SELECT id, dia, descricao, razao_social, valor FROM caixa_extrato
-            WHERE empresa=$1 AND ano=$2 AND mes=$3
-              AND ($4::int IS NULL OR banco_id = $4)
-            ORDER BY dia, id`,
-          [company, parseInt(ano), parseInt(mes), bancoId]
-        );
-        return res.json({ rows: r.rows });
+        const [r, dpR] = await Promise.all([
+          pool.query(
+            `SELECT e.id, e.dia, e.descricao, e.razao_social, e.account_number,
+                    e.counterparty_document, e.valor,
+                    e.belvo_tx_id, e.banco_id, b.nome AS banco_nome,
+                    e.atualizado_em
+             FROM caixa_extrato e
+             LEFT JOIN caixa_bancos b ON b.id = e.banco_id
+              WHERE e.empresa=$1 AND e.ano=$2 AND e.mes=$3
+                AND ($4::int IS NULL OR e.banco_id = $4)
+              ORDER BY e.dia, e.id`,
+            [company, parseInt(ano), parseInt(mes), bancoId]
+          ),
+          pool.query(
+            "SELECT palavra_chave, razao_social, cnpj, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato' ORDER BY categoria_nome",
+            [company]
+          ),
+        ]);
+        const rules = dpR.rows;
+        const rows = r.rows.map(row => {
+          const effectiveRS = row.razao_social || (() => {
+            const parts = (row.descricao || '').split('\u00b7');
+            return parts.length > 1 ? parts.slice(1).join('\u00b7').trim() : '';
+          })();
+          const rsLower   = effectiveRS.toLowerCase();
+          const descLower = (row.descricao || '').toLowerCase();
+          const cnpjDoc   = (row.counterparty_document || '').replace(/\D/g, '');
+          let categoria = null;
+          for (const dp of rules) {
+            const dpCNPJ = (dp.cnpj || '').replace(/\D/g, '');
+            const dpRS   = (dp.razao_social || '').toLowerCase();
+            const dpPK   = (dp.palavra_chave || '').toLowerCase();
+            let matched = false;
+            if (dpCNPJ) {
+              matched = cnpjDoc && cnpjDoc === dpCNPJ;
+            } else if (dpRS && dpPK) {
+              matched = rsLower && rsLower.includes(dpRS) && descLower.includes(dpPK);
+            } else if (dpRS) {
+              matched = rsLower && rsLower.includes(dpRS);
+            } else if (dpPK) {
+              matched = descLower.includes(dpPK);
+            }
+            if (matched) { categoria = dp.categoria_nome; break; }
+          }
+          return { ...row, categoria };
+        });
+        return res.json({ rows });
       }
       // List months with data
       const r = await pool.query(

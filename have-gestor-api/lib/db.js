@@ -1,30 +1,27 @@
 const { Pool } = require('pg');
+const companies = require('./companies');
 
-// Cache of pools per company (reused from data.js pattern)
+// Single shared pool cache for the entire application
 const pools = {};
 
 /**
- * Get or create a connection pool for a company
+ * Get or create a connection pool for a company.
+ * Single source of truth — all API files must use this instead of local copies.
  * @param {string} company - Company slug (e.g., 'lanzi')
  * @returns {Pool} - PostgreSQL connection pool
  */
 function getPool(company) {
   if (pools[company]) return pools[company];
-
-  // Get company config (usuarios table is in the same database)
-  // For simplicity, assume all users are in the main database for each company
-  const key = company.toUpperCase();
-
+  const key = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
   pools[company] = new Pool({
-    host: process.env[`${key}_HOST`],
-    port: parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`],
-    user: process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`],
+    host:     (process.env[`${key}_HOST`]     || '').trim(),
+    port:     parseInt((process.env[`${key}_PORT`] || '5432').trim()),
+    database: (process.env[`${key}_DB`]       || '').trim(),
+    user:     (process.env[`${key}_USER`]     || '').trim(),
+    password: (process.env[`${key}_PASSWORD`] || '').trim(),
     ssl: { rejectUnauthorized: false },
     max: 5,
   });
-
   return pools[company];
 }
 

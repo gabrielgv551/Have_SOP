@@ -1,19 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-const companies = require('../lib/companies');
 const { nextBizDay, DEFAULT_CATEGORIAS, seedDefaults, consolidarMes, consolidarAnual } = require('../lib/consolidar-caixa');
-
-const pools = {};
-function getPool(company) {
-  if (pools[company]) return pools[company];
-  const key = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
-  pools[company] = new Pool({
-    host: process.env[`${key}_HOST`], port: parseInt(process.env[`${key}_PORT`] || '5432'),
-    database: process.env[`${key}_DB`], user: process.env[`${key}_USER`],
-    password: process.env[`${key}_PASSWORD`], ssl: { rejectUnauthorized: false }, max: 5,
-  });
-  return pools[company];
-}
+const { getPool } = require('../lib/db');
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -52,7 +39,16 @@ module.exports = async (req, res) => {
       const { ano, mes } = req.query;
 
       if (!ano || !mes) {
-        // Ensure defaults exist
+        // Ensure tables and defaults exist
+        await pool.query(`CREATE TABLE IF NOT EXISTS caixa_categorias (
+          id SERIAL PRIMARY KEY, empresa VARCHAR(50) NOT NULL, nome VARCHAR(100) NOT NULL,
+          tipo VARCHAR(30) DEFAULT 'item', parent INT REFERENCES caixa_categorias(id) ON DELETE SET NULL,
+          ordem INT DEFAULT 0, UNIQUE(empresa, nome))`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS caixa_lancamentos (
+          id SERIAL PRIMARY KEY, empresa VARCHAR(50) NOT NULL, categoria_id INT REFERENCES caixa_categorias(id) ON DELETE CASCADE,
+          ano INT NOT NULL, mes INT NOT NULL, dia INT, valor NUMERIC(15,2) DEFAULT 0,
+          descricao TEXT, tipo VARCHAR(20) DEFAULT 'previsto', subempresa_id INT,
+          criado_em TIMESTAMP DEFAULT NOW(), atualizado_em TIMESTAMP DEFAULT NOW())`);
         const countR = await pool.query('SELECT COUNT(*) FROM caixa_categorias WHERE empresa=$1', [company]);
         if (parseInt(countR.rows[0].count) === 0) await seedDefaults(pool, company);
         const catsR = await pool.query(
