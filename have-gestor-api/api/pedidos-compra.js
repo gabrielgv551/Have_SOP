@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { getPool } = require('../lib/db');
+const { getPool, getCompanyPool } = require('../lib/db');
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -226,8 +226,7 @@ module.exports = async (req, res) => {
 
   const payload = verifyToken(req, res);
   if (!payload) return;
-  const company = payload.company || 'lanzi';
-  const pool = getPool(company);
+  const { company, pool } = getCompanyPool(payload);
 
   try {
     if (req.query.module === 'fornecedores') return await handleFornecedores(req, res, pool, company);

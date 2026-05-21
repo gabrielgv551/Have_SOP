@@ -1,3 +1,16 @@
+function parseBody(raw) {
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
+  return raw || {};
+}
+
+async function upsertConfig(pool, company, chave, valor) {
+  await pool.query(
+    `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW())
+     ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`,
+    [company, chave, String(valor)]
+  );
+}
+
 function isTinyTable(t) { return /^bd_(pedidos|estoque)_tiny_[a-z0-9_]+$/.test(t); }
 
 const TABELAS_PERMITIDAS = [
@@ -109,16 +122,14 @@ async function getMlToken(pool, company, accountId) {
     [chave + '_refresh', tokenData.refresh_token],
     [chave + '_exp',     newExpAt],
   ]) {
-    await pool.query(
-      `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW())
-       ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`,
-      [company, k, v]
-    );
+    await upsertConfig(pool, company, k, v);
   }
   return tokenData.access_token;
 }
 
 module.exports = {
+  parseBody,
+  upsertConfig,
   isTinyTable,
   TABELAS_PERMITIDAS,
   CANAL_COL,

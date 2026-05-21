@@ -188,8 +188,14 @@ async function resetPassword(company, userId, newPasswordHash) {
   return result.rows[0];
 }
 
+function getCompanyPool(payload) {
+  const company = payload?.empresa || payload?.company || 'lanzi';
+  return { company, pool: getPool(company) };
+}
+
 module.exports = {
   getPool,
+  getCompanyPool,
   queryUsuarios,
   getAllUsers,
   createUser,

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const companies = require('../lib/companies');
-const { getPool } = require('../lib/db');
+const { getPool, getCompanyPool } = require('../lib/db');
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -22,12 +22,11 @@ module.exports = async (req, res) => {
   const payload = verifyToken(req, res);
   if (!payload) return;
 
-  const company = payload.company || 'lanzi';
+  const { company, pool } = getCompanyPool(payload);
   const companyKey = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
   if (!process.env[`${companyKey}_HOST`]) {
     return res.status(503).json({ error: 'Banco de dados não configurado para esta empresa.' });
   }
-  const pool = getPool(company);
 
   try {
     // GET - list months or get specific month

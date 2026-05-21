@@ -1,5 +1,6 @@
 ﻿const jwt = require('jsonwebtoken');
-const { getPool } = require('../lib/db');
+const { getPool, getCompanyPool } = require('../lib/db');
+const { parseBody, upsertConfig } = require('../lib/data-helpers');
 const handleTiny   = require('../lib/data-tiny');
 const handleVendas = require('../lib/data-vendas');
 const handleSopc   = require('../lib/data-sopc');
@@ -7,11 +8,6 @@ const handleSopc   = require('../lib/data-sopc');
 const TINY_MODULES  = ['tiny-oauth','tiny-debug','tiny-sync','cron-tiny','tiny-skip-old','tiny-enrich','tiny-margem','tiny-canais','import-margem'];
 const VENDAS_MODULES = ['margens','vendas','forecast-canais','forecast-recebimentos','forecast-diario'];
 const SOPC_MODULES  = ['sopc-config','fornecedores-config','sku-desativadas'];
-
-function parseBody(raw) {
-  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
-  return raw || {};
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,9 +40,10 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Token inválido ou expirado. Faça login novamente.' });
   }
 
+  const { company, pool } = getCompanyPool(payload);
+
   // PATCH — atualizar campo empresa de um título de contas_pagar
   if (req.method === 'PATCH') {
-    const pool = getPool(payload.company || 'lanzi');
     const { id, empresa } = req.body || {};
     if (!id) return res.status(400).json({ error: 'id obrigatorio' });
     try {
@@ -59,8 +56,6 @@ module.exports = async (req, res) => {
 
   // Módulo Sync Vendas
   if (mod === 'sync-vendas') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
     try {
       const tableCheck = await pool.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name='sync_log') AS existe`);
       if (!tableCheck.rows[0].existe) {
@@ -78,10 +73,7 @@ module.exports = async (req, res) => {
 
   // Módulo Configurações
   if (mod === 'configuracoes') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
     try {
-      await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
       if (req.method === 'GET') {
         const r = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
         const result = {};
@@ -100,7 +92,7 @@ module.exports = async (req, res) => {
           if (valor === '' || valor === null) {
             await pool.query(`DELETE FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`, [company, chave.replace(/_token$/, '') + '%']);
           } else {
-            await pool.query(`INSERT INTO configuracoes (empresa, chave, valor, atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa, chave) DO UPDATE SET valor=EXCLUDED.valor, atualizado_em=NOW()`, [company, chave, String(valor)]);
+            await upsertConfig(pool, company, chave, valor);
           }
         }
         return res.json({ ok: true, saved: updates.map(([k]) => k) });
@@ -132,12 +124,10 @@ module.exports = async (req, res) => {
         const uData = await uRes.json();
         nick = uData.nickname || uData.email || state;
       } catch {}
-      const company = payload.company || 'lanzi';
-      const pool = getPool(company);
       const chave = state + '_token';
       const expAt = new Date(Date.now() + (tokenData.expires_in || 21600) * 1000).toISOString();
       for (const [k, v] of [[chave, tokenData.access_token],[chave+'_refresh', tokenData.refresh_token],[chave+'_nick', nick],[chave+'_user_id', String(tokenData.user_id||'')],[chave+'_exp', expAt]]) {
-        await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+        await upsertConfig(pool, company, k, v);
       }
       return res.json({ ok: true, nick });
     } catch(e) { return res.status(500).json({ error: e.message }); }
@@ -149,9 +139,6 @@ module.exports = async (req, res) => {
     const _body = parseBody(req.body);
     const { account_id } = _body;
     if (!account_id) return res.status(400).json({ error: 'account_id é obrigatório' });
-
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
 
     try {
       // 1. Apagar tokens da conta em configuracoes

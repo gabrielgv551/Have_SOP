@@ -1,11 +1,10 @@
-const { getPool } = require('./db');
+const { getPool, getCompanyPool } = require('./db');
 
 module.exports = async function handleVendas(req, res, payload) {
 
   // Módulo Margens · DRE Gerencial
   if (req.query.module === 'margens') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     const { ano, mes, todos_meses } = req.query;
     try {
       if (!ano || !mes) {
@@ -151,38 +150,9 @@ module.exports = async function handleVendas(req, res, payload) {
 
   // Módulo Vendas
   if (req.query.module === 'vendas') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     const { action } = req.query;
     try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS vendas_canais_config (
-          empresa        VARCHAR(50) NOT NULL,
-          canal          TEXT        NOT NULL,
-          lead_time_dias INTEGER     NOT NULL DEFAULT 3,
-          PRIMARY KEY (empresa, canal)
-        )
-      `);
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS vendas_previsao (
-          empresa       VARCHAR(50)   NOT NULL,
-          ano           INTEGER       NOT NULL,
-          mes           INTEGER       NOT NULL,
-          canal         TEXT          NOT NULL,
-          valor         NUMERIC(18,2) NOT NULL DEFAULT 0,
-          atualizado_em TIMESTAMP     DEFAULT NOW(),
-          PRIMARY KEY (empresa, ano, mes, canal)
-        )
-      `);
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS vendas_grupos_canais (
-          empresa VARCHAR(50) NOT NULL,
-          grupo   TEXT        NOT NULL,
-          canal   TEXT        NOT NULL,
-          PRIMARY KEY (empresa, grupo, canal)
-        )
-      `);
-
       if (action === 'canais') {
         const r = await pool.query(`
           SELECT c.canal, COALESCE(v.lead_time_dias, 3) AS lead_time_dias
@@ -311,8 +281,7 @@ module.exports = async function handleVendas(req, res, payload) {
 
   // ── Módulo Forecast por Canal ──────────────────────────────────────────
   if (req.query.module === 'forecast-canais') {
-    const company = payload.empresa || payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     try {
       const colsR = await pool.query(
         `SELECT column_name FROM information_schema.columns WHERE table_name='forecast_12m' ORDER BY ordinal_position`
@@ -425,8 +394,7 @@ module.exports = async function handleVendas(req, res, payload) {
 
   // ── Módulo Previsão de Recebimentos ──────────────────────────────────
   if (req.query.module === 'forecast-recebimentos') {
-    const company = payload.empresa || payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     try {
       const precosR = await pool.query(`
         SELECT
@@ -516,8 +484,7 @@ module.exports = async function handleVendas(req, res, payload) {
 
   // ── Módulo Forecast Diário ─────────────────────────────────────────────
   if (req.query.module === 'forecast-diario') {
-    const company = payload.empresa || payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     const mes = req.query.mes || '';
     try {
       const mesesR = await pool.query(`

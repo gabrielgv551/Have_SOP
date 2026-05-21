@@ -1,20 +1,13 @@
-const { getPool } = require('./db');
+const { getPool, getCompanyPool } = require('./db');
 const { isTinyTable, TABELAS_PERMITIDAS, CANAL_GRUPO_SQL, getTableColumns, lerEstoqueFullMap } = require('./data-helpers');
 
 module.exports = async function handleSopc(req, res, payload) {
 
   // Módulo S&OP Config
   if (req.query.module === 'sopc-config') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     try {
       if (req.method === 'GET') {
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS sopc_config (
-            empresa VARCHAR(50), modulo VARCHAR(50), chave VARCHAR(100), valor TEXT,
-            PRIMARY KEY (empresa, modulo, chave)
-          )
-        `);
         const r = await pool.query(
           'SELECT modulo, chave, valor FROM sopc_config WHERE empresa=$1 ORDER BY modulo, chave',
           [company]
@@ -41,17 +34,8 @@ module.exports = async function handleSopc(req, res, payload) {
 
   // Módulo Fornecedores Config (lead time por Marca)
   if (req.query.module === 'fornecedores-config') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS fornecedores_config (
-          empresa        VARCHAR(50) NOT NULL,
-          marca          TEXT        NOT NULL,
-          lead_time_dias INTEGER     NOT NULL DEFAULT 30,
-          PRIMARY KEY (empresa, marca)
-        )
-      `);
       if (req.method === 'GET') {
         const r = await pool.query(`
           SELECT m.marca,
@@ -99,8 +83,7 @@ module.exports = async function handleSopc(req, res, payload) {
 
   // Módulo SKU Desativadas
   if (req.query.module === 'sku-desativadas') {
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     try {
       if (req.method === 'GET') {
         const r = await pool.query(

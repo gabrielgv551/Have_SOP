@@ -3,7 +3,7 @@
 // Todas as operações isoladas dos dados reais.
 
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
+const { getCompanyPool } = require('../lib/db');
 const companies = require('../lib/companies');
 const { nextBizDay, consolidarAnual } = require('../lib/consolidar-caixa');
 const {
@@ -225,20 +225,6 @@ Para criar eventos, oriente o usuário a descrever: tipo, valor, data e prazo.`;
   ], 800);
 }
 
-// ─── CONNECTION POOL ─────────────────────────────────────────────────────────
-
-const pools = {};
-function getPool(company) {
-  if (pools[company]) return pools[company];
-  const key = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
-  const e = k => (process.env[`${key}_${k}`] || '').trim();
-  pools[company] = new Pool({
-    host: e('HOST'), port: parseInt(e('PORT') || '5432'),
-    database: e('DB'), user: e('USER'),
-    password: e('PASSWORD'), ssl: { rejectUnauthorized: false }, max: 5,
-  });
-  return pools[company];
-}
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -255,8 +241,7 @@ module.exports = async (req, res) => {
 
   const payload = verifyToken(req, res);
   if (!payload) return;
-  const company = payload.company || 'lanzi';
-  const pool = getPool(company);
+  const { company, pool } = getCompanyPool(payload);
 
   const { action, id, aid, rid, ids } = req.query;
 

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getPool } = require('../lib/db');
+const { getPool, getCompanyPool } = require('../lib/db');
 
 const PLUGGY_BASE = 'https://api.pluggy.ai';
 
@@ -256,8 +256,7 @@ module.exports = async (req, res) => {
 
   const payload = verifyToken(req, res);
   if (!payload) return;
-  const company = payload.company || 'lanzi';
-  const pool = getPool(company);
+  const { company, pool } = getCompanyPool(payload);
 
   // Roteamento
   try {

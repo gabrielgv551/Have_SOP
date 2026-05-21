@@ -1,20 +1,20 @@
-const { getPool } = require('./db');
+const { getPool, getCompanyPool } = require('./db');
+const { parseBody, upsertConfig } = require('./data-helpers');
 
 module.exports = async function handleTiny(req, res, payload) {
 
   // Módulo Tiny OAuth — conectar conta Tiny ERP v3
   if (req.query.module === 'tiny-oauth') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-    const _tBody = (typeof req.body === 'string') ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const _tBody = parseBody(req.body);
     const { code, state, modules } = _tBody;
     if (!code || !state) return res.status(400).json({ error: 'code e state são obrigatórios' });
 
     const TINY_REDIRECT_URI  = 'https://have-gestor-frontend.vercel.app/tiny-callback';
     const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
     const TINY_API_BASE  = 'https://erp.tiny.com.br/public-api/v3';
-    const _company = payload?.company || 'lanzi';
-    const _pool = getPool(_company);
-    const _creds = await _pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave IN ('tiny_client_id','tiny_client_secret')`, [_company]);
+    const { company, pool } = getCompanyPool(payload);
+    const _creds = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave IN ('tiny_client_id','tiny_client_secret')`, [company]);
     const _credMap = {}; _creds.rows.forEach(r => { _credMap[r.chave] = r.valor; });
     const TINY_CLIENT_ID     = (_credMap.tiny_client_id     || process.env.TINY_CLIENT_ID     || '').trim();
     const TINY_CLIENT_SECRET = (_credMap.tiny_client_secret || process.env.TINY_CLIENT_SECRET || '').trim();
@@ -51,11 +51,8 @@ module.exports = async function handleTiny(req, res, payload) {
         if (emp) nick = emp.nomeFantasia || emp.razaoSocial || emp.nome || state;
       } catch {}
 
-      const company = payload.company || 'lanzi';
-      const pool    = getPool(company);
       const expAt   = new Date(Date.now() + (tokenData.expires_in || 21600) * 1000).toISOString();
       const modsStr = modules || 'vendas,estoque,pedidos';
-      await pool.query(`CREATE TABLE IF NOT EXISTS configuracoes (empresa VARCHAR(50) NOT NULL, chave VARCHAR(100) NOT NULL, valor TEXT, atualizado_em TIMESTAMP DEFAULT NOW(), PRIMARY KEY (empresa, chave))`);
       for (const [k, v] of [
         [`${state}_token`,   apiToken],
         [`${state}_refresh`, tokenData.refresh_token],
@@ -63,10 +60,7 @@ module.exports = async function handleTiny(req, res, payload) {
         [`${state}_exp`,     expAt],
         [`${state}_modulos`, modsStr],
       ]) {
-        await pool.query(
-          `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`,
-          [company, k, v]
-        );
+        await upsertConfig(pool, company, k, v);
       }
 
       const mods = modsStr.split(',').map(m => m.trim());
@@ -143,8 +137,7 @@ module.exports = async function handleTiny(req, res, payload) {
   if (req.query.module === 'tiny-debug') {
     const account = req.query.account;
     if (!account) return res.status(400).json({ error: 'account obrigatório' });
-    const company = payload.company || 'lanzi';
-    const pool = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     try {
       const cfgRes = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1 AND chave LIKE $2`, [company, account + '%']);
       const cfg = {};
@@ -173,7 +166,7 @@ module.exports = async function handleTiny(req, res, payload) {
           accessToken = rrData.access_token;
           const newExp = new Date(Date.now() + (rrData.expires_in || 300) * 1000).toISOString();
           for (const [k, v] of [[account+'_token', rrData.access_token],[account+'_refresh', rrData.refresh_token||refreshToken],[account+'_exp', newExp]]) {
-            await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+            await upsertConfig(pool, company, k, v);
           }
         }
       }
@@ -308,8 +301,7 @@ module.exports = async function handleTiny(req, res, payload) {
     const account = req.query.account;
     if (!account) return res.status(400).json({ error: 'account é obrigatório. Ex: ?account=tiny_marcon' });
 
-    const company = payload.company || 'lanzi';
-    const pool    = getPool(company);
+    const { company, pool } = getCompanyPool(payload);
     const TINY_API       = 'https://erp.tiny.com.br/public-api/v3';
     const TINY_TOKEN_URL = 'https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token';
 
@@ -340,7 +332,7 @@ module.exports = async function handleTiny(req, res, payload) {
           accessToken = nt.access_token;
           const newExp = new Date(Date.now() + (nt.expires_in || 300) * 1000).toISOString();
           for (const [k, v] of [[account+'_token', nt.access_token],[account+'_refresh', nt.refresh_token||refreshToken],[account+'_exp', newExp]]) {
-            await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+            await upsertConfig(pool, company, k, v);
           }
         }
       }
@@ -521,10 +513,7 @@ module.exports = async function handleTiny(req, res, payload) {
         results.estoque = produtos.length;
       }
 
-      await pool.query(
-        `INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`,
-        [company, account + '_token_sync', new Date().toLocaleString('pt-BR')]
-      );
+      await upsertConfig(pool, company, account + '_token_sync', new Date().toLocaleString('pt-BR'));
 
       return res.json({ ok: true, account, synced_at: new Date().toISOString(), results });
     } catch(e) { return res.status(500).json({ error: e.message }); }
@@ -533,8 +522,7 @@ module.exports = async function handleTiny(req, res, payload) {
   // ── cron-tiny: sync + enrich automático ──
   if (req.query.module === 'cron-tiny') {
     try {
-      const company = payload.company || 'lanzi';
-      const pool    = getPool(company);
+      const { company, pool } = getCompanyPool(payload);
       const cfgRes  = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
       const cfg = {};
       for (const r of cfgRes.rows) cfg[r.chave] = r.valor;
@@ -564,7 +552,7 @@ module.exports = async function handleTiny(req, res, payload) {
             accessToken = nt.access_token;
             const newExp = new Date(Date.now() + (nt.expires_in || 300) * 1000).toISOString();
             for (const [k, v] of [[account + '_token', accessToken], [account + '_refresh', nt.refresh_token || cfg[account + '_refresh']], [account + '_exp', newExp]])
-              await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+              await upsertConfig(pool, company, k, v);
           }
         }
 
@@ -661,7 +649,7 @@ module.exports = async function handleTiny(req, res, payload) {
           await new Promise(r => setTimeout(r, 1000));
         }
 
-        await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, account + '_token_sync', new Date().toLocaleString('pt-BR')]);
+        await upsertConfig(pool, company, account + '_token_sync', new Date().toLocaleString('pt-BR'));
         log.push({ account, synced: items.length, enriched });
       }
       return res.json({ ok: true, ran_at: new Date().toISOString(), log });
@@ -674,8 +662,7 @@ module.exports = async function handleTiny(req, res, payload) {
       const account  = req.query.account;
       const before   = req.query.before;
       if (!account || !before) return res.status(400).json({ error: 'account e before obrigatórios' });
-      const company  = payload.company || 'lanzi';
-      const pool     = getPool(company);
+      const { company, pool } = getCompanyPool(payload);
       const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
       await pool.query(`ALTER TABLE bd_pedidos_tiny_${safeName} ADD COLUMN IF NOT EXISTS financeiro_ok BOOLEAN DEFAULT FALSE`).catch(()=>{});
       const r = await pool.query(
@@ -693,8 +680,7 @@ module.exports = async function handleTiny(req, res, payload) {
       const account = req.query.account;
       if (!account) return res.status(400).json({ error: 'account obrigatório' });
 
-      const company = payload.company || 'lanzi';
-      const pool = getPool(company);
+      const { company, pool } = getCompanyPool(payload);
 
       const cfg = {};
       const cfgRows = await pool.query(`SELECT chave, valor FROM configuracoes WHERE empresa=$1`, [company]);
@@ -718,7 +704,7 @@ module.exports = async function handleTiny(req, res, payload) {
             accessToken = nt.access_token;
             const newExp = new Date(Date.now() + (nt.expires_in || 300) * 1000).toISOString();
             for (const [k, v] of [[account+'_token', accessToken],[account+'_refresh', nt.refresh_token||refreshToken],[account+'_exp', newExp]])
-              await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+              await upsertConfig(pool, company, k, v);
           }
         }
       }
@@ -866,8 +852,7 @@ module.exports = async function handleTiny(req, res, payload) {
   // ── tiny-margem ──
   if (req.query.module === 'tiny-margem') {
     try {
-      const company  = payload.company || 'lanzi';
-      const pool     = getPool(company);
+      const { company, pool } = getCompanyPool(payload);
       const account  = req.query.account;
       if (!account) return res.status(400).json({ error: 'account obrigatório' });
       const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
@@ -877,7 +862,7 @@ module.exports = async function handleTiny(req, res, payload) {
         sessionCookie = req.body.sessionCookie;
         csrfToken     = req.body.csrfToken || '';
         for (const [k,v] of [[account+'_olist_cookie', sessionCookie],[account+'_olist_csrf', csrfToken]]) {
-          await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+          await upsertConfig(pool, company, k, v);
         }
       } else {
         const cfgRes = await pool.query(`SELECT chave,valor FROM configuracoes WHERE empresa=$1 AND chave IN ($2,$3)`, [company, account+'_olist_cookie', account+'_olist_csrf']);
@@ -917,7 +902,7 @@ module.exports = async function handleTiny(req, res, payload) {
             bearerToken = _rd.access_token;
             const _newExp = new Date(Date.now() + (_rd.expires_in || 21600) * 1000).toISOString();
             for (const [k,v] of [[account+'_token', bearerToken],[account+'_refresh', _rd.refresh_token || _cfg[account+'_refresh']],[account+'_exp', _newExp]]) {
-              await pool.query(`INSERT INTO configuracoes (empresa,chave,valor,atualizado_em) VALUES ($1,$2,$3,NOW()) ON CONFLICT (empresa,chave) DO UPDATE SET valor=EXCLUDED.valor,atualizado_em=NOW()`, [company, k, v]);
+              await upsertConfig(pool, company, k, v);
             }
             console.log(`[tiny-margem] Token renovado para ${account}, expira ${_newExp}`);
           } else {
@@ -1014,20 +999,7 @@ module.exports = async function handleTiny(req, res, payload) {
   // ── tiny-canais ──
   if (req.query.module === 'tiny-canais') {
     try {
-      const company  = payload.company || 'lanzi';
-      const pool     = getPool(company);
-
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS tiny_canais_config (
-          empresa             VARCHAR(50) NOT NULL,
-          canal               TEXT        NOT NULL,
-          pct_comissao        NUMERIC(6,2) NOT NULL DEFAULT 0,
-          pct_taxa            NUMERIC(6,2) NOT NULL DEFAULT 0,
-          pct_imposto         NUMERIC(6,2) NOT NULL DEFAULT 0,
-          atualizado_em       TIMESTAMP DEFAULT NOW(),
-          PRIMARY KEY (empresa, canal)
-        )
-      `);
+      const { company, pool } = getCompanyPool(payload);
 
       if (req.method !== 'POST') {
         const account  = req.query.account;
@@ -1073,8 +1045,7 @@ module.exports = async function handleTiny(req, res, payload) {
     try {
       const account = req.query.account;
       if (!account) return res.status(400).json({ error: 'account obrigatório' });
-      const company  = payload.company || 'lanzi';
-      const pool     = getPool(company);
+      const { company, pool } = getCompanyPool(payload);
       const safeName = account.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
 
       for (const [col, type] of [

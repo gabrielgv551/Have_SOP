@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const companies = require('../lib/companies');
-const { getPool } = require('../lib/db');
+const { getPool, getCompanyPool } = require('../lib/db');
 
 function verifyToken(req, res) {
   const auth = (req.headers.authorization || '').split(' ')[1];
@@ -22,25 +22,13 @@ module.exports = async (req, res) => {
   const payload = verifyToken(req, res);
   if (!payload) return;
 
-  const company = payload.company || 'lanzi';
+  const { company, pool } = getCompanyPool(payload);
   const companyKey = (companies[company] && companies[company].dbEnvKey) || company.toUpperCase();
   if (!process.env[`${companyKey}_HOST`]) {
     return res.status(503).json({ error: 'Banco de dados não configurado para esta empresa.' });
   }
-  const pool = getPool(company);
 
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS dfs_estrutura (
-        id SERIAL PRIMARY KEY,
-        empresa VARCHAR(50) NOT NULL,
-        tipo VARCHAR(20) NOT NULL,
-        dados JSONB DEFAULT '{}',
-        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(empresa, tipo)
-      )
-    `);
-
     if (req.method === 'GET') {
       const result = await pool.query(
         'SELECT tipo, dados FROM dfs_estrutura WHERE empresa = $1',

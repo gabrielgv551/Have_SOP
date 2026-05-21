@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 function isAdmin(payload) {
-  return payload.role === 'admin' || payload.user === 'admin';
+  return payload.role === 'admin';
 }
 
 function validatePasswordStrength(password) {

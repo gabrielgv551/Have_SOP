@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const companies = require('../lib/companies');
-const { getPool } = require('../lib/db');
+const { getPool, getCompanyPool } = require('../lib/db');
 
 const analysisCache = {};
 
@@ -2489,9 +2489,8 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Token inválido ou expirado' });
   }
 
-  const company = payload.company || 'lanzi';
+  const { company, pool } = getCompanyPool(payload);
   const companyName = companies[company]?.name || company;
-  const pool = getPool(company);
 
   // GET /api/agents?agent=sop → lista agentes OU análise automática
   if (req.method === 'GET') {
