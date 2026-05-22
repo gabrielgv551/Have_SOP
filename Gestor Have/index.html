@@ -1,4 +1,4 @@
-﻿< !DOCTYPE html>
+< !DOCTYPE html>
     <html lang="pt-BR">
 
     <head>
@@ -4403,6 +4403,7 @@
                             <button class="refresh-btn" onclick="expandAllCaixaMeses()" style="font-size:12px;">▼ Abrir todos</button>
                             <button class="refresh-btn" onclick="collapseAllCaixaMeses()" style="font-size:12px;">▲ Fechar todos</button>
                             <button class="refresh-btn" id="cx-toggle-realizado" onclick="toggleSoRealizado()" style="font-size:12px;">○ Só Realizado</button>
+                            <button class="refresh-btn" onclick="downloadCaixaFluxoExcel()" style="font-size:12px;">⬇ Excel</button>
                             <button class="btn-primary" onclick="openAddCaixaRow()" style="font-size:13px;">+ Linha</button>
                             <button class="btn-primary" onclick="openModeloModal()" style="font-size:13px;">&#9998; Editar modelo</button>
                             <button class="refresh-btn" onclick="resetarModeloPadrao()" style="font-size:12px;color:var(--red);border-color:var(--red);">&#8635; Resetar padrão</button>
@@ -4706,6 +4707,10 @@
                             </button>
                             <button onclick="openPcFornecedoresModal()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;">
                                 👥 Fornecedores
+                            </button>
+                            <input type="file" id="pc-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handlePcUploadExcel(this.files)">
+                            <button onclick="document.getElementById('pc-file-input').click()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;">
+                                ⬆ Importar
                             </button>
                             <button onclick="openPedidoSidebar()" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
                                 + Novo Pedido
@@ -9950,9 +9955,7 @@ if (id === 'dfs-kpis') {
             // ── DFS Excel export helpers ──────────────────────────────────────────
             function _tableToAoa(tableEl) {
                 function readCell(el) {
-                    let txt = '';
-                    el.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) txt += n.textContent; });
-                    return txt.trim();
+                    return (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
                 }
                 const aoa = [];
                 tableEl.querySelectorAll('thead tr').forEach(tr => {
@@ -11213,6 +11216,38 @@ if (id === 'dfs-kpis') {
             function collapseAllCaixaMeses() {
                 _cxExpandedMeses.clear();
                 renderCaixaFluxoHorizontal();
+            }
+
+            async function downloadCaixaFluxoExcel() {
+                if (!_cxAllMonthsData) {
+                    showToast('Carregue o fluxo antes de exportar.', 'error');
+                    return;
+                }
+                const table = document.querySelector('#cx-fluxo-anual table.fcxd-horizontal');
+                if (!table) {
+                    showToast('Tabela não encontrada.', 'error');
+                    return;
+                }
+                try {
+                    await loadSheetJS();
+                    const ano = document.getElementById('cx-ano-select')?.value || _cxAllMonthsData.ano || '';
+                    const subSel = document.getElementById('cx-subempresa-select');
+                    const subLabel = (subSel?.selectedOptions?.[0]?.textContent || 'todas')
+                        .replace(/[^\w\sáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ-]/g, '')
+                        .replace(/\s+/g, '_')
+                        .slice(0, 24) || 'todas';
+                    const aoa = _tableToAoa(table);
+                    if (!aoa.length) throw new Error('Nenhum dado para exportar');
+                    const ws = XLSX.utils.aoa_to_sheet(aoa);
+                    const maxCols = Math.max(...aoa.map(r => r.length), 1);
+                    ws['!cols'] = [{ wch: 38 }, ...Array(Math.max(0, maxCols - 1)).fill({ wch: 11 })];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Fluxo Diario');
+                    XLSX.writeFile(wb, 'caixa_fluxo_diario_' + ano + '_' + subLabel + '.xlsx');
+                    showToast('Download iniciado', 'success');
+                } catch (e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
             }
 
             function toggleSoRealizado() {
@@ -12866,6 +12901,118 @@ if (id === 'dfs-kpis') {
                 if (match && match.prazo_padrao_dias) {
                     document.getElementById('pc-form-vencimento').value = _pcAddDays(emissao, match.prazo_padrao_dias);
                 }
+            }
+
+            async function handlePcUploadExcel(fileList) {
+                if (!fileList || !fileList.length) return;
+                const file = fileList[0];
+                try {
+                    await loadSheetJS();
+                    showToast('Lendo planilha...', 'info');
+                    const buf = await file.arrayBuffer();
+                    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+                    if (aoa.length < 2) throw new Error('A planilha parece estar vazia ou sem cabeçalho.');
+                    
+                    const header = aoa[0] || [];
+                    const parseDateBR = (d) => {
+                        if (d instanceof Date) return d.toISOString().slice(0, 10);
+                        const str = String(d || '').trim();
+                        if (!str) return null;
+                        const p = str.split('/');
+                        if (p.length === 3) {
+                            const [day, mo, yr] = p;
+                            const y = yr.length === 2 ? '20' + yr : yr;
+                            return `${y}-${mo.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        }
+                        return str;
+                    };
+
+                    const token = localStorage.getItem('have_token');
+                    let importados = 0;
+                    for (let i = 1; i < aoa.length; i++) {
+                        const row = aoa[i];
+                        if (!row || !row.length) continue;
+                        
+                        let idxNumero = header.findIndex(h => /n.mero|os|nf/i.test(String(h)));
+                        let idxDataEmissao = header.findIndex(h => /data pedido/i.test(String(h)));
+                        let idxDataPrevista = header.findIndex(h => /data faturamento|previsto|vencimento/i.test(String(h)));
+                        let idxFornec = header.findIndex(h => /fornecedor/i.test(String(h)));
+                        let idxValor = header.findIndex(h => /valor/i.test(String(h)));
+                        let idxPrazo = header.findIndex(h => /prazo/i.test(String(h)));
+
+                        // Colunas default do screenshot caso cabecalho esteja um pouco diferente
+                        if (idxNumero===-1) idxNumero = 0;
+                        if (idxDataEmissao===-1) idxDataEmissao = 1;
+                        if (idxDataPrevista===-1) idxDataPrevista = 2;
+                        if (idxFornec===-1) idxFornec = 3;
+                        if (idxValor===-1) idxValor = 5;
+                        if (idxPrazo===-1) idxPrazo = 7;
+
+                        const numStr = String(row[idxNumero] || '').trim();
+                        const dataEmissStr = parseDateBR(row[idxDataEmissao]);
+                        const dataPrevStr = parseDateBR(row[idxDataPrevista]);
+                        let fornStr = String(row[idxFornec] || '').trim();
+                        let prazoStr = String(row[idxPrazo] || '').trim();
+                        let valStr = String(row[idxValor] || '').replace(/[R$\\s]/g,'');
+
+                        if (!fornStr && numStr) fornStr = 'Fornecedor'; // fallback
+                        if (!dataEmissStr || !fornStr || !valStr || numStr == '') continue;
+
+                        // converte valor
+                        if (valStr.includes(',') && valStr.includes('.')) {
+                            // provavelmente formato pt-BR com separador de milhar. ex: 107.686,90
+                            valStr = valStr.replace(/\\./g, '').replace(',', '.');
+                        } else {
+                            valStr = valStr.replace(',', '.');
+                        }
+                        const finalValor = parseFloat(valStr) || 0;
+                        if (finalValor <= 0) continue;
+
+                        let prazosEnviados = [];
+                        let vencEnviado = null;
+                        if (prazoStr && prazoStr.match(/\\d+/)) {
+                            const pparts = prazoStr.split(/\\/|-| /).map(x => parseInt(x)).filter(x => x>0);
+                            if (pparts.length > 0) {
+                                prazosEnviados = pparts;
+                            } else {
+                                if (dataPrevStr) vencEnviado = dataPrevStr;
+                            }
+                        } else {
+                            if (dataPrevStr) vencEnviado = dataPrevStr;
+                            else vencEnviado = dataEmissStr; // fallback last resort
+                        }
+
+                        // if both missing
+                        if (prazosEnviados.length===0 && !vencEnviado) continue;
+
+                        const body = {
+                            fornecedor: fornStr,
+                            data_emissao: dataEmissStr,
+                            nf: numStr,
+                            valor: finalValor,
+                            prazos: prazosEnviados,
+                            vencimento: vencEnviado
+                        };
+
+                        const url = API_BASE + '/pedidos-compra';
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify(body)
+                        });
+                        
+                        if (res.ok) importados++;
+                    }
+
+                    showToast(importados + ' pedidos importados com sucesso!', 'success');
+                    loadPedidosCompra();
+                } catch(e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
+                const fi = document.getElementById('pc-file-input');
+                if (fi) fi.value = '';
             }
 
             async function savePedido() {
