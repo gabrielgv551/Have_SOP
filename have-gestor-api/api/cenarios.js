@@ -5,6 +5,7 @@
 const jwt = require('jsonwebtoken');
 const { getCompanyPool } = require('../lib/db');
 const companies = require('../lib/companies');
+const { callGroq, callGemini, callAI } = require('../lib/llm');
 const { nextBizDay, consolidarAnual } = require('../lib/consolidar-caixa');
 const {
   ensureTables,
@@ -19,63 +20,7 @@ const {
 } = require('../lib/cenarios-utils');
 const { projetar } = require('../lib/cenarios-engine');
 
-// ─── OPENROUTER / LLM ────────────────────────────────────────────────────────
-
-// Groq (Llama 3.3 70B) — principal
-async function _callGroq(messages, maxTokens = 1200) {
-  const key = (process.env.GROQ_API_KEY || '').trim();
-  if (!key) throw new Error('GROQ_API_KEY não configurada');
-  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
-  let lastErr;
-  for (const model of models) {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0.3, messages }),
-    });
-    if (r.ok) {
-      const d = await r.json();
-      return (d.choices[0].message.content || '').trim();
-    }
-    const errBody = await r.text();
-    lastErr = `Groq ${r.status} (${model}): ${errBody.slice(0, 200)}`;
-    if (r.status !== 429) break;
-  }
-  throw new Error(lastErr);
-}
-
-// Gemini — fallback
-async function _callGemini(messages, maxTokens = 1200) {
-  const key = (process.env.GEMINI_API_KEY || '').trim();
-  if (!key) throw new Error('GEMINI_API_KEY não configurada');
-  const sysMsg = messages.find(m => m.role === 'system');
-  const chatMsgs = messages.filter(m => m.role !== 'system');
-  const body = {
-    contents: chatMsgs.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    })),
-    generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 },
-  };
-  if (sysMsg) body.systemInstruction = { parts: [{ text: sysMsg.content }] };
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
-  if (!r.ok) { const e = await r.text(); throw new Error(`Gemini ${r.status}: ${e.slice(0, 200)}`); }
-  const d = await r.json();
-  return (d.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
-}
-
-// Ponto de entrada — Groq primeiro, Gemini como fallback
-async function _callAI(messages, maxTokens = 1200) {
-  if ((process.env.GROQ_API_KEY || '').trim()) {
-    try { return await _callGroq(messages, maxTokens); } catch (e) {
-      console.warn('[_callAI] Groq falhou, tentando Gemini:', e.message);
-    }
-  }
-  return _callGemini(messages, maxTokens);
-}
+// ─── LLM (Groq + Gemini via lib/llm.js) ─────────────────────────────────────
 
 async function _extractEvento(messages, cenario, planoContas, eventosAtuais) {
   const evStr = eventosAtuais.length
@@ -148,7 +93,7 @@ Se tem tudo necessário → {"acao":"criar_evento","evento":{"tipo":"...","nome"
 Se falta info obrigatória → {"acao":"perguntar","pergunta":"Texto amigável em PT-BR perguntando exatamente o que falta, de forma conversacional. Mencione os defaults que serão usados para campos opcionais."}
 Se não é pedido de evento → {"acao":null}`;
 
-  const raw = await _callAI([
+  const raw = await callAI([
     { role: 'system', content: system },
     { role: 'user', content: convStr },
   ], 700);
@@ -199,7 +144,7 @@ Com base EXCLUSIVAMENTE nos números acima, explique em 4–6 linhas:
 - Impacto líquido total no período analisado
 - Veredicto financeiro claro (melhora liquidez no curto prazo, comprime no longo prazo, etc)`;
 
-  return _callAI([
+  return callAI([
     { role: 'system', content: system },
     { role: 'user', content: user },
   ], 800);
@@ -219,7 +164,7 @@ Projeção mensal atual (líquido): ${resumo}
 Responda em português brasileiro, seja conciso e útil.
 Para criar eventos, oriente o usuário a descrever: tipo, valor, data e prazo.`;
 
-  return _callAI([
+  return callAI([
     { role: 'system', content: system },
     ...messages.slice(-6),
   ], 800);

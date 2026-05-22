@@ -1,5 +1,3 @@
--- RENOMEADO: conteúdo movido para 010_create_sopc_config.sql
--- Este arquivo foi renumerado para resolver conflito com 008_create_belvo_links.sql
 -- Tabela de configuração dos módulos S&OP
 CREATE TABLE IF NOT EXISTS sopc_config (
   empresa  VARCHAR(50)  NOT NULL,

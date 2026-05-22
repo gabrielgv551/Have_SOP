@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const companies = require('../lib/companies');
 const { getPool, getCompanyPool } = require('../lib/db');
+const { SYSTEM_FOOTER, anthropicRequest } = require('../lib/llm');
 
 const analysisCache = {};
 
@@ -659,16 +660,6 @@ Resumo executivo de cada módulo ativado (2–3 linhas cada, apenas os mais crí
 No máximo 5 ações, ordenadas por impacto financeiro estimado. Formato: Ação | Módulo | Impacto R$ | Urgência`;
 
 // ─── CALL LLM (síntese principal — Anthropic Claude) ────────────────────────
-
-const SYSTEM_FOOTER = `
-
-REGRAS ABSOLUTAS DE INTERPRETAÇÃO DE VALORES:
-- Todos os valores numéricos estão em REAIS (R$) exatos. O que está no dado É o valor real.
-- 850000 = R$ 850.000,00 (oitocentos e cinquenta MIL reais) — NÃO é milhão.
-- 1500000 = R$ 1.500.000,00 (um milhão e meio) — NÃO é 1,5 bilhão.
-- NUNCA multiplique nem divida os valores recebidos.
-- Sempre formate usando padrão brasileiro: ponto para milhar, vírgula para decimal.
-- Exemplo correto: R$ 850.000,00 | R$ 1.234.567,89`;
 
 async function callLLM({ systemPrompt, userMessage, companyName, model, maxTokens }) {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -1535,33 +1526,6 @@ const TOOL_RESULT_MAX_CHARS = 1500;
 const TOOL_RESULT_MAX_CHARS_LARGE = 5000;
 const TOOL_RESULT_MAX_CHARS_SOPC = 25000;
 const TOOL_RESULT_MAX_CHARS_SOPC_ITEM = 10000;
-
-async function anthropicRequest(body) {
-  const maxRetries = 3;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(body),
-    });
-    if (response.status === 429) {
-      const wait = (attempt + 1) * 20000;
-      console.warn(`[anthropicRequest] 429 rate limit, aguardando ${wait/1000}s (tentativa ${attempt+1}/${maxRetries})`);
-      await new Promise(r => setTimeout(r, wait));
-      continue;
-    }
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Anthropic API error ${response.status}: ${errText}`);
-    }
-    return response.json();
-  }
-  throw new Error('Anthropic API: limite de tentativas esgotado após rate limit 429');
-}
 
 async function callLLMWithTools({ systemPrompt, userMessage, tools, executeTool, companyName, maxRounds = 12, maxTokens = 4000 }) {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY não configurada');

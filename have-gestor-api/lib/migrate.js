@@ -13,7 +13,7 @@ const path = require('path');
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
 
 /**
- * Aplica todas as migrations 0*.sql no pool informado.
+ * Aplica todas as migrations NNN_*.sql no pool informado (suporta 001–999+).
  * Cria a tabela schema_migrations se não existir para rastrear quais já foram aplicadas.
  */
 async function runMigrations(pool, company) {
@@ -26,7 +26,7 @@ async function runMigrations(pool, company) {
   `);
 
   const files = fs.readdirSync(MIGRATIONS_DIR)
-    .filter(f => /^0\d+.*\.sql$/.test(f))
+    .filter(f => /^\d+_.*\.sql$/.test(f))
     .sort();
 
   const { rows: applied } = await pool.query('SELECT filename FROM schema_migrations');

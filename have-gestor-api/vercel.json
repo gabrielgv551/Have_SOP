@@ -11,8 +11,9 @@
     "api/caixa-extrato.js": { "maxDuration": 30 },
     "api/caixa-modelo.js": { "maxDuration": 30 },
     "api/caixa-depara.js": { "maxDuration": 10 },
-    "api/pedidos-compra.js": { "maxDuration": 10 },
-    "api/agents.js":  { "maxDuration": 120 }
+    "api/agents.js":  { "maxDuration": 120 },
+    "api/cenarios.js": { "maxDuration": 60 },
+    "api/pedidos-compra.js": { "maxDuration": 30 }
   },
   "crons": [
     {
