@@ -196,10 +196,10 @@ def ler_estoque_seguranca(engine) -> pd.DataFrame:
 def ler_estoque_atual(engine) -> pd.DataFrame:
     print("\n[...] Lendo estoque atual (estoque_consolidado)...")
     query = text("""
-        SELECT "SKU" AS sku, SUM("Estoque Base") AS estoque_atual
+        SELECT sku, SUM(estoque_base) AS estoque_atual
         FROM estoque_consolidado
-        WHERE "SKU" IS NOT NULL AND TRIM("SKU") != ''
-        GROUP BY "SKU"
+        WHERE sku IS NOT NULL AND TRIM(sku) != ''
+        GROUP BY sku
     """)
     df = pd.read_sql(query, engine)
     df = limpar_sku(df)
