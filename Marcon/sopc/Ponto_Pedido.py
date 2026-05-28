@@ -214,19 +214,23 @@ def ler_estoque_atual(engine) -> pd.DataFrame:
 # ─────────────────────────────────────────────
 def ler_pedidos_aberto(engine) -> pd.DataFrame:
     print("\n[...] Lendo pedidos em aberto (PO)...")
-    query = text("""
-        SELECT
-            "SKU"                   AS sku,
-            SUM("Quantidade")       AS pedidos_aberto,
-            MAX("Previsao_Entrega") AS entrega_pedido_aberto
-        FROM po
-        WHERE "SKU" IS NOT NULL
-        GROUP BY "SKU"
-    """)
-    df = pd.read_sql(query, engine)
-    df = limpar_sku(df)
-    print(f"[OK] Pedidos em aberto: {len(df)} SKUs")
-    return df
+    try:
+        query = text("""
+            SELECT
+                "SKU"                   AS sku,
+                SUM("Quantidade")       AS pedidos_aberto,
+                MAX("Previsao_Entrega") AS entrega_pedido_aberto
+            FROM po
+            WHERE "SKU" IS NOT NULL
+            GROUP BY "SKU"
+        """)
+        df = pd.read_sql(query, engine)
+        df = limpar_sku(df)
+        print(f"[OK] Pedidos em aberto: {len(df)} SKUs")
+        return df
+    except Exception as e:
+        print(f"   [AVISO] Tabela 'po' não encontrada — ignorando pedidos em aberto. ({e})")
+        return pd.DataFrame(columns=["sku", "pedidos_aberto", "entrega_pedido_aberto"])
 
 
 # ─────────────────────────────────────────────
