@@ -1,6 +1,9 @@
 /**
- * GET /api/admin/usuarios - List all users
- * POST /api/admin/usuarios - Create new user
+ * GET    /api/admin/usuarios              - List all users
+ * POST   /api/admin/usuarios              - Create new user
+ * PATCH  /api/admin/usuarios?id=X         - Update user  (rewrite from /api/admin/usuarios/:id)
+ * DELETE /api/admin/usuarios?id=X         - Deactivate   (rewrite from /api/admin/usuarios/:id)
+ * PUT    /api/admin/usuarios?id=X&action=reset-password  (rewrite from /api/admin/usuarios/:id/reset-password)
  */
 
 const jwt = require('jsonwebtoken');
@@ -10,7 +13,7 @@ const db = require('../../lib/db');
 // CORS headers
 function setCORSHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
@@ -118,6 +121,109 @@ async function handleCreateUsuario(req, res) {
   }
 }
 
+/**
+ * PATCH - Update user (merged from [id].js)
+ */
+async function handleUpdateUsuario(req, res, id) {
+  const payload = verifyAdminToken(req, res);
+  if (!payload) return;
+
+  try {
+    const { nome, perfil, ativo, nav_permissoes } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'User ID required' });
+    }
+
+    if (perfil && !['admin', 'gestor', 'have'].includes(perfil)) {
+      return res.status(400).json({ error: 'Perfil inválido' });
+    }
+
+    const updates = {};
+    if (nome !== undefined) updates.nome = nome;
+    if (perfil !== undefined) updates.perfil = perfil;
+    if (ativo !== undefined) updates.ativo = ativo;
+    if (nav_permissoes !== undefined) updates.nav_permissoes = Array.isArray(nav_permissoes) ? nav_permissoes : null;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+    }
+
+    const updatedUser = await db.updateUser(payload.company, parseInt(id), updates);
+
+    console.log(`[ADMIN] User ID ${id} updated by ${payload.user}`);
+    res.json({
+      message: 'Usuário atualizado com sucesso',
+      user: updatedUser
+    });
+  } catch (e) {
+    console.error('[ADMIN] Update user failed:', e.message);
+    res.status(500).json({ error: 'Erro ao atualizar usuário' });
+  }
+}
+
+/**
+ * DELETE - Deactivate user (merged from [id].js)
+ */
+async function handleDeleteUsuario(req, res, id) {
+  const payload = verifyAdminToken(req, res);
+  if (!payload) return;
+
+  try {
+    if (!id) {
+      return res.status(400).json({ error: 'User ID required' });
+    }
+
+    const deletedUser = await db.deactivateUser(payload.company, parseInt(id));
+
+    console.log(`[ADMIN] User ID ${id} deactivated by ${payload.user}`);
+    res.json({
+      message: 'Usuário desativado com sucesso',
+      user: deletedUser
+    });
+  } catch (e) {
+    console.error('[ADMIN] Delete user failed:', e.message);
+    res.status(500).json({ error: 'Erro ao desativar usuário' });
+  }
+}
+
+/**
+ * PUT - Reset password (merged from [id]/reset-password.js)
+ */
+async function handleResetPassword(req, res, userId) {
+  const payload = verifyAdminToken(req, res);
+  if (!payload) return;
+
+  try {
+    const { tempPassword } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID required' });
+    }
+
+    if (!tempPassword) {
+      return res.status(400).json({ error: 'tempPassword is required' });
+    }
+
+    const pwValidation = auth.validatePasswordStrength(tempPassword);
+    if (!pwValidation.valid) {
+      return res.status(400).json({ error: pwValidation.error });
+    }
+
+    const senhaHash = await auth.hashPassword(tempPassword);
+    const updatedUser = await db.resetPassword(payload.company, parseInt(userId), senhaHash);
+
+    console.log(`[ADMIN] Password reset for user ID ${userId} by ${payload.user}`);
+    res.json({
+      message: 'Senha atualizada com sucesso',
+      user: updatedUser
+    });
+  } catch (e) {
+    console.error('[ADMIN] Reset password failed:', e.message);
+    res.status(500).json({ error: 'Erro ao resetar senha' });
+  }
+}
+
 module.exports = async (req, res) => {
   setCORSHeaders(res);
 
@@ -125,13 +231,20 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  const { id, action } = req.query;
+
   try {
-    if (req.method === 'GET') {
-      return await handleGetUsuarios(req, res);
+    // Routes with :id (rewritten from /api/admin/usuarios/:id and /api/admin/usuarios/:id/reset-password)
+    if (id) {
+      if (req.method === 'PATCH') return await handleUpdateUsuario(req, res, id);
+      if (req.method === 'DELETE') return await handleDeleteUsuario(req, res, id);
+      if (req.method === 'PUT' && action === 'reset-password') return await handleResetPassword(req, res, id);
+      return res.status(405).json({ error: 'Method not allowed' });
     }
-    if (req.method === 'POST') {
-      return await handleCreateUsuario(req, res);
-    }
+
+    // Collection routes
+    if (req.method === 'GET') return await handleGetUsuarios(req, res);
+    if (req.method === 'POST') return await handleCreateUsuario(req, res);
 
     res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {

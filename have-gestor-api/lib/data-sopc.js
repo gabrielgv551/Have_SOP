@@ -291,7 +291,7 @@ module.exports = async function handleSopc(req, res, payload) {
           EXTRACT(YEAR  FROM "Data"::date) AS ano,
           EXTRACT(MONTH FROM "Data"::date) AS mes,
           (SELECT receita_bruta FROM rb) AS receita_bruta,
-          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"                   ELSE 0 END) AS receita_liquida,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Receita Liquida"::numeric, "Total Venda") ELSE 0 END) AS receita_liquida,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"            ELSE 0 END) AS qtd_liquida,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0)  ELSE 0 END) AS margem_bruta,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0)     ELSE 0 END) AS custo_total
@@ -525,6 +525,43 @@ module.exports = async function handleSopc(req, res, payload) {
         GROUP BY "Categoria"
         ORDER BY receita DESC
       `, catParams);
+      return res.json(result.rows);
+    }
+    if (tabela === 'ponto_pedido') {
+      result = await pool.query(`
+        SELECT pp.*,
+               COALESCE(bv.nome_produto, '') AS nome_produto
+        FROM ponto_pedido pp
+        LEFT JOIN (
+          SELECT TRIM("Sku"::text) AS sku,
+                 MAX("Nome Produto") AS nome_produto
+          FROM bd_vendas
+          WHERE "Sku" IS NOT NULL
+            AND TRIM("Sku"::text) != ''
+            AND "Nome Produto" IS NOT NULL
+            AND TRIM("Nome Produto"::text) != ''
+          GROUP BY TRIM("Sku"::text)
+        ) bv ON bv.sku = TRIM(pp.sku::text)
+      `);
+      return res.json(result.rows);
+    }
+    if (tabela === 'cadastros_sku') {
+      result = await pool.query(`
+        SELECT c.*,
+               ec_nome."Produto"
+        FROM cadastros_sku c
+        LEFT JOIN (
+          SELECT TRIM("SKU"::text) AS sku,
+                 MAX("Produto") AS "Produto"
+          FROM estoque_consolidado
+          WHERE "SKU" IS NOT NULL
+            AND TRIM("SKU"::text) != ''
+            AND "Produto" IS NOT NULL
+            AND TRIM("Produto"::text) != ''
+          GROUP BY TRIM("SKU"::text)
+        ) ec_nome ON ec_nome.sku = TRIM(c."Sku"::text)
+        LIMIT 5000
+      `);
       return res.json(result.rows);
     }
     result = await pool.query(`SELECT * FROM ${tabela} LIMIT 5000`);

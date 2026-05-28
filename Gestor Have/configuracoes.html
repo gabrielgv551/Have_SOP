@@ -310,6 +310,80 @@
     .tab-content { display:none; }
     .tab-content.active { display:block; }
 
+    /* ── KITS TABLE ── */
+    .kits-toolbar {
+      display:flex; align-items:center; gap:10px;
+      margin-bottom:16px;
+    }
+    .kits-toolbar input {
+      padding:9px 12px;
+      border:1px solid var(--border); border-radius:8px;
+      font-size:13px; font-family:'DM Sans',sans-serif;
+      background:var(--surface); width:180px;
+      transition:border-color 0.15s;
+    }
+    .kits-toolbar input:focus { outline:none; border-color:var(--accent); background:#fff; }
+    .kits-toolbar input.qty { width:90px; }
+    .kits-add-btn {
+      padding:9px 16px;
+      background:var(--accent); color:#fff;
+      border:none; border-radius:8px;
+      font-size:13px; font-weight:600;
+      cursor:pointer; transition:opacity 0.15s; white-space:nowrap;
+    }
+    .kits-add-btn:hover { opacity:0.85; }
+    .kits-table-wrap {
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .kits-table {
+      width:100%; border-collapse:collapse;
+      font-size:13px;
+    }
+    .kits-table thead th {
+      background:#f0f4f8;
+      padding:10px 14px;
+      text-align:left;
+      font-size:11px; font-weight:600;
+      text-transform:uppercase; letter-spacing:0.05em;
+      color:var(--muted); border-bottom:1px solid var(--border);
+    }
+    .kits-table tbody tr {
+      border-bottom:1px solid var(--border);
+      transition:background 0.1s;
+    }
+    .kits-table tbody tr:last-child { border-bottom:none; }
+    .kits-table tbody tr:hover { background:#f8fafc; }
+    .kits-table td { padding:10px 14px; vertical-align:middle; }
+    .kits-table td.sku-cell { font-weight:600; font-family:monospace; font-size:12px; }
+    .kits-table td.qty-cell { color:var(--accent); font-weight:700; text-align:center; }
+    .kits-del-btn {
+      width:28px; height:28px; border:none; background:none;
+      color:rgba(50,48,49,0.3); font-size:14px; cursor:pointer;
+      border-radius:6px; display:flex; align-items:center; justify-content:center;
+      transition:all 0.15s;
+    }
+    .kits-del-btn:hover { background:#fff0f0; color:var(--red); }
+    .kits-group-header td {
+      background:#f8fafc;
+      font-size:11px; font-weight:700;
+      color:var(--muted); text-transform:uppercase;
+      letter-spacing:0.06em; padding:6px 14px;
+      border-bottom:1px solid var(--border);
+    }
+    .kits-arrow { color:var(--muted); margin:0 6px; }
+    .kits-info-banner {
+      background:rgba(0,124,220,0.06);
+      border:1px solid rgba(0,124,220,0.15);
+      border-radius:10px;
+      padding:12px 16px;
+      font-size:12px; color:#0063b8;
+      margin-bottom:18px;
+      line-height:1.5;
+    }
+
     /* Empty state */
     .empty-section {
       background:#fff;
@@ -377,6 +451,7 @@
       <div class="tab" onclick="switchTab('fornecedores', this)">Fornecedores</div>
       <div class="tab" onclick="switchTab('canais', this)">Canais de Venda</div>
       <div class="tab" onclick="switchTab('empresas', this)">Empresas</div>
+      <div class="tab" onclick="switchTab('kits', this)">Kits</div>
     </div>
   </div>
 
@@ -456,6 +531,56 @@
         <div class="icon">🏢</div>
         Gerenciamento de empresas em breve.
       </div>
+    </div>
+
+    <!-- TAB: Kits ──────────────────────────────────────────────────── -->
+    <div id="tab-kits" class="tab-content">
+
+      <div class="kits-info-banner">
+        📦 <strong>Kits</strong> são SKUs compostos por múltiplos SKUs simples. Quando um kit é vendido,
+        o S&amp;OP explode a venda em demanda para cada componente, garantindo que o forecast e o
+        ponto de pedido considerem o consumo real de cada peça.
+      </div>
+
+      <!-- Formulário de adição -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon">➕</span>
+          <span class="section-title">Adicionar mapeamento</span>
+        </div>
+        <div class="kits-toolbar">
+          <input type="text" id="kit-sku-kit"       placeholder="SKU Kit (ex: KIT-OLEO-10)" oninput="this.value = this.value.toUpperCase()">
+          <span style="color:var(--muted);font-size:18px">→</span>
+          <input type="text" id="kit-sku-comp"      placeholder="SKU Componente (ex: OLEO-5W30)" oninput="this.value = this.value.toUpperCase()">
+          <input type="number" id="kit-qty" class="qty" placeholder="Qtd" min="0.0001" step="any">
+          <button class="kits-add-btn" onclick="adicionarKit()">+ Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Tabela de kits existentes -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon">📋</span>
+          <span class="section-title">Mapeamentos cadastrados</span>
+          <span class="section-badge" id="kits-count">0 mapeamentos</span>
+        </div>
+        <div class="kits-table-wrap" id="kits-table-wrap">
+          <table class="kits-table">
+            <thead>
+              <tr>
+                <th>SKU Kit</th>
+                <th>SKU Componente</th>
+                <th style="text-align:center">Qtd / Kit</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="kits-tbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -800,6 +925,103 @@ async function sincronizarTiny(accountId) {
 
 // Expõe para o popup ml-callback.html / tiny-callback.html
 window.intLoadCfg = async function() { await loadConfig(); renderCards(); };
+
+// ─── Kits ─────────────────────────────────────────────────────
+let _kits = [];
+
+async function loadKits() {
+  try {
+    const r = await fetch(`${API_BASE}/sku-kits`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    _kits = d.kits || [];
+    renderKits();
+  } catch(e) {
+    document.getElementById('kits-tbody').innerHTML =
+      `<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+function renderKits() {
+  const tbody = document.getElementById('kits-tbody');
+  const badge = document.getElementById('kits-count');
+  badge.textContent = `${_kits.length} mapeamento${_kits.length !== 1 ? 's' : ''}`;
+
+  if (_kits.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px">Nenhum kit cadastrado ainda.</td></tr>`;
+    return;
+  }
+
+  // Group by sku_kit
+  const groups = {};
+  _kits.forEach(k => {
+    if (!groups[k.sku_kit]) groups[k.sku_kit] = [];
+    groups[k.sku_kit].push(k);
+  });
+
+  let html = '';
+  for (const [skuKit, comps] of Object.entries(groups)) {
+    html += `<tr class="kits-group-header"><td colspan="4">📦 ${skuKit} <span style="color:var(--muted);font-weight:400">(${comps.length} componente${comps.length !== 1 ? 's' : ''})</span></td></tr>`;
+    comps.forEach(k => {
+      const qtdFmt = Number.isInteger(k.quantidade) ? k.quantidade : parseFloat(k.quantidade.toFixed(4));
+      html += `
+        <tr>
+          <td class="sku-cell" style="padding-left:24px">${k.sku_kit}</td>
+          <td class="sku-cell">${k.sku_componente}</td>
+          <td class="qty-cell">${qtdFmt}×</td>
+          <td style="text-align:right">
+            <button class="kits-del-btn" onclick="deletarKit(${k.id})" title="Remover">🗑</button>
+          </td>
+        </tr>`;
+    });
+  }
+  tbody.innerHTML = html;
+}
+
+async function adicionarKit() {
+  const skuKit  = document.getElementById('kit-sku-kit').value.trim();
+  const skuComp = document.getElementById('kit-sku-comp').value.trim();
+  const qty     = parseFloat(document.getElementById('kit-qty').value);
+
+  if (!skuKit || !skuComp) { showToast('⚠ Preencha SKU Kit e SKU Componente.'); return; }
+  if (isNaN(qty) || qty <= 0) { showToast('⚠ Quantidade deve ser um número positivo.'); return; }
+
+  try {
+    const r = await fetch(`${API_BASE}/sku-kits`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku_kit: skuKit, sku_componente: skuComp, quantidade: qty })
+    });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Erro ao salvar'); }
+    document.getElementById('kit-sku-kit').value  = '';
+    document.getElementById('kit-sku-comp').value = '';
+    document.getElementById('kit-qty').value      = '';
+    showToast('✔ Mapeamento salvo!');
+    await loadKits();
+  } catch(e) { showToast('✕ ' + e.message); }
+}
+
+async function deletarKit(id) {
+  if (!confirm('Remover este mapeamento?')) return;
+  try {
+    const r = await fetch(`${API_BASE}/sku-kits?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!r.ok) throw new Error('Erro ao remover');
+    showToast('✔ Removido.');
+    await loadKits();
+  } catch(e) { showToast('✕ ' + e.message); }
+}
+
+// Carrega kits quando o tab é aberto
+const _origSwitchTab = switchTab;
+switchTab = function(name, el) {
+  _origSwitchTab(name, el);
+  if (name === 'kits') loadKits();
+};
 
 // ─── Init ─────────────────────────────────────────────────────
 (async () => {

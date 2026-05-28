@@ -4,8 +4,6 @@
     "api/login.js": { "maxDuration": 10 },
     "api/data.js":  { "maxDuration": 300 },
     "api/admin/usuarios.js": { "maxDuration": 10 },
-    "api/admin/usuarios/[id].js": { "maxDuration": 10 },
-    "api/admin/usuarios/[id]/reset-password.js": { "maxDuration": 10 },
     "api/dfs-base.js": { "maxDuration": 30 },
     "api/dfs-estrutura.js": { "maxDuration": 10 },
     "api/caixa-extrato.js": { "maxDuration": 30 },
@@ -13,8 +11,19 @@
     "api/caixa-depara.js": { "maxDuration": 10 },
     "api/agents.js":  { "maxDuration": 120 },
     "api/cenarios.js": { "maxDuration": 60 },
-    "api/pedidos-compra.js": { "maxDuration": 30 }
+    "api/pedidos-compra.js": { "maxDuration": 30 },
+    "api/sku-kits.js":       { "maxDuration": 10 }
   },
+  "rewrites": [
+    {
+      "source": "/api/admin/usuarios/:id/reset-password",
+      "destination": "/api/admin/usuarios?id=:id&action=reset-password"
+    },
+    {
+      "source": "/api/admin/usuarios/:id",
+      "destination": "/api/admin/usuarios?id=:id"
+    }
+  ],
   "crons": [
     {
       "path": "/api/data?module=cron-tiny",

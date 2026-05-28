@@ -1,0 +1,788 @@
+[
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/login/"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/login/",
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/CACHE/css/output.dd16762e2bf2.css"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/CACHE/css/output.090856d208d3.css"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/img/homev3/logo.svg"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/img/homev3/logo-b.svg"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/img/login/icon_01.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/CACHE/js/output.c961ed6f59d0.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/CACHE/js/output.470086c80463.js"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/CACHE/css/output.dd16762e2bf2.css",
+    "content_type": "text/css"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/CACHE/css/output.090856d208d3.css",
+    "content_type": "text/css"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/img/homev3/logo-b.svg",
+    "content_type": "image/svg+xml"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/img/homev3/logo.svg",
+    "content_type": "image/svg+xml"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/img/login/icon_01.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/CACHE/js/output.470086c80463.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/CACHE/js/output.c961ed6f59d0.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/img/homev3/bg-principal.jpg"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/img/homev3/bg-principal.jpg",
+    "content_type": "image/jpeg"
+  },
+  {
+    "method": "POST",
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810537801&_gaz=1&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGAC&are=1&cid=525365647.1779810539&ec_mode=a&frm=0&pscdl=noapi&rcb=14&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&_s=1&tag_exp=0~115616986~115938465~115938468&uid=None&sid=1779810539&sct=1&seg=0&dl=https%3A%2F%2Fsys.precocerto.co%2Flogin%2F&dt=Pre%C3%A7o%20Certo&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&up.custom_user_id=None&up.company_name=&tfd=4066"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/img/homev3/icon.ico"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/img/homev3/icon.ico",
+    "content_type": "image/vnd.microsoft.icon"
+  },
+  {
+    "type": "response",
+    "status": 204,
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810537801&_gaz=1&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGAC&are=1&cid=525365647.1779810539&ec_mode=a&frm=0&pscdl=noapi&rcb=14&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&_s=1&tag_exp=0~115616986~115938465~115938468&uid=None&sid=1779810539&sct=1&seg=0&dl=https%3A%2F%2Fsys.precocerto.co%2Flogin%2F&dt=Pre%C3%A7o%20Certo&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&up.custom_user_id=None&up.company_name=&tfd=4066",
+    "content_type": "text/plain"
+  },
+  {
+    "method": "POST",
+    "url": "https://sys.precocerto.co/authenticate_user_ajax/",
+    "body": "csrfmiddlewaretoken=jmk4CdTBJujOzocdxRzgMBad4EOzZBU5q1dis5MYm1CQcSwTKl3csdQI3L2B8My6&username_login=comercial%40casaeletromarcon.com.br&password_login=eletro123"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/authenticate_user_ajax/",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/"
+  },
+  {
+    "type": "response",
+    "status": 302,
+    "url": "https://sys.precocerto.co/",
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/dashboard"
+  },
+  {
+    "type": "response",
+    "status": 302,
+    "url": "https://sys.precocerto.co/dashboard",
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/dashboard/"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/dashboard/",
+    "content_type": "text/html"
+  },
+  {
+    "method": "POST",
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810537801&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGQC&are=1&cid=525365647.1779810539&frm=0&pscdl=noapi&rcb=14&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&tag_exp=0~115616986~115938465~115938468&uid=None&sid=1779810539&sct=1&seg=0&dl=https%3A%2F%2Fsys.precocerto.co%2Flogin%2F&dt=Pre%C3%A7o%20Certo&_s=2&tfd=6854",
+    "body": "en=user_id_dimension&_ee=1&_et=13\r\nen=user_engagement&_et=2757"
+  },
+  {
+    "method": "POST",
+    "url": "https://www.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810537801&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGQC&are=1&cid=525365647.1779810539&frm=0&pscdl=noapi&rcb=14&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=3&tag_exp=0%7E115616986%7E115938465%7E115938468&uid=None&sid=1779810539&sct=1&seg=0&dl=https%3A%2F%2Fsys.precocerto.co%2Flogin%2F&dt=Pre%C3%A7o+Certo&_s=2&tfd=6854",
+    "body": "en=user_id_dimension&_ee=1&_et=13\r\nen=user_engagement&_et=2757"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/e1b0c1b.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/cb7f898.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/3ef0f1f.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/4dcf3a1.js"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/e1b0c1b.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/cb7f898.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/4dcf3a1.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/3ef0f1f.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/4a8cd0d.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/dd5c385.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/957efca.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/_nuxt/b977f38.js"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/957efca.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/b977f38.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/dd5c385.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/_nuxt/4a8cd0d.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/user/detail"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/favicon-16x16.png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/favicon-16x16.png",
+    "content_type": "image/png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/v2/orders/"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/user/detail",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/company/active"
+  },
+  {
+    "type": "response",
+    "status": 404,
+    "url": "https://sys.precocerto.co/v2/orders/",
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/bundles/app.9382e959342edda74f29.css"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/logos_pc/logo-precocerto-w.svg"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/pc_school.svg"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/logos_pc/logo-precocerto.svg"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/illustrations/pc-pig-new-layout-button.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/illustrations/404.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-bling.png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/bundles/app.9382e959342edda74f29.css",
+    "content_type": "text/css"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/logos_pc/logo-precocerto-w.svg",
+    "content_type": "image/svg+xml"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/pc_school.svg",
+    "content_type": "image/svg+xml"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-olist.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-cnova.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-casas-bahia.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-b2w.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-extra.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-lojas-americanas.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-continental.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-ideris.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-magis5.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-lexos.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-omie.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-anymarket.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-baselinker.png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/bundles/app.a3c5d9f649c0699b3428.js"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/CACHE/js/output.4afb80a28f07.js"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/logos_pc/logo-precocerto.svg",
+    "content_type": "image/svg+xml"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/CACHE/js/output.4afb80a28f07.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/bundles/precocerto/static/bundles/images/bg-sky.ceb79553f78a3b87b384b472039c8394.png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/illustrations/pc-pig-new-layout-button.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/illustrations/404.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-bling.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-olist.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-cnova.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-casas-bahia.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-b2w.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-extra.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-lojas-americanas.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-continental.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-ideris.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-magis5.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-lexos.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-omie.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-anymarket.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/images/integrations/logos/medium-baselinker.png",
+    "content_type": "image/png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/bundles/precocerto/static/bundles/images/bg-sky.ceb79553f78a3b87b384b472039c8394.png",
+    "content_type": "image/png"
+  },
+  {
+    "method": "POST",
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810544355&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGQC&are=1&cid=525365647.1779810539&frm=0&pscdl=noapi&rcb=2&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&tag_exp=0~115938466~115938469~118128922~118689381~119034493&uid=16082&sid=1779810539&sct=1&seg=1&dl=https%3A%2F%2Fsys.precocerto.co%2Fv2%2Forders%2F&dt=Pre%C3%A7o%20Certo&_s=1&tfd=965",
+    "body": "en=user_id_dimension&_ee=1&_et=2&up.custom_user_id=16082&up.company_name=Casa%20Eletro%20Marcon%20LTDA\r\nen=company_name_dimension&_ee=1&ep.company_name=Casa%20Eletro%20Marcon%20LTDA&_et=2"
+  },
+  {
+    "method": "POST",
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810544355&em=tv.1~em.BGrUTi2EREGW8zHOeLj3qOzJV6DNFHxSMEGxuS_v2Ak&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGQC&are=1&cid=525365647.1779810539&ec_mode=a&frm=0&pscdl=noapi&rcb=2&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&_s=2&tag_exp=0~115938466~115938469~118128922~118689381~119034493&uid=16082&sid=1779810539&sct=1&seg=1&dl=https%3A%2F%2Fsys.precocerto.co%2Fv2%2Forders%2F&dt=Pre%C3%A7o%20Certo&en=page_view&_ee=1&tfd=966"
+  },
+  {
+    "type": "response",
+    "status": 204,
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810544355&em=tv.1~em.BGrUTi2EREGW8zHOeLj3qOzJV6DNFHxSMEGxuS_v2Ak&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGQC&are=1&cid=525365647.1779810539&ec_mode=a&frm=0&pscdl=noapi&rcb=2&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&_s=2&tag_exp=0~115938466~115938469~118128922~118689381~119034493&uid=16082&sid=1779810539&sct=1&seg=1&dl=https%3A%2F%2Fsys.precocerto.co%2Fv2%2Forders%2F&dt=Pre%C3%A7o%20Certo&en=page_view&_ee=1&tfd=966",
+    "content_type": "text/plain"
+  },
+  {
+    "type": "response",
+    "status": 204,
+    "url": "https://analytics.google.com/g/collect?v=2&tid=G-RFG6Q595P9&gtm=45je65k1h1v9116432353za200zd9116432353&_p=1779810544355&gcd=13l3l3l3l1l1&npa=0&dma=0&ecid=1919882786&_eu=AAAAAGQC&are=1&cid=525365647.1779810539&frm=0&pscdl=noapi&rcb=2&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=19.0.0&uaw=0&ul=pt-br&gaf=2&tag_exp=0~115938466~115938469~118128922~118689381~119034493&uid=16082&sid=1779810539&sct=1&seg=1&dl=https%3A%2F%2Fsys.precocerto.co%2Fv2%2Forders%2F&dt=Pre%C3%A7o%20Certo&_s=1&tfd=965",
+    "content_type": "text/plain"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/bundles/app.a3c5d9f649c0699b3428.js",
+    "content_type": "text/javascript"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration/main"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/company/active"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/company/active",
+    "content_type": "application/json"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/integration/main",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/static/img/favicon-32x32.png"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/static/img/favicon-32x32.png",
+    "content_type": "image/png"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "content_type": "application/json"
+  }
+]

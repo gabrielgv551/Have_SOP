@@ -1,0 +1,157 @@
+[
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/user/detail",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/gerenciar/pedidos-de-venda/?source_created=01%2F02%2F2025%20-%2028%2F02%2F2025&date_before=2025-02-28&date_after=2025-02-01&ordering=-source_created",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/user/detail",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/company/active",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/order/facts/total?&source_created=01%2F02%2F2025+-+28%2F02%2F2025&date_before=2025-02-28&date_after=2025-02-01",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/channel?limit=200&orders__source_created=01%2F02%2F2025+-+28%2F02%2F2025&has_order_in=01%2F02%2F2025+-+28%2F02%2F2025",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/company?ordering=company_name&limit=200",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/user/detail",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/margin-configurations",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/persistent-messages?page=ORDERS",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integrations",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/order/margin-summary?source_created=01%2F02%2F2025+-+28%2F02%2F2025&date_before=2025-02-28&date_after=2025-02-01",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/order?source_created=01%2F02%2F2025+-+28%2F02%2F2025&date_before=2025-02-28&date_after=2025-02-01&ordering=-source_created",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/tiny/webhook-status/queue",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/order/export-orders-by-line?source_created=01%2F02%2F2025+-+28%2F02%2F2025&date_before=2025-02-28&date_after=2025-02-01&id__notin=",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/task/result/e14b6bd0-1e62-471d-bd6d-799b0ac0952f",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/task/result/e14b6bd0-1e62-471d-bd6d-799b0ac0952f",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/integration-task/last/21673",
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://sys.precocerto.co/api/task/result/e14b6bd0-1e62-471d-bd6d-799b0ac0952f",
+    "body": ""
+  }
+]

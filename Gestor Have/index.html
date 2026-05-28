@@ -1062,7 +1062,28 @@
                 color: #1a1a1a;
                 font-weight: 600;
                 border: 1px solid rgba(0, 136, 255, 0.25);
+                position: relative;
             }
+            #sku-tooltip {
+                position: fixed;
+                background: #1c2d4a;
+                color: #fff;
+                padding: 5px 11px;
+                border-radius: 7px;
+                font-size: 11px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                font-weight: 500;
+                white-space: nowrap;
+                max-width: 300px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 99999;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+            }
+            #sku-tooltip.visible { opacity: 1; }
 
             /* ABC badges */
             .abc-badge {
@@ -1655,7 +1676,7 @@
             table.dfs-table .dfs-num {
                 text-align: right;
                 font-variant-numeric: tabular-nums;
-                font-family: ui-monospace, 'Cascadia Code', monospace;
+                font-family: 'DM Sans', sans-serif;
                 color: var(--text);
                 min-width: 72px;
                 white-space: nowrap;
@@ -1708,6 +1729,8 @@
             #panel-dfs-fluxo table.dfs-table tr.fcx-saldo-row td.dfs-col-desc { padding-left:14px; }
             #panel-dfs-fluxo table.dfs-table .dfs-num { text-align:right; }
             #panel-dfs-fluxo.fluxo-edit .fcx-cell { background:rgba(0,124,220,0.07) !important; outline:1px solid rgba(0,124,220,0.35); cursor:text; }
+            #panel-dfs-fluxo:not(.fluxo-edit) .fcx-cell { cursor:pointer; }
+            #panel-dfs-fluxo:not(.fluxo-edit) .fcx-cell:hover { background:rgba(0,124,220,0.05) !important; outline:1px dashed rgba(0,124,220,0.3); }
             #panel-dfs-fluxo:not(.fluxo-edit) #btn-fcx-edit-actions { display:none !important; }
             #panel-dfs-fluxo.fluxo-edit #btn-fcx-edit { display:none !important; }
             #panel-dfs-fluxo.fluxo-edit #btn-fcx-edit-actions { display:flex !important; gap:8px; }
@@ -2001,6 +2024,10 @@
             #panel-dfs-pmv table.pmv-table tbody td.pmv-sku { text-align:left; padding-left:12px; font-weight:600; font-size:12px; color:#1c2d4a; }
             #panel-dfs-pmv table.pmv-table tfoot td { background:#f0f4fa; font-weight:700; font-size:12px; padding:7px 6px; border-top:2px solid #c8d4e8; text-align:right; }
             #panel-dfs-pmv table.pmv-table tfoot td.pmv-sku { text-align:left; padding-left:12px; }
+            #panel-dfs-pmv table.pmv-table thead th.pmv-sku:first-child { position:sticky; left:0; z-index:3; box-shadow:2px 0 5px rgba(0,0,0,0.18); }
+            #panel-dfs-pmv table.pmv-table tbody td:first-child { position:sticky; left:0; z-index:1; background:var(--bg); box-shadow:2px 0 5px rgba(0,0,0,0.08); }
+            #panel-dfs-pmv table.pmv-table tbody tr:hover td:first-child { background:#f0f7ff; }
+            #panel-dfs-pmv table.pmv-table tfoot td:first-child { position:sticky; left:0; z-index:1; background:#f0f4fa; box-shadow:2px 0 5px rgba(0,0,0,0.08); }
             #panel-dfs-pmv .pmv-pos { color:#16a34a; font-weight:600; }
             #panel-dfs-pmv .pmv-neg { color:#dc2626; font-weight:600; }
             #panel-dfs-pmv .pmv-zero { color:var(--muted); }
@@ -2030,6 +2057,43 @@
             #panel-dfs-kpis table.kpi-table .dfs-num { text-align: right; font-variant-numeric: tabular-nums; }
             #panel-dfs-kpis table.kpi-table tr.dfs-row-item td.dfs-num { font-weight: 600; color: #1c2d4a; }
             #panel-dfs-kpis table.kpi-table tr.kpi-var-row td.dfs-num { color: #64748b; font-size: 11px; }
+
+            /* ── DuPont ── */
+            .dp-canvas { display:flex; align-items:flex-start; gap:12px; padding:20px 16px; overflow-x:auto; min-width:0; }
+            .dp-left-tree { display:flex; flex-direction:column; gap:18px; flex-shrink:0; }
+            .dp-strip { display:flex; align-items:center; gap:8px; }
+            .dp-leaves { display:flex; flex-direction:column; gap:3px; }
+            .dp-leaf { display:flex; justify-content:space-between; align-items:center; background:#f8faff; border:1px solid #dde8f5; border-radius:6px; padding:5px 10px; gap:18px; min-width:182px; }
+            .dp-leaf .dp-ll { font-size:11px; color:#64748b; white-space:nowrap; }
+            .dp-leaf .dp-lv { font-size:12px; font-weight:600; color:#1c2d4a; white-space:nowrap; }
+            .dp-leaf .dp-lv.neg { color:#dc2626; }
+            .dp-leaf .dp-lv.pos { color:#16a34a; }
+            .dp-arr-icon { color:#94a3b8; font-size:18px; padding:0 4px; flex-shrink:0; }
+            .dp-node-card { background:#1c2d4a; color:#fff; border-radius:10px; padding:10px 14px; text-align:center; flex-shrink:0; }
+            .dp-node-card .dp-nc-label { font-size:10px; opacity:.65; text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+            .dp-node-card .dp-nc-val { font-size:17px; font-weight:700; letter-spacing:-.3px; }
+            .dp-node-card .dp-nc-sub { font-size:9px; opacity:.5; margin-top:2px; }
+            .dp-node-card.dp-blue { background:#007CDC; }
+            .dp-node-card.dp-green { background:#15803d; }
+            .dp-node-card.dp-red { background:#b91c1c; }
+            .dp-node-card.dp-alert { background:#dc2626; }
+            .dp-center { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; flex-shrink:0; padding:0 8px; }
+            .dp-center-mul { font-size:11px; color:#64748b; text-align:center; white-space:nowrap; }
+            .dp-node-roi { background:#007CDC; padding:16px 18px; min-width:100px; }
+            .dp-node-roi .dp-nc-val { font-size:26px; }
+            .dp-right { display:flex; flex-direction:column; gap:16px; flex-shrink:0; min-width:260px; }
+            .dp-right-block { display:flex; flex-direction:column; gap:6px; }
+            .dp-right-block-label { font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+            .dp-eva-section { display:flex; flex-direction:column; gap:6px; background:#f8faff; border:1px solid #dde8f5; border-radius:10px; padding:10px 12px; }
+            .dp-eva-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+            .dp-mini-arr { color:#94a3b8; font-size:15px; font-weight:700; flex-shrink:0; }
+            .dp-val-box { background:#fff; border:1px solid #c8d4e0; border-radius:6px; padding:4px 10px; font-size:12px; font-weight:600; color:#1c2d4a; text-align:center; min-width:64px; flex-shrink:0; }
+            .dp-val-box .dp-vb-label { font-size:9px; color:#94a3b8; margin-bottom:1px; }
+            .dp-wacc-wrap { background:#fff; border:1px solid rgba(0,124,220,.3); border-radius:6px; padding:3px 8px; text-align:center; flex-shrink:0; }
+            .dp-wacc-wrap .dp-vb-label { font-size:9px; color:#007CDC; margin-bottom:1px; }
+            #dp-wacc-input { width:46px; border:none; background:transparent; font-size:13px; font-weight:700; color:#007CDC; text-align:center; outline:none; padding:0; }
+            .dp-divida-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+            .dp-strip-sep { height:1px; background:#e2e8f0; margin:0 0 4px 0; width:100%; }
 
             table.dfs-table tr.dfs-row-section td.dfs-num {
                 color: var(--accent);
@@ -2629,6 +2693,9 @@
                     <div class="nav-item" onclick="showPanel('dfs-kpis')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>KPIs
                     </div>
+                    <div class="nav-item" onclick="showPanel('dfs-dupont')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></span>DuPont
+                    </div>
                     <div class="nav-item" onclick="showPanel('dfs-plano-contas')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>Plano de Contas
                     </div>
@@ -3106,6 +3173,7 @@
                                 <option value="OK">✓ OK</option>
                             </select>
                             <button onclick="loadSopcControle()" style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer">↺ Atualizar</button>
+                            <button onclick="downloadControleEstoqueExcel()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;" title="Baixar Excel">⬇ Excel</button>
                         </div>
                         <input class="search-input" id="sc-search" placeholder="🔍  Buscar SKU..." oninput="filterTable('sc')" style="width:200px"><select class="filter-select" id="sc-filter-marca" onchange="filterTable('sc')" style="min-width:140px"><option value="">Todas as marcas</option></select>
                     </div>
@@ -3962,7 +4030,7 @@
                             <select id="fcx-ano-select" onchange="updateFluxoYear()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-right:12px;"><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select>
                             <button class="refresh-btn" onclick="downloadFluxoExcel()" style="font-size:12px;">⬇ Excel</button>
                             <button id="btn-fcx-edit" class="btn-secondary" onclick="toggleFluxoEdit(true)" style="padding:8px 16px;font-size:13px;border-radius:8px;cursor:pointer;">✏️ Editar</button>
-                            <div id="btn-fcx-edit-actions"><button class="btn-primary" onclick="saveFluxoData()" style="padding:8px 16px;font-size:13px;border-radius:8px;cursor:pointer;">💾 Salvar</button><button class="btn-secondary" onclick="toggleFluxoEdit(false)" style="padding:8px 16px;font-size:13px;border-radius:8px;cursor:pointer;">✕ Cancelar</button></div>
+                            <div id="btn-fcx-edit-actions"><button class="btn-primary" onclick="saveFluxoData()" style="padding:8px 16px;font-size:13px;border-radius:8px;cursor:pointer;">💾 Salvar</button><button class="btn-secondary" onclick="revertFluxoEdit()" style="padding:8px 16px;font-size:13px;border-radius:8px;cursor:pointer;">↩ Desfazer</button><button class="btn-secondary" onclick="cancelFluxoEdit()" style="padding:8px 16px;font-size:13px;border-radius:8px;cursor:pointer;">✕ Cancelar</button></div>
                         </div>
                     </div>
                     <div class="dfs-sheet-card">
@@ -4140,6 +4208,168 @@
                         </div>
                     </div>
                 </div>
+                <!-- DuPont · Análise de Performance -->
+                <div class="panel" id="panel-dfs-dupont">
+                    <div class="section-header">
+                        <div class="section-title">DFS · DuPont</div>
+                        <div class="section-actions">
+                            <label style="font-size:12px;color:var(--muted);font-weight:500;">Ano</label>
+                            <select id="dp-ano-select" onchange="updateDuPont()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);">
+                                <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+                            </select>
+                            <label style="font-size:12px;color:var(--muted);font-weight:500;">Mês</label>
+                            <select id="dp-mes-select" onchange="updateDuPont()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);">
+                                <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option><option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="dfs-sheet-card">
+                        <div class="dfs-sheet-banner">Análise de Performance Financeira — <span id="dp-periodo">–</span></div>
+                        <div class="dp-canvas">
+
+                            <!-- ════ ESQUERDA: 3 strips ════ -->
+                            <div class="dp-left-tree">
+
+                                <!-- STRIP 1: DRE → Lucro Líquido → Lucratividade -->
+                                <div class="dp-strip">
+                                    <div class="dp-leaves">
+                                        <div class="dp-leaf"><span class="dp-ll">Receita Líquida</span><span class="dp-lv pos" id="dp-leaf-rol">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">(−) Custos</span><span class="dp-lv neg" id="dp-leaf-custos">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">(−) Desp. Variáveis</span><span class="dp-lv neg" id="dp-leaf-despvar">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">(−) Desp. Fixas</span><span class="dp-lv neg" id="dp-leaf-despfixas">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">(±) Resultado Fin.</span><span class="dp-lv" id="dp-leaf-fin">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">(−) IR / CSLL</span><span class="dp-lv neg" id="dp-leaf-ir">–</span></div>
+                                    </div>
+                                    <span class="dp-arr-icon">→</span>
+                                    <div class="dp-node-card" id="dp-card-ll">
+                                        <div class="dp-nc-label">Lucro Líquido</div>
+                                        <div class="dp-nc-val" id="dp-val-ll">–</div>
+                                        <div class="dp-nc-sub">÷ Rec. Líquida</div>
+                                    </div>
+                                    <span class="dp-arr-icon">→</span>
+                                    <div class="dp-node-card dp-blue">
+                                        <div class="dp-nc-label">Lucratividade</div>
+                                        <div class="dp-nc-val" id="dp-val-lucratividade">–</div>
+                                        <div class="dp-nc-sub">LL / Rec. Líq.</div>
+                                    </div>
+                                </div>
+
+                                <!-- STRIP 2: Ativo → Ativo Total → Giro -->
+                                <div class="dp-strip">
+                                    <div class="dp-leaves">
+                                        <div class="dp-leaf"><span class="dp-ll">Ativo Circulante</span><span class="dp-lv" id="dp-leaf-ac">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">Ativo Não Circulante</span><span class="dp-lv" id="dp-leaf-anc">–</span></div>
+                                    </div>
+                                    <span class="dp-arr-icon">→</span>
+                                    <div class="dp-node-card" id="dp-card-at">
+                                        <div class="dp-nc-label">Ativo Total</div>
+                                        <div class="dp-nc-val" id="dp-val-at">–</div>
+                                        <div class="dp-nc-sub">Rec. Líq. ÷ AT</div>
+                                    </div>
+                                    <span class="dp-arr-icon">→</span>
+                                    <div class="dp-node-card dp-blue">
+                                        <div class="dp-nc-label">Giro do Ativo</div>
+                                        <div class="dp-nc-val" id="dp-val-giro">–</div>
+                                        <div class="dp-nc-sub">Rec. Líq. / AT</div>
+                                    </div>
+                                </div>
+
+                                <!-- STRIP 3: Passivo → Passivo Total → Alavancagem -->
+                                <div class="dp-strip">
+                                    <div class="dp-leaves">
+                                        <div class="dp-leaf"><span class="dp-ll">Passivo Circulante</span><span class="dp-lv" id="dp-leaf-pc">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">Passivo Não Circulante</span><span class="dp-lv" id="dp-leaf-pnc">–</span></div>
+                                        <div class="dp-leaf"><span class="dp-ll">Patrimônio Líquido</span><span class="dp-lv" id="dp-leaf-pl">–</span></div>
+                                    </div>
+                                    <span class="dp-arr-icon">→</span>
+                                    <div class="dp-node-card" id="dp-card-pt">
+                                        <div class="dp-nc-label">Passivo Total</div>
+                                        <div class="dp-nc-val" id="dp-val-pt">–</div>
+                                        <div class="dp-nc-sub">÷ PL</div>
+                                    </div>
+                                    <span class="dp-arr-icon">→</span>
+                                    <div class="dp-node-card dp-blue">
+                                        <div class="dp-nc-label">Alavancagem</div>
+                                        <div class="dp-nc-val" id="dp-val-alavancagem">–</div>
+                                        <div class="dp-nc-sub">Pass. Total / PL</div>
+                                    </div>
+                                </div>
+
+                            </div><!-- /dp-left-tree -->
+
+                            <!-- ════ CENTRO: ×→ ROI ════ -->
+                            <div class="dp-center">
+                                <div class="dp-center-mul">Lucrat. × Giro</div>
+                                <div class="dp-node-card dp-node-roi">
+                                    <div class="dp-nc-label">ROI</div>
+                                    <div class="dp-nc-val" id="dp-val-roi">–</div>
+                                </div>
+                                <div class="dp-center-mul">× Alavancagem</div>
+                            </div>
+
+                            <!-- ════ DIREITA: ROE + EVA + Dívida/EBITDA ════ -->
+                            <div class="dp-right">
+
+                                <!-- ROE -->
+                                <div class="dp-right-block">
+                                    <div class="dp-right-block-label">Retorno</div>
+                                    <div class="dp-node-card" id="dp-card-roe">
+                                        <div class="dp-nc-label">ROE</div>
+                                        <div class="dp-nc-val" id="dp-val-roe">–</div>
+                                        <div class="dp-nc-sub">ROI × Alavancagem</div>
+                                    </div>
+                                </div>
+
+                                <!-- WACC / Spread / EVA -->
+                                <div class="dp-right-block">
+                                    <div class="dp-right-block-label">EVA · Valor Econômico</div>
+                                    <div class="dp-eva-section">
+                                        <div class="dp-eva-row">
+                                            <div class="dp-val-box"><div class="dp-vb-label">ROI</div><span id="dp-val-roi-b">–</span></div>
+                                            <span class="dp-mini-arr">−</span>
+                                            <div class="dp-wacc-wrap"><div class="dp-vb-label">WACC %</div><input type="number" id="dp-wacc-input" value="11" min="0" max="100" step="0.1" onchange="updateDuPont()"></div>
+                                            <span class="dp-mini-arr">=</span>
+                                            <div class="dp-node-card" id="dp-card-spread" style="min-width:80px;">
+                                                <div class="dp-nc-label">Spread</div>
+                                                <div class="dp-nc-val" id="dp-val-spread">–</div>
+                                            </div>
+                                        </div>
+                                        <div class="dp-eva-row">
+                                            <div class="dp-val-box"><div class="dp-vb-label">Spread</div><span id="dp-val-spread-b">–</span></div>
+                                            <span class="dp-mini-arr">×</span>
+                                            <div class="dp-val-box"><div class="dp-vb-label">Ativo Ajust.</div><span id="dp-val-at-ajust">–</span></div>
+                                            <span class="dp-mini-arr">=</span>
+                                            <div class="dp-node-card" id="dp-card-eva" style="min-width:80px;">
+                                                <div class="dp-nc-label">EVA</div>
+                                                <div class="dp-nc-val" id="dp-val-eva">–</div>
+                                                <div class="dp-nc-sub">AT − Pass. Circ.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Dívida / EBITDA -->
+                                <div class="dp-right-block">
+                                    <div class="dp-right-block-label">Alavancagem Financeira</div>
+                                    <div class="dp-divida-row">
+                                        <div class="dp-val-box"><div class="dp-vb-label">Dívida</div><span id="dp-val-divida">–</span></div>
+                                        <span class="dp-mini-arr">÷</span>
+                                        <div class="dp-val-box"><div class="dp-vb-label">EBITDA</div><span id="dp-val-ebitda-b">–</span></div>
+                                        <span class="dp-mini-arr">=</span>
+                                        <div class="dp-node-card" id="dp-card-div-ebitda" style="min-width:100px;">
+                                            <div class="dp-nc-label">Dívida / EBITDA</div>
+                                            <div class="dp-nc-val" id="dp-val-div-ebitda">–</div>
+                                            <div class="dp-nc-sub" id="dp-div-ebitda-note">até 4× saudável</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div><!-- /dp-right -->
+
+                        </div><!-- /dp-canvas -->
+                    </div><!-- /dfs-sheet-card -->
+                </div><!-- /panel-dfs-dupont -->
+
                 <!-- PMV · PRICE VOLUME MIX -->
                 <div class="panel" id="panel-dfs-pmv">
                     <div class="section-header">
@@ -4163,6 +4393,7 @@
                                 <select id="pmv-filter-canal" onchange="runPmv()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px;background:var(--bg);color:var(--text);"><option value="">Todos os canais</option></select>
                                 <select id="pmv-filter-marca" onchange="applyPmvFilter()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px;background:var(--bg);color:var(--text);"><option value="">Todas as marcas</option></select>
                                 <input id="pmv-filter-sku" type="text" placeholder="🔍 Filtrar SKU..." oninput="applyPmvFilter()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px;">
+                                <button onclick="downloadPmvExcel()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar Excel">⬇ Excel</button>
                             </div>
                         </div>
                     </div>
@@ -4541,6 +4772,7 @@
                             <button class="btn-primary" onclick="conectarBancoBelvo()" style="font-size:13px;">＋ Conectar Banco</button>
                         </div>
                         <div class="section-actions" id="of-actions-extratos" style="display:none;">
+                            <button onclick="downloadOfExtratosExcel()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar Excel">⬇ Excel</button>
                             <button class="refresh-btn" onclick="loadOfExtratos()" style="font-size:12px;">↻ Atualizar</button>
                         </div>
                     </div>
@@ -4601,6 +4833,7 @@
                     <div class="section-header">
                         <div class="section-title">Caixa · Contas a Pagar</div>
                         <div class="section-actions">
+                            <button onclick="downloadContasPagarExcel()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar Excel">⬇ Excel</button>
                             <button class="refresh-btn" onclick="loadContasPagar()" style="font-size:12px;">↻ Atualizar</button>
                         </div>
                     </div>
@@ -4711,6 +4944,12 @@
                             <input type="file" id="pc-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handlePcUploadExcel(this.files)">
                             <button onclick="document.getElementById('pc-file-input').click()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;">
                                 ⬆ Importar
+                            </button>
+                            <button onclick="downloadModeloPedidos()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar planilha modelo para importação">
+                                📥 Modelo
+                            </button>
+                            <button onclick="downloadPedidosCompraExcel()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar Excel">
+                                ⬇ Excel
                             </button>
                             <button onclick="openPedidoSidebar()" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
                                 + Novo Pedido
@@ -5039,6 +5278,7 @@
                                 <option value="12" selected>12 meses</option>
                                 <option value="24">24 meses</option>
                             </select>
+                            <button onclick="downloadVendasExcel()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar Excel">⬇ Excel</button>
                             <button class="refresh-btn" onclick="loadVendas()" style="font-size:12px;">↻ Atualizar</button>
                         </div>
                     </div>
@@ -5200,6 +5440,7 @@
                         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                             <select id="dre-periodo" onchange="loadDreGerencial()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px"><option value="">Carregando...</option></select>
                             <button onclick="loadDreGerencial()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">↺</button>
+                            <button onclick="downloadDreGerencialExcel()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-weight:500;" title="Baixar Excel">⬇ Excel</button>
                             <button id="btn-dre-meses" onclick="toggleDreMesMode()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px">📅 Por Meses</button>
                             <div style="display:flex;align-items:center;gap:4px">
                                 <input type="text" id="dre-sku-search" list="dre-sku-datalist" placeholder="🔍 SKU ou produto..." oninput="setDreSkuFilter(this.value)" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;min-width:180px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
@@ -5282,6 +5523,7 @@
                         <button class="sc-tab" id="cfg-tab-fornecedores" onclick="showCfgTab('fornecedores')">Fornecedores</button>
                         <button class="sc-tab" id="cfg-tab-canais" onclick="showCfgTab('canais')">Canais de Venda</button>
                         <button class="sc-tab" id="cfg-tab-empresas" onclick="showCfgTab('empresas')">🏢 Empresas</button>
+                        <button class="sc-tab" id="cfg-tab-kits" onclick="showCfgTab('kits')">📦 Kits</button>
                     </div>
                     <!-- Tab: Canais de Venda (grupos) -->
                     <div id="cfg-panel-canais" style="display:none">
@@ -5358,6 +5600,35 @@
                                     <button onclick="cfgEmpresasCloseModal()" style="padding:10px 18px;background:var(--surface2);border:1.5px solid var(--border);border-radius:9px;font-size:14px;cursor:pointer;">Cancelar</button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <!-- Tab: Kits -->
+                    <div id="cfg-panel-kits" style="display:none">
+                        <div style="background:rgba(0,124,220,0.06);border:1px solid rgba(0,124,220,0.15);border-radius:10px;padding:12px 16px;font-size:12px;color:#0063b8;margin-bottom:18px;line-height:1.5">
+                            📦 <strong>Kits</strong> são SKUs compostos por múltiplos SKUs simples. Quando um kit é vendido, o S&amp;OP explode a venda em demanda para cada componente, garantindo que o forecast e o ponto de pedido considerem o consumo real.
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+                            <input id="cfg-kit-sku-kit"  type="text" placeholder="SKU Kit (ex: KIT-OLEO-10)"      oninput="this.value=this.value.toUpperCase()" style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);width:210px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                            <span style="color:var(--muted);font-size:16px">→</span>
+                            <input id="cfg-kit-sku-comp" type="text" placeholder="SKU Componente (ex: OLEO-5W30)" oninput="this.value=this.value.toUpperCase()" style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);width:230px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                            <input id="cfg-kit-qty"      type="number" placeholder="Qtd" min="0.0001" step="any"  style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);width:80px;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                            <button onclick="cfgKitsAdicionar()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ Adicionar</button>
+                            <button onclick="document.getElementById('cfg-kits-file').click()" style="padding:8px 14px;background:#f0f4f8;color:var(--text);border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">&#x1F4E5; Importar CSV</button>
+                            <input type="file" id="cfg-kits-file" accept=".csv,.txt" style="display:none" onchange="cfgKitsImportarCSV(this)">
+                        </div>
+                        <div id="cfg-kits-import-status" style="display:none;font-size:12px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:8px"></div>
+                        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Formato CSV: <code style="background:var(--surface2);padding:1px 6px;border-radius:4px">sku_kit,sku_componente,quantidade</code> (sem cabeçalho ou com cabeçalho)</div>
+                        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px" id="cfg-kits-count">0 mapeamentos</div>
+                        <div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;max-width:720px">
+                            <table style="width:100%;border-collapse:collapse;font-size:13px" id="cfg-kits-table">
+                                <thead><tr style="background:var(--surface2)">
+                                    <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border)">SKU Kit</th>
+                                    <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border)">SKU Componente</th>
+                                    <th style="text-align:center;padding:9px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--border);width:90px">Qtd / Kit</th>
+                                    <th style="width:40px;border-bottom:1.5px solid var(--border)"></th>
+                                </tr></thead>
+                                <tbody id="cfg-kits-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Carregando...</td></tr></tbody>
+                            </table>
                         </div>
                     </div>
                     <!-- Tab: APIs -->
@@ -5589,9 +5860,19 @@
                     const hasThisMonth = cell && cell.dataset.raw !== '' && cell.dataset.raw !== undefined && cell.dataset.raw !== null;
                     if (hasThisMonth) {
                         const v = parseFloat(cell.dataset.raw);
-                        if (!isNaN(v)) cumRaw += v;
+                        if (!isNaN(v)) {
+                            const modeSel = document.getElementById(`dre-mode-mes${m}`);
+                            const mode = modeSel ? modeSel.value : 'saldo';
+                            if (mode === 'saldo') {
+                                dreRLCumByMonth[m] = v;
+                            } else {
+                                cumRaw += v;
+                                dreRLCumByMonth[m] = cumRaw;
+                            }
+                        }
+                    } else {
+                        dreRLCumByMonth[m] = null;
                     }
-                    dreRLCumByMonth[m] = hasThisMonth ? cumRaw : null;
                 }
 
                 for (let i = 1; i <= 12; i++) {
@@ -5899,6 +6180,36 @@
 
             let _balanceteAccounts = [];
 
+            function _getAccountDisplayValue(code) {
+                if (!code) return '';
+                const c = String(code).replace(/\./g, '');
+                const acc = _balanceteAccounts.find(a => a.conta === c);
+                return acc ? `${acc.conta} – ${acc.nome}` : String(code);
+            }
+
+            function _buildAccountsDatalist() {
+                let dl = document.getElementById('dfs-accounts-dl');
+                if (!dl) { dl = document.createElement('datalist'); dl.id = 'dfs-accounts-dl'; document.body.appendChild(dl); }
+                dl.innerHTML = _balanceteAccounts.map(ba =>
+                    `<option value="${esc(ba.conta + ' – ' + ba.nome)}">`
+                ).join('');
+            }
+
+            function _refreshAccountsDatalist(activeInput) {
+                const usedCodes = new Set(
+                    Array.from(document.querySelectorAll('[data-acct]'))
+                        .filter(inp => inp !== activeInput)
+                        .map(inp => inp.value.split(' – ')[0].trim())
+                        .filter(v => v)
+                );
+                let dl = document.getElementById('dfs-accounts-dl');
+                if (!dl) { dl = document.createElement('datalist'); dl.id = 'dfs-accounts-dl'; document.body.appendChild(dl); }
+                dl.innerHTML = _balanceteAccounts
+                    .filter(ba => !usedCodes.has(ba.conta))
+                    .map(ba => `<option value="${esc(ba.conta + ' – ' + ba.nome)}">`)
+                    .join('');
+            }
+
             function _mappingSelectHtml(selected) {
                 const _selNc = String(selected || '').replace(/\./g, '');
                 return _balanceteAccounts.map(ba =>
@@ -5961,11 +6272,11 @@
                 const div = document.createElement('div');
                 div.className = 'mapping-sel-row';
                 div.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
+                const displayVal = _getAccountDisplayValue(selectedValue);
                 div.innerHTML = `
-                    <select class="filter-select" style="flex:1;">
-                        <option value="">Não mapeado</option>
-                        ${_mappingSelectHtml(selectedValue || '')}
-                    </select>
+                    <input type="text" list="dfs-accounts-dl" data-acct value="${esc(displayVal)}" placeholder="Buscar por número ou nome..." class="filter-select" style="flex:1;"
+                        onfocus="_refreshAccountsDatalist(this)"
+                        oninput="_refreshAccountsDatalist(this)">
                     <button onclick="_removeMappingSelRow(this)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0;flex-shrink:0;">✕</button>
                 `;
                 container.appendChild(div);
@@ -5996,6 +6307,7 @@
                 await loadDreConfig();
                 _balanceteAccounts = [];
                 try { _balanceteAccounts = await fetchDfsAllAccounts(); } catch (e) { if (e.message === 'Sess\u00e3o expirada') return; }
+                _buildAccountsDatalist();
                 const savedMappings = getDreMappings();
                 const structure = getDreStructure();
                 tbody.innerHTML = '';
@@ -6047,8 +6359,8 @@
                     const mappings = {};
                     rows.forEach(row => {
                         const key = row.dataset.mappingKey;
-                        const selects = row.querySelectorAll('.mapping-sel-row select');
-                        const values = Array.from(selects).map(s => s.value).filter(v => v);
+                        const selects = row.querySelectorAll('.mapping-sel-row input[data-acct]');
+                        const values = Array.from(selects).map(s => s.value.split(' – ')[0].trim()).filter(v => v);
                         if (key && values.length === 1) mappings[key] = values[0];
                         else if (key && values.length > 1) mappings[key] = values;
                     });
@@ -6083,6 +6395,7 @@
                 } catch (e) {
                     if (e.message === 'Sessão expirada') return;
                 }
+                _buildAccountsDatalist();
 
                 tbody.innerHTML = '';
                 allAccounts.forEach(acc => {
@@ -6130,8 +6443,8 @@
                     const mappings = {};
                     rows.forEach(row => {
                         const key = row.dataset.mappingKey;
-                        const selects = row.querySelectorAll('.mapping-sel-row select');
-                        const values = Array.from(selects).map(s => s.value).filter(v => v);
+                        const selects = row.querySelectorAll('.mapping-sel-row input[data-acct]');
+                        const values = Array.from(selects).map(s => s.value.split(' – ')[0].trim()).filter(v => v);
                         if (key && values.length === 1) mappings[key] = values[0];
                         else if (key && values.length > 1) mappings[key] = values;
                     });
@@ -6766,6 +7079,149 @@
             }
 
             // ══════════════════════════════════════════════
+            // DuPont — Análise de Performance Financeira
+            // ══════════════════════════════════════════════
+            async function updateDuPont() {
+                const m = parseInt(document.getElementById('dp-mes-select')?.value || 1);
+                const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                const yr = parseInt(document.getElementById('dp-ano-select')?.value || new Date().getFullYear());
+                const periodoEl = document.getElementById('dp-periodo');
+                if (periodoEl) periodoEl.textContent = MONTHS[m - 1] + ' ' + yr;
+
+                await Promise.all([
+                    loadDreData(yr, true).catch(() => {}),
+                    loadBalancoData(yr, true).catch(() => {})
+                ]);
+
+                const fmtN = (v) => v === null || v === undefined || isNaN(v)
+                    ? '–'
+                    : v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                const fmtPct = (v) => v === null || v === undefined || isNaN(v) ? '–' : fmtN(v) + '%';
+                const fmtX   = (v) => v === null || v === undefined || isNaN(v) ? '–' : fmtN(v) + '×';
+
+                const getRawDre = (id) => {
+                    const el = document.getElementById(id);
+                    if (!el || el.dataset.raw === '' || el.dataset.raw === undefined || el.dataset.raw === null) return null;
+                    const v = parseFloat(el.dataset.raw);
+                    return isNaN(v) ? null : v / 100;
+                };
+
+                const rol        = getRawDre(`total-dre-rol-mes${m}`);
+                const rl         = getRawDre(`total-dre-rl-mes${m}`);
+                const ebitdaRaw  = getRawDre(`total-dre-ebitda-mes${m}`);
+                const custos     = getRawDre(`total-dre-custos-mes${m}`);
+                const despVar    = getRawDre(`total-dre-desp-var-mes${m}`);
+                const despFixas  = getRawDre(`total-dre-desp-fixas-mes${m}`);
+                const fin        = getRawDre(`total-dre-fin-mes${m}`);
+                const ircsll     = getRawDre(`total-dre-ircsll-mes${m}`);
+
+                const parseNumber  = (str) => parseFloat(String(str).replace(/\./g, '').replace(',', '.')) || 0;
+                const readPassivo  = (el) => (el.dataset.rawSaldo !== undefined && el.dataset.rawSaldo !== '') ? parseFloat(el.dataset.rawSaldo) / 100 : parseNumber(el.textContent);
+
+                const ac  = Array.from(document.querySelectorAll(`#ativo-circulante-body .account-value[data-month="${m}"]`)).reduce((s, el) => s + parseNumber(el.textContent), 0);
+                const anc = Array.from(document.querySelectorAll(`#ativo-nao-circulante-body .account-value[data-month="${m}"]`)).reduce((s, el) => s + parseNumber(el.textContent), 0);
+                const pc  = Array.from(document.querySelectorAll(`#passivo-circulante-body .account-value[data-month="${m}"]`)).reduce((s, el) => s + readPassivo(el), 0);
+                const pnc = Array.from(document.querySelectorAll(`#passivo-nao-circulante-body .account-value[data-month="${m}"]`)).reduce((s, el) => s + readPassivo(el), 0);
+                const plAccounts = Array.from(document.querySelectorAll(`#pl-body .account-value[data-month="${m}"]`)).reduce((s, el) => s + readPassivo(el), 0);
+
+                const reSign = parseFloat(document.getElementById('bal-res-exercicio-sign')?.value ?? '-1');
+                let resExercicio = 0;
+                const dreRLCell = document.getElementById(`total-dre-rl-mes${m}`);
+                if (dreRLCell && dreRLCell.dataset.raw !== '' && dreRLCell.dataset.raw !== undefined) {
+                    const modeSel = document.getElementById(`dre-mode-mes${m}`);
+                    const mode = modeSel ? modeSel.value : 'saldo';
+                    let cumRawVal;
+                    if (mode === 'saldo') {
+                        cumRawVal = parseFloat(dreRLCell.dataset.raw);
+                    } else {
+                        let cumRaw = 0;
+                        for (let k = 1; k <= m; k++) {
+                            const c = document.getElementById(`total-dre-rl-mes${k}`);
+                            if (c && c.dataset.raw !== '' && c.dataset.raw !== undefined) {
+                                const v = parseFloat(c.dataset.raw);
+                                if (!isNaN(v)) cumRaw += v;
+                            }
+                        }
+                        cumRawVal = cumRaw;
+                    }
+                    if (!isNaN(cumRawVal)) resExercicio = (cumRawVal * reSign) / 100;
+                }
+                const pl = plAccounts + resExercicio;
+
+                const at = ac + anc;
+                const et = pc + pnc;
+                const pt = et + pl;
+
+                const lucratividade = (rol && rol !== 0 && rl !== null) ? (rl / rol) * 100 : null;
+                const giro          = (at && at !== 0 && rol !== null)  ? rol / at         : null;
+                const roi           = (lucratividade !== null && giro !== null) ? (rl / at) * 100 : null;
+                const alavancagem   = (pl && pt !== null) ? pt / pl : null;
+                const roe           = (roi !== null && alavancagem !== null) ? roi * alavancagem : null;
+                const wacc          = parseFloat(document.getElementById('dp-wacc-input')?.value) || 11;
+                const spread        = roi !== null ? roi - wacc : null;
+                const atAjust       = at - pc;
+                const eva           = (spread !== null) ? (spread / 100) * atAjust : null;
+                const divida        = et;
+                const ebitdaAbs     = ebitdaRaw !== null ? Math.abs(ebitdaRaw) : null;
+                const divEbitda     = (ebitdaAbs && ebitdaAbs !== 0) ? divida / ebitdaAbs : null;
+
+                const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+                set('dp-leaf-rol',      fmtN(rol));
+                set('dp-leaf-custos',   fmtN(custos));
+                set('dp-leaf-despvar',  fmtN(despVar));
+                set('dp-leaf-despfixas',fmtN(despFixas));
+                set('dp-leaf-fin',      fmtN(fin));
+                set('dp-leaf-ir',       fmtN(ircsll));
+                set('dp-leaf-ac',       fmtN(ac));
+                set('dp-leaf-anc',      fmtN(anc));
+                set('dp-leaf-pc',       fmtN(pc));
+                set('dp-leaf-pnc',      fmtN(pnc));
+                set('dp-leaf-pl',       fmtN(pl));
+
+                set('dp-val-ll',            fmtN(rl));
+                set('dp-val-at',            fmtN(at));
+                set('dp-val-pt',            fmtN(pt));
+                set('dp-val-lucratividade', fmtPct(lucratividade));
+                set('dp-val-giro',          fmtX(giro));
+                set('dp-val-alavancagem',   fmtX(alavancagem));
+                set('dp-val-roi',           fmtPct(roi));
+                set('dp-val-roi-b',         fmtPct(roi));
+                set('dp-val-roe',           fmtPct(roe));
+                set('dp-val-spread',        fmtPct(spread));
+                set('dp-val-spread-b',      fmtPct(spread));
+                set('dp-val-at-ajust',      fmtN(atAjust));
+                set('dp-val-eva',           fmtN(eva));
+                set('dp-val-divida',        fmtN(divida));
+                set('dp-val-ebitda-b',      fmtN(ebitdaAbs));
+                set('dp-val-div-ebitda',    fmtX(divEbitda));
+
+                const setCard = (id, val, greenClass, redClass) => {
+                    const el = document.getElementById(id);
+                    if (!el || val === null) return;
+                    el.className = el.className.replace(/\bdp-green\b|\bdp-red\b|\bdp-alert\b/g, '').trim();
+                    el.classList.add(val >= 0 ? greenClass : redClass);
+                };
+                setCard('dp-card-ll',     rl,     'dp-green', 'dp-red');
+                setCard('dp-card-roe',    roe,    'dp-green', 'dp-red');
+                setCard('dp-card-spread', spread, 'dp-green', 'dp-red');
+                setCard('dp-card-eva',    eva,    'dp-green', 'dp-red');
+
+                const divCard = document.getElementById('dp-card-div-ebitda');
+                const divNote = document.getElementById('dp-div-ebitda-note');
+                if (divCard && divEbitda !== null) {
+                    divCard.className = divCard.className.replace(/\bdp-green\b|\bdp-red\b|\bdp-alert\b/g, '').trim();
+                    if (divEbitda > 4) {
+                        divCard.classList.add('dp-alert');
+                        if (divNote) divNote.textContent = '⚠ Alerta: > 4× insolvência';
+                    } else {
+                        divCard.classList.add('dp-green');
+                        if (divNote) divNote.textContent = '✓ Saudável (≤ 4×)';
+                    }
+                }
+            }
+
+            // ══════════════════════════════════════════════
             // KPI — Indicadores Financeiros
             // ══════════════════════════════════════════════
             function updateKpiTable() {
@@ -7190,6 +7646,19 @@
                     descTd.appendChild(btn);
                     if (_isMapped) row.classList.add('fcx-bal-mapped');
                 });
+                // Clique direto na célula → entra em modo edição automaticamente
+                document.querySelectorAll('#panel-dfs-fluxo .fcx-cell').forEach(cell => {
+                    if (cell.dataset.fcxClickDone) return;
+                    cell.dataset.fcxClickDone = '1';
+                    cell.addEventListener('click', function() {
+                        const panel = document.getElementById('panel-dfs-fluxo');
+                        if (!panel.classList.contains('fluxo-edit')) {
+                            toggleFluxoEdit(true);
+                            const self = this;
+                            setTimeout(() => { self.focus(); const r = document.createRange(); r.selectNodeContents(self); r.collapse(false); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }, 20);
+                        }
+                    });
+                });
             }
 
             async function openFcxMapModal(fcxId, rowLabel) {
@@ -7498,6 +7967,21 @@
             }
 
             let _fcxListeners = [];
+
+            async function revertFluxoEdit() {
+                if (!confirm('Desfazer todas as alterações não salvas e restaurar valores salvos?')) return;
+                const year = document.getElementById('fcx-ano-select').value;
+                await loadFluxoData(year);
+                applyFcxBalMappings();
+                showToast('Alterações revertidas', 'success');
+            }
+
+            async function cancelFluxoEdit() {
+                const year = document.getElementById('fcx-ano-select').value;
+                toggleFluxoEdit(false);
+                await loadFluxoData(year);
+                applyFcxBalMappings();
+            }
             function toggleFluxoEdit(on) {
                 const panel = document.getElementById('panel-dfs-fluxo');
                 if (on) {
@@ -8123,6 +8607,7 @@
                         queryDB('estoque_seguranca')
                     ]);
                     state.pp = data;
+                    if (data.length > 0) console.log('[debug-pp] cols:', Object.keys(data[0]), '| nome_produto sample:', data[0].nome_produto, data[1]?.nome_produto, data[2]?.nome_produto);
                     state.custoMap = {};
                     cadData.forEach(r => { state.custoMap[String(r.Sku || '').trim()] = +r['Custo Un'] || 0; });
                     state.precoVendaMap = {};
@@ -9011,7 +9496,7 @@
             function rowHTML(key, r) {
                 if (key === 'abc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada)}</span></td><td>${fmtN(r.volume_total)}</td><td>R$ ${fmtN(r.margem_total)}</td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${esc(r.abc_volume)}</span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${esc(r.abc_margem)}</span></td><td>${fmtPct(r.nivel_servico)}</td></tr>`;
 
-                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _nome = (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span class="sku-code" title="${_nome}">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
+                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _nome = String(r.nome_produto || '').trim() || (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span class="sku-code"${_nome ? ` data-tooltip="${_nome}"` : ''}>${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${(r.data_sugerida_pedido && (+r.qty_sugerida || 0) > 0) ? fmtPedidoDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
 
                 if (key === 'es') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.desvio_padrao)}</td><td>${fmtN(r.lead_time)}</td><td>${fmtBR(r.fator_z)}</td><td>${fmtBR(r.es_estatistico)}</td><td>${fmtBR(r.es_teto)}</td><td><strong>${fmtN(r.estoque_seguranca)}</strong></td><td>${r.teto_aplicado === 'true' || r.teto_aplicado === true ? '<span style="color:var(--orange)">✓ Sim</span>' : '<span style="color:var(--muted)">Não</span>'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td></tr>`;
 
@@ -9019,7 +9504,7 @@
 
                 if (key === 'fc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td>${esc(r.canal || '–')}</td><td>${fmtDate(r.data)}</td><td><span style="font-size:11px;color:var(--muted)">${esc(r.metodo)}</span></td><td>${fmtN(r.prev_qtd)}</td><td>${fmtN(r.prev_min)}</td><td>${fmtN(r.prev_max)}</td></tr>`;
 
-                if (key === 'sw') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${alertBadge(r.alerta)}</td><td>${fmtN(r.estoque_atual)}</td><td>${fmtN(r.pedidos_aberto)}</td><td><strong>${fmtN(r.qty_sugerida)}</strong></td><td>${r.data_sugerida_pedido ? fmtDate(r.data_sugerida_pedido) : '–'}</td><td>${r.data_prevista_entrega ? fmtDate(r.data_prevista_entrega) : '–'}</td><td style="font-size:11px;color:var(--muted)">${r.semana_inicio ? fmtDate(r.semana_inicio) + ' → ' + fmtDate(r.semana_fim) : '–'}</td></tr>`;
+                if (key === 'sw') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${alertBadge(r.alerta)}</td><td>${fmtN(r.estoque_atual)}</td><td>${fmtN(r.pedidos_aberto)}</td><td><strong>${fmtN(r.qty_sugerida)}</strong></td><td>${r.data_sugerida_pedido ? fmtPedidoDate(r.data_sugerida_pedido) : '–'}</td><td>${r.data_prevista_entrega ? fmtDate(r.data_prevista_entrega) : '–'}</td><td style="font-size:11px;color:var(--muted)">${r.semana_inicio ? fmtDate(r.semana_inicio) + ' → ' + fmtDate(r.semana_fim) : '–'}</td></tr>`;
 
                 if (key === 'sc') { const avisoCls = {'PRECISA COMPRAR':'alert-RUPTURA','TRANSFERIR PRO FULL':'alert-PEDIR','COMPRAR · TRANSFERIR FULL':'alert-RUPTURA','OK':'alert-OK'}; const avisoCls2 = avisoCls[r.aviso] || 'alert-SEM'; const avisoIcon = {'PRECISA COMPRAR':'🛒','TRANSFERIR PRO FULL':'🚛','COMPRAR · TRANSFERIR FULL':'⚠','OK':'✓'}; const cobTxt = r.cobertura_full !== null && r.cobertura_full !== undefined ? fmtN(r.cobertura_full) + ' dias' : '–'; const estoqueCol = r.estoque_selecionado != null ? r.estoque_selecionado : r.estoque_full; const qtdSug = r.qtd_sugerida > 0 ? `<strong style="color:var(--accent)">${fmtN(r.qtd_sugerida)}</strong>` : `<span style="color:var(--muted)">–</span>`; return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td>${fmtN(r.estoque_base)}</td><td><strong>${fmtN(estoqueCol)}</strong></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.media_canal)}</td><td>${cobTxt}</td><td>${qtdSug}</td><td><span class="alert-badge ${avisoCls2}">${(avisoIcon[r.aviso]||'')} ${esc(r.aviso)}</span></td></tr>`; }
 
@@ -9559,7 +10044,7 @@ function filterTable(key) {
                 'semana': 'Lista Semanal de Pedidos',
                 'hist-vendas': 'Histórico de Vendas · Mês a Mês',
                 'dfs-base': 'DFS · Base de dados', 'dfs-balanco': 'DFS · Balanço patrimonial',
-                'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-plano-contas': 'DFS · Plano de Contas', 'dfs-pmv': 'S&OP · PMV · Price Volume Mix',
+                'dfs-dre': 'DFS · DRE', 'dfs-fluxo': 'DFS · Fluxo de caixa indireto', 'dfs-kpis': 'DFS · KPIs', 'dfs-dupont': 'DFS · DuPont', 'dfs-plano-contas': 'DFS · Plano de Contas', 'dfs-pmv': 'S&OP · PMV · Price Volume Mix',
                 'caixa-base': 'Caixa · Extratos Manuais', 'caixa-fluxo': 'Caixa · Fluxo Diário', 'caixa-depara': 'Caixa · De-Para', 'caixa-openfinance': 'Caixa · Open Finance', 'caixa-contas-pagar': 'Caixa · Contas a Pagar', 'caixa-pedidos-compra': 'Caixa · Pedidos de Compra', 'caixa-config': 'Caixa · Configurações', 'caixa-vendas': 'Vendas', 'caixa-cenarios': 'Caixa · Cenários What-If',
 'admin-usuarios': 'Gerenciar Usuários',
 'sopc-controle': 'S&OP · Controle Estoques',
@@ -9611,6 +10096,7 @@ if (id === 'dfs-kpis') {
                     if (ex) ex.textContent = yr;
                     updateKpiTable();
                 }
+                if (id === 'dfs-dupont') { updateDuPont(); }
                 if (id === 'dfs-pmv') { loadPmvMonths(); }
                 if (id === 'caixa-base') {
                     loadCaixaMeses();
@@ -10148,6 +10634,14 @@ if (id === 'dfs-kpis') {
                 catch {
                     return esc(v);
                 }
+            }
+
+            function fmtPedidoDate(v) {
+                if (!v) return '–';
+                const today = new Date().toISOString().slice(0, 10);
+                const d = String(v).slice(0, 10);
+                if (d <= today) return '<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap">⚠ Hoje</span>';
+                return fmtDate(v);
             }
 
             function alertBadge(a) {
@@ -12903,6 +13397,20 @@ if (id === 'dfs-kpis') {
                 }
             }
 
+            async function downloadModeloPedidos() {
+                await loadSheetJS();
+                const data = [
+                    ['Fornecedor', 'Data Pedido', 'Data Faturamento', 'NF', 'Valor', 'Prazo'],
+                    ['Exemplo Ltda', '01/06/2026', '01/07/2026', '12345', '1.500,00', '30/60/90'],
+                    ['Fornecedor ABC', '05/06/2026', '20/06/2026', 'OS 789', '2.300,50', '30'],
+                ];
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{wch:20},{wch:14},{wch:18},{wch:12},{wch:14},{wch:12}];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Modelo');
+                XLSX.writeFile(wb, 'modelo_pedidos_compra.xlsx');
+            }
+
             async function handlePcUploadExcel(fileList) {
                 if (!fileList || !fileList.length) return;
                 const file = fileList[0];
@@ -12963,7 +13471,7 @@ if (id === 'dfs-kpis') {
                         // converte valor
                         if (valStr.includes(',') && valStr.includes('.')) {
                             // provavelmente formato pt-BR com separador de milhar. ex: 107.686,90
-                            valStr = valStr.replace(/\\./g, '').replace(',', '.');
+                            valStr = valStr.replace(/\./g, '').replace(',', '.');
                         } else {
                             valStr = valStr.replace(',', '.');
                         }
@@ -12972,8 +13480,8 @@ if (id === 'dfs-kpis') {
 
                         let prazosEnviados = [];
                         let vencEnviado = null;
-                        if (prazoStr && prazoStr.match(/\\d+/)) {
-                            const pparts = prazoStr.split(/\\/|-| /).map(x => parseInt(x)).filter(x => x>0);
+                        if (prazoStr && prazoStr.match(/\d+/)) {
+                            const pparts = prazoStr.split(/\/|-| /).map(x => parseInt(x)).filter(x => x>0);
                             if (pparts.length > 0) {
                                 prazosEnviados = pparts;
                             } else {
@@ -13293,6 +13801,7 @@ if (id === 'dfs-kpis') {
             // ── Open Finance Tabs ──────────────────────────────────────
             const _ofMeses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
             let _ofMesesComDados = [];
+            let _ofExtratosRows = [];
 
             function switchOfTab(tab) {
                 document.getElementById('of-tab-bancos').style.display   = tab === 'bancos'   ? '' : 'none';
@@ -13366,6 +13875,7 @@ if (id === 'dfs-kpis') {
                     const r = await fetch(API_BASE + `/caixa-extrato?ano=${ano}&mes=${mes}${qs}`, { headers:{ 'Authorization':'Bearer '+token } });
                     const d = await r.json();
                     const rows = d.rows || [];
+                    _ofExtratosRows = rows;
 
                     title.textContent = mesNome + ' — ' + rows.length + ' lançamentos';
 
@@ -14091,7 +14601,7 @@ if (id === 'dfs-kpis') {
                                 <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(s.nome_produto||'')}">${esc(s.nome_produto||'–')}</td>
                                 <td><span style="background:rgba(0,124,220,0.08);color:var(--accent);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">${esc(s.categoria||'–')}</span></td>
                                 <td><span style="${cls==='boa'?'color:#16a34a':cls==='media'?'color:#ca8a04':cls==='negativa'?'color:#7f1d1d':'color:#dc2626'};font-weight:700">${parseFloat(s.margem_pct).toFixed(1)}%</span></td>
-                                <td>R$ ${Math.abs(parseFloat(s.receita_liquida)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                                <td>R$ ${Math.abs(parseFloat(s.receita_liquida)||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
                                 <td>${fmtRS(s.margem_contribuicao)}</td>
                                 <td>${Math.round(s.qtd_liquida).toLocaleString('pt-BR')}</td>
                                 <td><span class="dre-pill ${cls}">${labels[cls]||cls}</span></td>
@@ -14250,7 +14760,7 @@ if (id === 'dfs-kpis') {
                                 <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(s.nome_produto||'')}">${esc(s.nome_produto||'–')}</td>
                                 <td><span style="background:rgba(0,124,220,0.08);color:var(--accent);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">${esc(s.categoria||'–')}</span></td>
                                 <td>${fmtP(parseFloat(s.margem_pct)||0, false)}</td>
-                                <td>${fmtR(s.receita_liquida)}</td>
+                                <td>R$ ${Math.abs(parseFloat(s.receita_liquida)||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
                                 <td>${fmtRSigned(s.margem_contribuicao)}</td>
                                 <td>${Math.round(s.qtd_liquida).toLocaleString('pt-BR')}</td>
                                 <td><span class="dre-pill ${cls}">${labels[cls]}</span></td>
@@ -14325,6 +14835,145 @@ if (id === 'dfs-kpis') {
                 if (tab === 'fornecedores') loadFornecedores();
                 if (tab === 'canais') loadCfgCanais();
                 if (tab === 'empresas') loadCfgEmpresas();
+                if (tab === 'kits') loadCfgKits();
+            }
+
+            // ══════════════════════════════════════════════
+            // KITS
+            // ══════════════════════════════════════════════
+            let _cfgKits = [];
+
+            async function loadCfgKits() {
+                document.getElementById('cfg-kits-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Carregando...</td></tr>';
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/sku-kits', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    const d = await r.json();
+                    _cfgKits = d.kits || [];
+                    renderCfgKits();
+                } catch(e) {
+                    document.getElementById('cfg-kits-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:#dc2626;padding:20px">Erro: ' + e.message + '</td></tr>';
+                }
+            }
+
+            function renderCfgKits() {
+                const tbody = document.getElementById('cfg-kits-tbody');
+                const count = document.getElementById('cfg-kits-count');
+                count.textContent = _cfgKits.length + ' mapeamento' + (_cfgKits.length !== 1 ? 's' : '');
+                if (_cfgKits.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px">Nenhum kit cadastrado ainda.</td></tr>';
+                    return;
+                }
+                const groups = {};
+                _cfgKits.forEach(k => { if (!groups[k.sku_kit]) groups[k.sku_kit] = []; groups[k.sku_kit].push(k); });
+                let html = '';
+                for (const [skuKit, comps] of Object.entries(groups)) {
+                    html += '<tr style="background:var(--surface2)"><td colspan="4" style="padding:6px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">📦 ' + skuKit + ' <span style="font-weight:400">(' + comps.length + ' componente' + (comps.length !== 1 ? 's' : '') + ')</span></td></tr>';
+                    comps.forEach(k => {
+                        const qty = Number.isInteger(k.quantidade) ? k.quantidade : parseFloat(Number(k.quantidade).toFixed(4));
+                        html += '<tr style="border-bottom:1px solid var(--border)">' +
+                            '<td style="padding:9px 14px 9px 24px;font-weight:600;font-family:monospace;font-size:12px">' + k.sku_kit + '</td>' +
+                            '<td style="padding:9px 14px;font-weight:600;font-family:monospace;font-size:12px">' + k.sku_componente + '</td>' +
+                            '<td style="text-align:center;color:var(--accent);font-weight:700;padding:9px">' + qty + '×</td>' +
+                            '<td style="text-align:center;padding:6px"><button onclick="cfgKitsDeletar(' + k.id + ')" style="width:26px;height:26px;border:none;background:none;color:rgba(50,48,49,.3);font-size:13px;cursor:pointer;border-radius:6px" onmouseover="this.style.background=\'#fff0f0\';this.style.color=\'#dc2626\'" onmouseout="this.style.background=\'none\';this.style.color=\'rgba(50,48,49,.3)\'">🗑</button></td>' +
+                            '</tr>';
+                    });
+                }
+                tbody.innerHTML = html;
+            }
+
+            async function cfgKitsAdicionar() {
+                const skuKit  = document.getElementById('cfg-kit-sku-kit').value.trim();
+                const skuComp = document.getElementById('cfg-kit-sku-comp').value.trim();
+                const qty     = parseFloat(document.getElementById('cfg-kit-qty').value);
+                if (!skuKit || !skuComp) { showToast('⚠ Preencha SKU Kit e SKU Componente.'); return; }
+                if (isNaN(qty) || qty <= 0) { showToast('⚠ Quantidade deve ser um número positivo.'); return; }
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/sku-kits', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sku_kit: skuKit, sku_componente: skuComp, quantidade: qty })
+                    });
+                    if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Erro ao salvar'); }
+                    document.getElementById('cfg-kit-sku-kit').value = '';
+                    document.getElementById('cfg-kit-sku-comp').value = '';
+                    document.getElementById('cfg-kit-qty').value = '';
+                    showToast('✔ Mapeamento salvo!');
+                    await loadCfgKits();
+                } catch(e) { showToast('✕ ' + e.message); }
+            }
+
+            async function cfgKitsImportarCSV(input) {
+                const file = input.files[0];
+                if (!file) return;
+                input.value = '';
+                const status = document.getElementById('cfg-kits-import-status');
+                status.style.display = '';
+                status.style.color = 'var(--muted)';
+                status.textContent = '⏳ Lendo arquivo...';
+
+                const text = await file.text();
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+
+                // Detecta separador (vírgula ou ponto-e-vírgula)
+                const sep = lines[0].includes(';') ? ';' : ',';
+
+                // Pula cabeçalho se existir (linha que contém texto não-numérico na 3ª coluna)
+                const dataLines = [];
+                for (const line of lines) {
+                    const parts = line.split(sep).map(p => p.trim().replace(/^"|"$/g, ''));
+                    if (parts.length < 3) continue;
+                    const qty = parseFloat(parts[2]);
+                    if (isNaN(qty)) continue; // é cabeçalho ou inválido
+                    dataLines.push({ sku_kit: parts[0].toUpperCase(), sku_componente: parts[1].toUpperCase(), quantidade: qty });
+                }
+
+                if (dataLines.length === 0) {
+                    status.style.color = '#dc2626';
+                    status.textContent = '✕ Nenhuma linha válida encontrada. Formato: sku_kit,sku_componente,quantidade';
+                    return;
+                }
+
+                status.textContent = `⏳ Importando ${dataLines.length} linha(s)...`;
+                const token = localStorage.getItem('have_token');
+                let ok = 0, erros = 0;
+
+                for (const row of dataLines) {
+                    try {
+                        const r = await fetch(API_BASE + '/sku-kits', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                            body: JSON.stringify(row)
+                        });
+                        if (r.ok) ok++; else erros++;
+                    } catch { erros++; }
+                }
+
+                if (erros === 0) {
+                    status.style.color = '#16a34a';
+                    status.textContent = `✔ ${ok} mapeamento(s) importados com sucesso!`;
+                } else {
+                    status.style.color = '#d97706';
+                    status.textContent = `⚠ ${ok} importados, ${erros} com erro.`;
+                }
+                setTimeout(() => { status.style.display = 'none'; }, 5000);
+                await loadCfgKits();
+            }
+
+            async function cfgKitsDeletar(id) {
+                if (!confirm('Remover este mapeamento?')) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/sku-kits?id=' + id, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!r.ok) throw new Error('Erro ao remover');
+                    showToast('✔ Removido.');
+                    await loadCfgKits();
+                } catch(e) { showToast('✕ ' + e.message); }
             }
 
             // ══════════════════════════════════════════════
@@ -16600,6 +17249,230 @@ if (id === 'dfs-kpis') {
                 } catch (e) { showToast('Erro: ' + e.message, 'error'); }
             }
 
+            // ══ EXCEL DOWNLOAD FUNCTIONS ══════════════════════════════════════════
+
+            // ── Contas a Pagar ────────────────────────────────────────────────────
+            async function downloadContasPagarExcel() {
+                const search   = (document.getElementById('cp-search')?.value  || '').toLowerCase().trim();
+                const situacao = document.getElementById('cp-situacao')?.value  || '';
+                const empresa  = document.getElementById('cp-empresa')?.value   || '';
+                const vencDe   = document.getElementById('cp-venc-de')?.value   || '';
+                const vencAte  = document.getElementById('cp-venc-ate')?.value  || '';
+                const filtered = _cpData.filter(r => {
+                    if (situacao && r.situacao !== situacao) return false;
+                    if (empresa  && r.empresa  !== empresa)  return false;
+                    const dv = r.data_vencimento ? r.data_vencimento.slice(0,10) : '';
+                    if (vencDe  && dv && dv < vencDe)  return false;
+                    if (vencAte && dv && dv > vencAte)  return false;
+                    if (search) {
+                        const hay = [(r.fornecedor||''),(r.historico||''),(r.numero_doc||''),(r.situacao||'')].join(' ').toLowerCase();
+                        if (!hay.includes(search)) return false;
+                    }
+                    return true;
+                });
+                if (!filtered.length) { showToast('Nenhum dado para exportar', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const fmtDate = d => d ? d.slice(0,10).split('-').reverse().join('/') : '';
+                    const rows = filtered.map(r => ({
+                        'Situação':    r.situacao      || '',
+                        'Empresa':     r.empresa       || '',
+                        'Nº Doc':      r.numero_doc    || '',
+                        'Fornecedor':  r.fornecedor    || '',
+                        'Histórico':   r.historico     || '',
+                        'Valor':       parseFloat(r.valor)  || 0,
+                        'Saldo':       parseFloat(r.saldo)  || 0,
+                        'Vencimento':  fmtDate(r.data_vencimento),
+                        'Emissão':     fmtDate(r.data_emissao),
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws['!cols'] = [{wch:14},{wch:22},{wch:14},{wch:30},{wch:35},{wch:14},{wch:14},{wch:14},{wch:14}];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Contas a Pagar');
+                    XLSX.writeFile(wb, 'contas_a_pagar.xlsx');
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // ── Pedidos de Compra ─────────────────────────────────────────────────
+            async function downloadPedidosCompraExcel() {
+                const q = (document.getElementById('pc-search')?.value || '').toLowerCase();
+                const filtered = _pcPedidos.filter(r =>
+                    (r.fornecedor||'').toLowerCase().includes(q) || (r.nf||'').toLowerCase().includes(q)
+                );
+                if (!filtered.length) { showToast('Nenhum dado para exportar', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const fmtDate = d => d ? d.slice(0,10).split('-').reverse().join('/') : '';
+                    const rows = filtered.map(r => ({
+                        'Fornecedor':       r.fornecedor        || '',
+                        'Emissão':          fmtDate(r.data_emissao),
+                        'NF':               r.nf                || '',
+                        'Valor':            parseFloat(r.valor) || 0,
+                        'Vencimento':       fmtDate(r.vencimento),
+                        'Vencto. Ajustado': fmtDate(r.vencimento_ajustado),
+                        'Parcela':          r.total_parcelas ? `${r.parcela}/${r.total_parcelas}` : '',
+                        'Linha Fluxo':      r.linha_fluxo       || '',
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws['!cols'] = [{wch:28},{wch:12},{wch:14},{wch:14},{wch:14},{wch:16},{wch:10},{wch:22}];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Pedidos de Compra');
+                    XLSX.writeFile(wb, 'pedidos_de_compra.xlsx');
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // ── Open Finance · Extratos ───────────────────────────────────────────
+            async function downloadOfExtratosExcel() {
+                if (!_ofExtratosRows.length) { showToast('Nenhum dado para exportar — carregue os extratos primeiro', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const fmtBRL = v => (Math.abs(v)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+                    const rows = _ofExtratosRows.map(r => ({
+                        'Dia':          r.dia,
+                        'Descrição':    r.descricao     || '',
+                        'Razão Social': r.razao_social  || '',
+                        'CNPJ':         r.counterparty_document || '',
+                        'Banco':        r.banco_nome    || '',
+                        'Valor (R$)':   (r.valor / 100),
+                        'Categorização': r.categoria    || '',
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws['!cols'] = [{wch:6},{wch:40},{wch:28},{wch:18},{wch:22},{wch:14},{wch:22}];
+                    const mes = document.getElementById('of-ext-mes')?.value || '';
+                    const ano = document.getElementById('of-ext-ano')?.value || '';
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Extratos');
+                    XLSX.writeFile(wb, `extratos_${mes}_${ano}.xlsx`);
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // ── Vendas (todas as abas) ────────────────────────────────────────────
+            async function downloadVendasExcel() {
+                const tab = _vndCurrentTab || 'realizadas';
+                const containerId = {
+                    realizadas: 'vnd-realizadas-container',
+                    previsao:   'vnd-previsao-container',
+                    canais:     'vnd-canais-container',
+                    forecast:   'vnd-forecast-container',
+                }[tab] || 'vnd-realizadas-container';
+                const tabLabel = {
+                    realizadas: 'a_receber',
+                    previsao:   'previsao_de_vendas',
+                    canais:     'canais',
+                    forecast:   'forecast_sop',
+                }[tab] || tab;
+
+                const container = document.getElementById(containerId);
+                const table = container ? container.querySelector('table') : null;
+                if (!table) { showToast('Nenhuma tabela visível para exportar', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const aoa = _tableToAoa(table);
+                    if (aoa.length < 2) { showToast('Nenhum dado para exportar', 'error'); return; }
+                    const ws = XLSX.utils.aoa_to_sheet(aoa);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Vendas');
+                    XLSX.writeFile(wb, `vendas_${tabLabel}.xlsx`);
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // ── DRE Gerencial ─────────────────────────────────────────────────────
+            async function downloadDreGerencialExcel() {
+                if (!_dreSkusData || !_dreSkusData.length) { showToast('Nenhum dado para exportar', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const q = (_dreSkuFilter || '').toLowerCase();
+                    const filtered = _dreSkusData.filter(s => {
+                        const viewMatch = _dreView === 'todos' || dreClassify(s.margem_pct) === _dreView;
+                        const skuMatch  = !_dreSkuFilter || s.sku.toLowerCase().includes(q) || (s.nome_produto||'').toLowerCase().includes(q);
+                        return viewMatch && skuMatch;
+                    });
+                    if (!filtered.length) { showToast('Nenhum dado para exportar', 'error'); return; }
+                    const rows = filtered.map(s => ({
+                        'SKU':                 s.sku              || '',
+                        'Produto':             s.nome_produto     || '',
+                        'Receita Bruta':       parseFloat(s.receita_bruta)       || 0,
+                        'Devoluções':          parseFloat(s.devolucoes)          || 0,
+                        'Receita Líquida':     parseFloat(s.receita_liquida)     || 0,
+                        'Margem Contribuição': parseFloat(s.margem_contribuicao) || 0,
+                        'Margem %':            parseFloat(s.margem_pct)          || 0,
+                        'Qtd Líquida':         parseFloat(s.qtd_liquida)         || 0,
+                        'Classificação':       dreClassify(s.margem_pct)         || '',
+                    }));
+                    const periodo = (document.getElementById('dre-periodo')?.value || '').replace('-','_');
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws['!cols'] = [{wch:14},{wch:35},{wch:16},{wch:14},{wch:16},{wch:20},{wch:10},{wch:12},{wch:14}];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'DRE Gerencial');
+                    XLSX.writeFile(wb, `dre_gerencial_${periodo}.xlsx`);
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // ── PMV · Price Volume Mix ────────────────────────────────────────────
+            async function downloadPmvExcel() {
+                if (!_pmvRows || !_pmvRows.length) { showToast('Nenhum dado para exportar — clique em Analisar primeiro', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const q = (document.getElementById('pmv-filter-sku')?.value || '').trim().toUpperCase();
+                    const marcaFiltro = (document.getElementById('pmv-filter-marca')?.value || '').trim();
+                    const filtered = _pmvRows.filter(r => {
+                        if (marcaFiltro && r.marca !== marcaFiltro) return false;
+                        if (q) {
+                            const s = String(r.sku||'').toUpperCase() + String(r.nome_produto||'').toUpperCase();
+                            if (!s.includes(q)) return false;
+                        }
+                        return true;
+                    });
+                    if (!filtered.length) { showToast('Nenhum dado para exportar', 'error'); return; }
+                    const rows = filtered.map(r => ({
+                        'SKU':            r.sku          || '',
+                        'Produto':        r.nome_produto || '',
+                        'Marca':          r.marca        || '',
+                        'Qtd Anterior':   r.qtd_prev     || 0,
+                        'Rev Anterior':   r.rev_prev     || 0,
+                        'Preço Anterior': r.unit_prev    || 0,
+                        'Mar% Anterior':  r.marpct_prev  || 0,
+                        'Qtd Atual':      r.qtd_curr     || 0,
+                        'Rev Atual':      r.rev_curr     || 0,
+                        'Preço Atual':    r.unit_curr    || 0,
+                        'Mar% Atual':     r.marpct_curr  || 0,
+                        'Δ Qtd':          r.dqtd         || 0,
+                        'Δ Rev':          r.drev         || 0,
+                        'Efeito Volume':  r.vol          || 0,
+                        'Efeito Preço':   r.preco        || 0,
+                        'Efeito Mix':     r.mix          || 0,
+                    }));
+                    const prev = document.getElementById('pmv-sel-prev')?.value || '';
+                    const curr = document.getElementById('pmv-sel-curr')?.value || '';
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'PMV');
+                    XLSX.writeFile(wb, `pmv_${prev}_vs_${curr}.xlsx`);
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
+            // ── Controle Estoque ──────────────────────────────────────────────────
+            async function downloadControleEstoqueExcel() {
+                const table = document.getElementById('sc-table');
+                if (!table) { showToast('Tabela não encontrada', 'error'); return; }
+                try {
+                    await loadSheetJS();
+                    const aoa = _tableToAoa(table);
+                    if (aoa.length < 2) { showToast('Nenhum dado para exportar', 'error'); return; }
+                    const ws = XLSX.utils.aoa_to_sheet(aoa);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Controle Estoque');
+                    XLSX.writeFile(wb, 'controle_estoque.xlsx');
+                    showToast('Download iniciado', 'success');
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+            }
+
         </script>
 
         <!-- Admin User Modal -->
@@ -17147,6 +18020,31 @@ if (id === 'dfs-kpis') {
       }
       mlHideAuthBar();
     };
+    (function() {
+        const tip = document.createElement('div');
+        tip.id = 'sku-tooltip';
+        document.body.appendChild(tip);
+        let _t = null;
+        document.addEventListener('mouseover', function(e) {
+            const el = e.target.closest('[data-tooltip]');
+            if (!el) return;
+            clearTimeout(_t);
+            tip.textContent = el.dataset.tooltip;
+            tip.classList.add('visible');
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!tip.classList.contains('visible')) return;
+            const x = e.clientX + 14;
+            const y = e.clientY - 34;
+            tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 8) + 'px';
+            tip.style.top = Math.max(y, 4) + 'px';
+        });
+        document.addEventListener('mouseout', function(e) {
+            const el = e.target.closest('[data-tooltip]');
+            if (!el) return;
+            _t = setTimeout(() => tip.classList.remove('visible'), 80);
+        });
+    })();
     window.mlHideAuthBar = function() {
       document.getElementById('ml-auth-bar').style.display = 'none';
       window._mlPopup = null;

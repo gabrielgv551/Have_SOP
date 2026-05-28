@@ -22,6 +22,11 @@ __pycache__/
 Lanzi/Lib/
 Lanzi/pip/
 
+# Cache ETL
+Marcon/etl/cache/
+Supershop/etl/cache/
+Lanzi/etl/cache/
+
 # OS
 .DS_Store
 Thumbs.db
