@@ -2706,6 +2706,9 @@
                     <div class="nav-item" onclick="showPanel('margens-dre')">
                         <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>DRE Gerencial
                     </div>
+                    <div class="nav-item" onclick="showPanel('margens-simulador')">
+                        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Simulador de Margens
+                    </div>
                     </div><!-- /nav-section-margens -->
                     <hr class="nav-sep">
                     <!-- DEMONSTRATIVOS FINANCEIROS -->
@@ -5507,6 +5510,29 @@
                     <!-- DRE result -->
                     <div id="dre-gerencial-result"></div>
                 </div>
+                <!-- MARGENS · SIMULADOR -->
+                <div class="panel" id="panel-margens-simulador">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Simulador de Margens</div>
+                            <div style="font-size:12px;color:var(--muted);margin-top:2px">Selecione um SKU e simule o impacto de ajustes de preço no volume necessário para manter o lucro</div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                            <select id="sim-periodo" onchange="loadSimuladorMargens()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px"><option value="">Carregando...</option></select>
+                            <select id="sim-filter-canal" onchange="loadSimuladorMargens()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;min-width:140px"><option value="">Todos os canais</option></select>
+                            <select id="sim-filter-marca" onchange="loadSimuladorMargens()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;min-width:140px"><option value="">Todas as marcas</option></select>
+                            <button onclick="loadSimuladorMargens()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">↺</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:20px">
+                        <select id="sim-sku-select" onchange="renderSkuSimulador()" style="width:100%;max-width:520px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer">
+                            <option value="">Selecione um SKU para simular...</option>
+                        </select>
+                    </div>
+                    <div id="sim-margens-result">
+                        <div style="padding:32px;text-align:center;color:var(--muted)">Selecione um período e um SKU para começar a simulação</div>
+                    </div>
+                </div>
                 <!-- AGENTES IA -->
                 <div class="panel" id="panel-agentes">
                     <div class="section-header">
@@ -8218,6 +8244,7 @@
                         canalSel.innerHTML = '<option value="">Todos os canais</option>' +
                             (d.canais || []).map(c => `<option value="${c}">${c}</option>`).join('');
                     }
+                    await applyDashFilters();
                 } catch(e) { console.error('loadDashFilters', e); }
             }
 
@@ -8468,10 +8495,11 @@
 
             async function loadOverview() {
                 try {
-                    const [abcRaw, ppRaw] = await Promise.all([
+                    const [abcRaw, ppResp] = await Promise.all([
                         queryDB('curva_abc').catch(() => []),
-                        queryDB('ponto_pedido').catch(() => [])
+                        queryDB('ponto_pedido').catch(() => ({ rows: [] }))
                     ]);
+                    const ppRaw = Array.isArray(ppResp) ? ppResp : (ppResp.rows || []);
                     const kpiData = await queryDB('dashboard_kpis', getDashFilters(), 45000).catch(() => ({}));
 
                     // Filter deactivated SKUs from overview calculations
@@ -10087,6 +10115,7 @@ function filterTable(key) {
 'sopc-controle': 'S&OP · Controle Estoques',
 'sku-desativadas': 'S&OP · SKUs Desativadas',
 'margens-dre': 'Margens · DRE Gerencial',
+'margens-simulador': 'Margens · Simulador',
 'agentes': 'Agentes · IA Analítica',
 'configuracoes': 'Configurações'
             }
@@ -10169,6 +10198,7 @@ if (id === 'dfs-kpis') {
                 if (id === 'sopc-controle') { loadSopcControle(); }
                 if (id === 'sku-desativadas') { loadSkuAtividade(); }
                 if (id === 'margens-dre') { loadMargensMeses(); }
+                if (id === 'margens-simulador') { loadSimuladorMargens(); }
                 if (id === 'agentes') { renderAgentCards(); }
                 if (id === 'configuracoes') { loadConfiguracoes(); }
                 if (id === 'admin-usuarios' && typeof loadAdminUsuarios === 'function') { loadAdminUsuarios(); }
@@ -17459,6 +17489,247 @@ if (id === 'dfs-kpis') {
                     showToast('Download iniciado', 'success');
                 } catch(e) { showToast('Erro: ' + e.message, 'error'); }
             }
+
+            // ══════════════════════════════════════════════
+            // MARGENS · SIMULADOR
+            // ══════════════════════════════════════════════
+            let _simData = [];
+            let _simMeses = [];
+            let _simDescontoPct = 5;
+            let _simAumentoPct = 5;
+
+            async function loadSimuladorMargens() {
+                const token = localStorage.getItem('have_token');
+                const sel = document.getElementById('sim-periodo');
+                const skuSel = document.getElementById('sim-sku-select');
+                const canalSel = document.getElementById('sim-filter-canal');
+                const marcaSel = document.getElementById('sim-filter-marca');
+                try {
+                    if (!_simMeses.length) {
+                        const [rMeses, rFiltros] = await Promise.all([
+                            fetch(`${API_BASE}/data?module=margens`, { headers: { 'Authorization': 'Bearer ' + token } }),
+                            fetch(`${API_BASE}/data?tabela=dashboard_filters`, { headers: { 'Authorization': 'Bearer ' + token } })
+                        ]);
+                        if (rMeses.status === 401) { handleUnauthorized(); return; }
+                        const d = await rMeses.json();
+                        _simMeses = d.meses || [];
+                        sel.innerHTML = _simMeses.map(m => `<option value="${m.ano}-${m.mes}">${String(m.mes).padStart(2,'0')}/${m.ano}</option>`).join('');
+                        if (_simMeses.length) sel.value = `${_simMeses[0].ano}-${_simMeses[0].mes}`;
+                        if (rFiltros.ok) {
+                            const filtros = await rFiltros.json();
+                            canalSel.innerHTML = '<option value="">Todos os canais</option>' + (filtros.canais || []).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+                            const marcas = (filtros.marcas || []);
+                            marcaSel.innerHTML = '<option value="">Todas as marcas</option>' + marcas.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+                        }
+                    }
+                    const [ano, mes] = (sel.value || '').split('-').map(Number);
+                    if (!ano || !mes) { document.getElementById('sim-margens-result').innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted)">Nenhum período disponível</div>'; return; }
+                    const canal = (canalSel.value || '').trim();
+                    const marca = (marcaSel.value || '').trim();
+                    document.getElementById('sim-margens-result').innerHTML = '<div style="padding:32px;text-align:center"><span class="ag-loading-spinner"></span> Carregando...</div>';
+                    let url = `${API_BASE}/data?module=simulador-margens&ano=${ano}&mes=${mes}`;
+                    if (canal) url += `&canal=${encodeURIComponent(canal)}`;
+                    if (marca) url += `&marca=${encodeURIComponent(marca)}`;
+                    const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (r.status === 401) { handleUnauthorized(); return; }
+                    const data = await r.json();
+                    _simData = data.skus || [];
+                    skuSel.innerHTML = '<option value="">Selecione um SKU para simular...</option>' +
+                        _simData.map(s => `<option value="${esc(s.sku)}">${esc(s.sku)} — ${esc((s.nome_produto||'').slice(0,45))}</option>`).join('');
+                    renderSkuSimulador();
+                } catch(e) {
+                    document.getElementById('sim-margens-result').innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted)">Erro ao carregar dados</div>';
+                    console.error('[SIMULADOR]', e);
+                }
+            }
+
+            function calcSim(s, ajustePct) {
+                const preco = s.preco_medio;
+                const custo = s.custo_unitario;
+                const qtd = s.qtd_liquida;
+                const lucroTotal = s.margem_contribuicao;
+                const novoPreco = preco * (1 + ajustePct / 100);
+                const lucroUnitNovo = novoPreco - custo;
+                const novaMargemPct = novoPreco > 0 ? ((novoPreco - custo) / novoPreco) * 100 : 0;
+                let qtdNecessaria = 0, deltaPct = 0, receitaSimulada = 0;
+                if (lucroUnitNovo > 0 && lucroTotal > 0) {
+                    qtdNecessaria = lucroTotal / lucroUnitNovo;
+                    deltaPct = qtd > 0 ? ((qtdNecessaria - qtd) / qtd) * 100 : 0;
+                    receitaSimulada = qtdNecessaria * novoPreco;
+                } else if (lucroUnitNovo <= 0) {
+                    qtdNecessaria = Infinity; deltaPct = Infinity; receitaSimulada = 0;
+                }
+                return { novoPreco, novaMargemPct, qtdNecessaria, deltaPct, receitaSimulada, lucroUnitNovo };
+            }
+
+            function renderSkuSimulador() {
+                const skuSel = document.getElementById('sim-sku-select');
+                const sku = skuSel.value;
+                const s = _simData.find(x => x.sku === sku);
+                if (!s) {
+                    document.getElementById('sim-margens-result').innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted)">Selecione um SKU para ver a simulação</div>';
+                    return;
+                }
+                const fmt = (n, d=2) => n != null && isFinite(n) ? n.toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d}) : '—';
+                const fmt0 = (n) => n != null && isFinite(n) ? n.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0}) : '—';
+                const fmtPct = (n) => n != null && isFinite(n) ? n.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%' : '—';
+
+                const simDesc = calcSim(s, -_simDescontoPct);
+                const simAum = calcSim(s, _simAumentoPct);
+
+                const deltaDescClass = simDesc.deltaPct > 0 ? 'color:#d32f2f' : 'color:var(--muted)';
+                const deltaDescIcon = simDesc.deltaPct > 0 ? '▲' : '';
+                const deltaAumClass = simAum.deltaPct < 0 ? 'color:#2e7d32' : 'color:var(--muted)';
+                const deltaAumIcon = simAum.deltaPct < 0 ? '▼' : '';
+
+                const html = `
+                <!-- Cards topo -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+                    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+                        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Receita Atual</div>
+                        <div style="font-size:22px;font-weight:700;color:var(--text);margin-top:6px">R$ ${fmt(s.receita_liquida)}</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px">${fmt0(s.qtd_liquida)} unidades</div>
+                    </div>
+                    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+                        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Lucro Bruto</div>
+                        <div style="font-size:22px;font-weight:700;color:var(--text);margin-top:6px">R$ ${fmt(s.margem_contribuicao)}</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px">R$ ${fmt(s.margem_contribuicao / s.qtd_liquida)}/unid</div>
+                    </div>
+                    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+                        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Margem</div>
+                        <div style="font-size:22px;font-weight:700;color:var(--accent);margin-top:6px">${fmtPct(s.margem_pct)}</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px">Custo R$ ${fmt(s.custo_unitario)}</div>
+                    </div>
+                    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+                        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Preço Médio</div>
+                        <div style="font-size:22px;font-weight:700;color:var(--text);margin-top:6px">R$ ${fmt(s.preco_medio)}</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc((s.nome_produto||'').slice(0,30))}</div>
+                    </div>
+                </div>
+
+                <!-- Inputs cenários -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px">
+                    <div style="background:linear-gradient(135deg, rgba(211,47,47,0.04) 0%, rgba(211,47,47,0.01) 100%);border:1.5px solid rgba(211,47,47,0.15);border-radius:14px;padding:20px">
+                        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d32f2f"></span>
+                            Cenário de Desconto
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                            <label style="font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap">DESCONTO %</label>
+                            <input type="number" id="sim-input-desc" value="${_simDescontoPct}" min="0" max="100" step="0.5" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface2);color:var(--text);text-align:center" onchange="_simDescontoPct=parseFloat(this.value)||0;renderSkuSimulador()">
+                        </div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:4px">Novo preço: <strong style="color:var(--text)">R$ ${fmt(simDesc.novoPreco)}</strong></div>
+                        <div style="font-size:12px;color:var(--muted)">Margem: <strong style="color:var(--text)">${fmtPct(simDesc.novaMargemPct)}</strong></div>
+                    </div>
+                    <div style="background:linear-gradient(135deg, rgba(46,125,50,0.04) 0%, rgba(46,125,50,0.01) 100%);border:1.5px solid rgba(46,125,50,0.15);border-radius:14px;padding:20px">
+                        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2e7d32"></span>
+                            Cenário de Aumento
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                            <label style="font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap">AUMENTO %</label>
+                            <input type="number" id="sim-input-aum" value="${_simAumentoPct}" min="0" max="500" step="0.5" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface2);color:var(--text);text-align:center" onchange="_simAumentoPct=parseFloat(this.value)||0;renderSkuSimulador()">
+                        </div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:4px">Novo preço: <strong style="color:var(--text)">R$ ${fmt(simAum.novoPreco)}</strong></div>
+                        <div style="font-size:12px;color:var(--muted)">Margem: <strong style="color:var(--text)">${fmtPct(simAum.novaMargemPct)}</strong></div>
+                    </div>
+                </div>
+
+                <!-- Cards impacto -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+                    <!-- Desconto -->
+                    <div style="background:linear-gradient(135deg, rgba(0,124,220,0.06) 0%, rgba(0,124,220,0.02) 100%);border:1.5px solid rgba(0,124,220,0.2);border-radius:14px;padding:20px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                            <div style="font-size:14px;font-weight:700;color:var(--text)">Receber mais com desconto</div>
+                            <span style="background:rgba(0,124,220,0.12);color:var(--accent);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600">-${_simDescontoPct}%</span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:10px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Preço com desconto</span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)">R$ ${fmt(simDesc.novoPreco)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Margem por unid.</span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)">R$ ${fmt(simDesc.lucroUnitNovo)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Manter lucro: precisa vender</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--accent)">${isFinite(simDesc.qtdNecessaria) ? fmt0(simDesc.qtdNecessaria) : '∞'} unid</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Diferença de volume</span>
+                                <span style="font-size:13px;font-weight:600;${deltaDescClass}">${deltaDescIcon} ${isFinite(simDesc.deltaPct) ? fmtPct(simDesc.deltaPct) : '—'}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Nova receita necessária</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--text)">R$ ${fmt(simDesc.receitaSimulada)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Margem esperada (lucro bruto)</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--text)">R$ ${fmt(isFinite(simDesc.qtdNecessaria) ? simDesc.qtdNecessaria * simDesc.lucroUnitNovo : 0)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,124,220,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Capital necessário (qtd × custo)</span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)">R$ ${fmt(isFinite(simDesc.qtdNecessaria) ? simDesc.qtdNecessaria * s.custo_unitario : 0)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+                                <span style="font-size:12px;color:var(--muted)">Diferença de capital</span>
+                                <span style="font-size:13px;font-weight:700;${(isFinite(simDesc.qtdNecessaria) ? (simDesc.qtdNecessaria * s.custo_unitario) - (s.qtd_liquida * s.custo_unitario) : 0) > 0 ? 'color:#d32f2f' : 'color:#2e7d32'}">${(isFinite(simDesc.qtdNecessaria) ? (simDesc.qtdNecessaria * s.custo_unitario) - (s.qtd_liquida * s.custo_unitario) : 0) > 0 ? '▲' : '▼'} R$ ${fmt(Math.abs(isFinite(simDesc.qtdNecessaria) ? (simDesc.qtdNecessaria * s.custo_unitario) - (s.qtd_liquida * s.custo_unitario) : 0))}</span>
+                            </div>
+                        </div>
+                        ${simDesc.lucroUnitNovo <= 0 ? '<div style="margin-top:10px;padding:8px 12px;background:rgba(211,47,47,0.08);border:1px solid rgba(211,47,47,0.2);border-radius:8px;font-size:12px;color:#d32f2f;font-weight:600">⚠️ Com esse desconto o preço fica abaixo do custo — impossível manter o lucro</div>' : ''}
+                    </div>
+
+                    <!-- Aumento -->
+                    <div style="background:linear-gradient(135deg, rgba(46,125,50,0.06) 0%, rgba(46,125,50,0.02) 100%);border:1.5px solid rgba(46,125,50,0.2);border-radius:14px;padding:20px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                            <div style="font-size:14px;font-weight:700;color:var(--text)">Menos volume, mais valor</div>
+                            <span style="background:rgba(46,125,50,0.12);color:#2e7d32;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600">+${_simAumentoPct}%</span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:10px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Preço com aumento</span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)">R$ ${fmt(simAum.novoPreco)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Margem por unid.</span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)">R$ ${fmt(simAum.lucroUnitNovo)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Manter lucro: pode vender</span>
+                                <span style="font-size:13px;font-weight:700;color:#2e7d32">${isFinite(simAum.qtdNecessaria) ? fmt0(simAum.qtdNecessaria) : '∞'} unid</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Diferença de volume</span>
+                                <span style="font-size:13px;font-weight:600;${deltaAumClass}">${deltaAumIcon} ${isFinite(simAum.deltaPct) ? fmtPct(simAum.deltaPct) : '—'}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Nova receita necessária</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--text)">R$ ${fmt(simAum.receitaSimulada)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Margem esperada (lucro bruto)</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--text)">R$ ${fmt(isFinite(simAum.qtdNecessaria) ? simAum.qtdNecessaria * simAum.lucroUnitNovo : 0)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(46,125,50,0.1)">
+                                <span style="font-size:12px;color:var(--muted)">Capital necessário (qtd × custo)</span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)">R$ ${fmt(isFinite(simAum.qtdNecessaria) ? simAum.qtdNecessaria * s.custo_unitario : 0)}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+                                <span style="font-size:12px;color:var(--muted)">Diferença de capital</span>
+                                <span style="font-size:13px;font-weight:700;${(isFinite(simAum.qtdNecessaria) ? (simAum.qtdNecessaria * s.custo_unitario) - (s.qtd_liquida * s.custo_unitario) : 0) > 0 ? 'color:#d32f2f' : 'color:#2e7d32'}">${(isFinite(simAum.qtdNecessaria) ? (simAum.qtdNecessaria * s.custo_unitario) - (s.qtd_liquida * s.custo_unitario) : 0) > 0 ? '▲' : '▼'} R$ ${fmt(Math.abs(isFinite(simAum.qtdNecessaria) ? (simAum.qtdNecessaria * s.custo_unitario) - (s.qtd_liquida * s.custo_unitario) : 0))}</span>
+                            </div>
+                        </div>
+                        ${simAum.lucroUnitNovo <= 0 ? '<div style="margin-top:10px;padding:8px 12px;background:rgba(211,47,47,0.08);border:1px solid rgba(211,47,47,0.2);border-radius:8px;font-size:12px;color:#d32f2f;font-weight:600">⚠️ Com esse aumento o preço ficaria abaixo do custo — impossível manter o lucro</div>' : ''}
+                    </div>
+                </div>
+                `;
+                document.getElementById('sim-margens-result').innerHTML = html;
+            }
+
+            // ══════════════════════════════════════════════
+            // FIM MARGENS · SIMULADOR
+            // ══════════════════════════════════════════════
 
             // ── PMV · Price Volume Mix ────────────────────────────────────────────
             async function downloadPmvExcel() {
