@@ -8182,13 +8182,13 @@
             async function applyDashFilters() {
                 _updateDashFilterIndicator();
                 try {
-                    const kpiData = await queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}));
+                    const kpiData = await queryDB('dashboard_kpis', getDashFilters(), 45000).catch(() => ({}));
                     _renderDashKpis(kpiData);
                     const mfFilters = {};
                     const f = getDashFilters();
                     if (f.marca) mfFilters.marca = f.marca;
                     if (f.canal) mfFilters.canal = f.canal;
-                    const raw = await queryDB('monthly_revenue', mfFilters);
+                    const raw = await queryDB('monthly_revenue', mfFilters, 45000);
                     _monthlyData = raw.map(r => ({ ano: +r.ano, mes: +r.mes, receita: +r.receita || 0, qtd: +r.qtd || 0, mc_pct: r.mc_pct != null ? +r.mc_pct : null }));
                     filterMonthlyChart();
                 } catch(e) { console.error('applyDashFilters', e); }
@@ -8343,7 +8343,7 @@
 
             async function loadMonthlyChart() {
                 try {
-                    const raw = await queryDB('monthly_revenue');
+                    const raw = await queryDB('monthly_revenue', {}, 45000);
                     _monthlyData = raw.map(r => ({ ano: +r.ano, mes: +r.mes, receita: +r.receita || 0, qtd: +r.qtd || 0, mc_pct: r.mc_pct != null ? +r.mc_pct : null }));
                     const years = [...new Set(_monthlyData.map(r => r.ano))].sort((a,b) => b-a);
                     const sel = document.getElementById('overview-chart-year');
@@ -8472,7 +8472,7 @@
                         queryDB('curva_abc').catch(() => []),
                         queryDB('ponto_pedido').catch(() => [])
                     ]);
-                    const kpiData = await queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}));
+                    const kpiData = await queryDB('dashboard_kpis', getDashFilters(), 45000).catch(() => ({}));
 
                     // Filter deactivated SKUs from overview calculations
                     const _deactOv = getDeactivatedSkus();

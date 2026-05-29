@@ -254,72 +254,40 @@ module.exports = async function handleSopc(req, res, payload) {
     }
     if (tabela === 'dashboard_kpis') {
       const { mes: mesFiltro, ano: anoFiltro, marca: marcaFiltro, canal: canalFiltro } = req.query;
-      console.log(`[DASHBOARD_KPIS] company=${payload.company} ano=${anoFiltro} mes=${mesFiltro} marca=${marcaFiltro} canal=${canalFiltro}`);
       const params = [];
-      // Usa "Data" válida (cast nativo timestamp->date); senão Ano/Mes -> MAKE_DATE
-      const dataExpr = `CASE
-          WHEN "Data" IS NOT NULL THEN "Data"::date
-          WHEN TRIM("Ano"::text) ~ '^\\d+$' AND TRIM("Mes"::text) ~ '^\\d+$'
-            THEN MAKE_DATE("Ano"::int, "Mes"::int, 1)
-          ELSE NULL
-        END`;
-      const conditions = [`${dataExpr} IS NOT NULL`];
+      let whereClause = `WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL`;
 
       if (canalFiltro) {
         params.push(canalFiltro);
-        conditions.push(`(${CANAL_GRUPO_SQL}) = $${params.length}`);
+        whereClause += ` AND (${CANAL_GRUPO_SQL}) = $${params.length}`;
       }
       if (marcaFiltro) {
         params.push(marcaFiltro);
-        conditions.push(`"Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
+        whereClause += ` AND "Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`;
       }
 
-      let whereClause = `WHERE ${conditions.join(' AND ')}`;
       let targetAno = anoFiltro ? parseInt(anoFiltro, 10) : null;
       let targetMes = mesFiltro ? parseInt(mesFiltro, 10) : null;
 
-      // Sem filtro de ano/mes: descobrir o período mais recente com MAX("Data"::date) (usa índice)
+      // Sem filtro: descobrir o período mais recente
       if (!targetAno || !targetMes) {
         const periodRes = await pool.query(`
-          SELECT
-            EXTRACT(YEAR  FROM MAX("Data"::date))::int AS ano,
-            EXTRACT(MONTH FROM MAX("Data"::date))::int AS mes
+          SELECT "Ano"::int AS ano, "Mes"::int AS mes
           FROM bd_vendas
-          WHERE "Data" IS NOT NULL
-        `);
+          ${whereClause}
+          ORDER BY "Ano" DESC, "Mes" DESC
+          LIMIT 1
+        `, params);
         targetAno = periodRes.rows[0]?.ano || null;
         targetMes = periodRes.rows[0]?.mes || null;
-        // Fallback: se Data for null em todas as linhas, tentar Ano/Mes
-        if (!targetAno || !targetMes) {
-          const fallbackRes = await pool.query(`
-            SELECT MAX("Ano"::int) AS ano, MAX("Mes"::int) AS mes
-            FROM bd_vendas
-            WHERE TRIM("Ano"::text) ~ '^\\d+$' AND TRIM("Mes"::text) ~ '^\\d+$'
-          `);
-          targetAno = fallbackRes.rows[0]?.ano || null;
-          targetMes = fallbackRes.rows[0]?.mes || null;
-        }
-      } else {
-        params.push(targetAno);
-        params.push(targetMes);
-        whereClause += ` AND EXTRACT(YEAR FROM ${dataExpr})::int = $${params.length - 1} AND EXTRACT(MONTH FROM ${dataExpr})::int = $${params.length}`;
       }
 
       if (!targetAno || !targetMes) {
-        console.log(`[DASHBOARD_KPIS] company=${payload.company} → NENHUM PERIODO ENCONTRADO`);
         return res.json({});
       }
-      console.log(`[DASHBOARD_KPIS] company=${payload.company} → periodo=${targetAno}-${targetMes}`);
 
-      // Se descobrimos o período via MAX, precisamos adicionar os filtros de ano/mes aos params
-      const kpiParams = [...params];
-      if (!anoFiltro || !mesFiltro) {
-        kpiParams.push(targetAno);
-        kpiParams.push(targetMes);
-      }
-
-      const anoPlaceholder = `$${kpiParams.length - 1}`;
-      const mesPlaceholder = `$${kpiParams.length}`;
+      params.push(targetAno);
+      params.push(targetMes);
 
       result = await pool.query(`
         SELECT
@@ -332,11 +300,9 @@ module.exports = async function handleSopc(req, res, payload) {
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0) ELSE 0 END) AS custo_total
         FROM bd_vendas
         ${whereClause}
-          AND EXTRACT(YEAR FROM ${dataExpr})::int = ${anoPlaceholder}
-          AND EXTRACT(MONTH FROM ${dataExpr})::int = ${mesPlaceholder}
-        GROUP BY EXTRACT(YEAR FROM ${dataExpr}), EXTRACT(MONTH FROM ${dataExpr})
-      `, kpiParams);
-      console.log(`[DASHBOARD_KPIS] company=${payload.company} → resultado=`, result.rows[0] || {});
+          AND "Ano" = $${params.length - 1} AND "Mes" = $${params.length}
+        GROUP BY "Ano", "Mes"
+      `, params);
       return res.json(result.rows[0] || {});
     }
     if (tabela === 'contas_pagar') {
