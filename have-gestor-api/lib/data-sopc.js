@@ -254,6 +254,7 @@ module.exports = async function handleSopc(req, res, payload) {
     }
     if (tabela === 'dashboard_kpis') {
       const { mes: mesFiltro, ano: anoFiltro, marca: marcaFiltro, canal: canalFiltro } = req.query;
+      console.log(`[DASHBOARD_KPIS] company=${payload.company} ano=${anoFiltro} mes=${mesFiltro} marca=${marcaFiltro} canal=${canalFiltro}`);
       const params = [];
       // Usa "Data" válida (cast nativo timestamp->date); senão Ano/Mes -> MAKE_DATE
       const dataExpr = `CASE
@@ -277,17 +278,27 @@ module.exports = async function handleSopc(req, res, payload) {
       let targetAno = anoFiltro ? parseInt(anoFiltro, 10) : null;
       let targetMes = mesFiltro ? parseInt(mesFiltro, 10) : null;
 
-      // Sem filtro de ano/mes: descobrir o período mais recente com MAX (muito mais rápido que GROUP BY em toda a tabela)
+      // Sem filtro de ano/mes: descobrir o período mais recente com MAX("Data"::date) (usa índice)
       if (!targetAno || !targetMes) {
         const periodRes = await pool.query(`
           SELECT
-            EXTRACT(YEAR FROM MAX(${dataExpr}))::int AS ano,
-            EXTRACT(MONTH FROM MAX(${dataExpr}))::int AS mes
+            EXTRACT(YEAR  FROM MAX("Data"::date))::int AS ano,
+            EXTRACT(MONTH FROM MAX("Data"::date))::int AS mes
           FROM bd_vendas
-          ${whereClause}
-        `, params);
+          WHERE "Data" IS NOT NULL
+        `);
         targetAno = periodRes.rows[0]?.ano || null;
         targetMes = periodRes.rows[0]?.mes || null;
+        // Fallback: se Data for null em todas as linhas, tentar Ano/Mes
+        if (!targetAno || !targetMes) {
+          const fallbackRes = await pool.query(`
+            SELECT MAX("Ano"::int) AS ano, MAX("Mes"::int) AS mes
+            FROM bd_vendas
+            WHERE TRIM("Ano"::text) ~ '^\\d+$' AND TRIM("Mes"::text) ~ '^\\d+$'
+          `);
+          targetAno = fallbackRes.rows[0]?.ano || null;
+          targetMes = fallbackRes.rows[0]?.mes || null;
+        }
       } else {
         params.push(targetAno);
         params.push(targetMes);
@@ -295,8 +306,10 @@ module.exports = async function handleSopc(req, res, payload) {
       }
 
       if (!targetAno || !targetMes) {
+        console.log(`[DASHBOARD_KPIS] company=${payload.company} → NENHUM PERIODO ENCONTRADO`);
         return res.json({});
       }
+      console.log(`[DASHBOARD_KPIS] company=${payload.company} → periodo=${targetAno}-${targetMes}`);
 
       // Se descobrimos o período via MAX, precisamos adicionar os filtros de ano/mes aos params
       const kpiParams = [...params];
@@ -323,6 +336,7 @@ module.exports = async function handleSopc(req, res, payload) {
           AND EXTRACT(MONTH FROM ${dataExpr})::int = ${mesPlaceholder}
         GROUP BY EXTRACT(YEAR FROM ${dataExpr}), EXTRACT(MONTH FROM ${dataExpr})
       `, kpiParams);
+      console.log(`[DASHBOARD_KPIS] company=${payload.company} → resultado=`, result.rows[0] || {});
       return res.json(result.rows[0] || {});
     }
     if (tabela === 'contas_pagar') {
