@@ -21,6 +21,8 @@ __pycache__/
 *.pyo
 Lanzi/Lib/
 Lanzi/pip/
+Supershop/Lib/
+Marcon/Lib/
 
 # Cache ETL
 Marcon/etl/cache/

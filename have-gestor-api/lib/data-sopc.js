@@ -255,50 +255,74 @@ module.exports = async function handleSopc(req, res, payload) {
     if (tabela === 'dashboard_kpis') {
       const { mes: mesFiltro, ano: anoFiltro, marca: marcaFiltro, canal: canalFiltro } = req.query;
       const params = [];
-      const filterClauses = [];
+      // Usa "Data" válida quando disponível; senão, gera uma data a partir de Ano/Mes somente se ambos forem numéricos
+      const safeAno = `CASE WHEN TRIM("Ano"::text) ~ '^\\d+$' THEN "Ano"::int ELSE NULL END`;
+      const safeMes = `CASE WHEN TRIM("Mes"::text) ~ '^\\d+$' THEN "Mes"::int ELSE NULL END`;
+      const dataExpr = `COALESCE(
+          CASE WHEN TRIM("Data"::text) ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN "Data"::date ELSE NULL END,
+          CASE WHEN ${safeAno} IS NOT NULL AND ${safeMes} IS NOT NULL THEN MAKE_DATE(${safeAno}, ${safeMes}, 1) ELSE NULL END
+        )`;
+      const conditions = [`${dataExpr} IS NOT NULL`];
+
       if (canalFiltro) {
         params.push(canalFiltro);
-        filterClauses.push(`(${CANAL_GRUPO_SQL}) = $${params.length}`);
+        conditions.push(`(${CANAL_GRUPO_SQL}) = $${params.length}`);
       }
       if (marcaFiltro) {
         params.push(marcaFiltro);
-        filterClauses.push(`"Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
+        conditions.push(`"Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`);
       }
-      const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
-      let lmSQL;
-      if (mesFiltro && anoFiltro) {
-        params.push(parseInt(anoFiltro));
-        params.push(parseInt(mesFiltro));
-        lmSQL = `SELECT DATE_TRUNC('month', TO_DATE(
-          LPAD($${params.length-1}::text,4,'0') || '-' || LPAD($${params.length}::text,2,'0') || '-01',
-          'YYYY-MM-DD'
-        )) AS m`;
+
+      let whereClause = `WHERE ${conditions.join(' AND ')}`;
+      let targetAno = anoFiltro ? parseInt(anoFiltro, 10) : null;
+      let targetMes = mesFiltro ? parseInt(mesFiltro, 10) : null;
+
+      // Sem filtro de ano/mes: descobrir o período mais recente com MAX (muito mais rápido que GROUP BY em toda a tabela)
+      if (!targetAno || !targetMes) {
+        const periodRes = await pool.query(`
+          SELECT
+            EXTRACT(YEAR FROM MAX(${dataExpr}))::int AS ano,
+            EXTRACT(MONTH FROM MAX(${dataExpr}))::int AS mes
+          FROM bd_vendas
+          ${whereClause}
+        `, params);
+        targetAno = periodRes.rows[0]?.ano || null;
+        targetMes = periodRes.rows[0]?.mes || null;
       } else {
-        lmSQL = `SELECT DATE_TRUNC('month', MAX("Data"::date)) AS m FROM bd_vendas WHERE "Data" IS NOT NULL`;
+        params.push(targetAno);
+        params.push(targetMes);
+        whereClause += ` AND EXTRACT(YEAR FROM ${dataExpr})::int = $${params.length - 1} AND EXTRACT(MONTH FROM ${dataExpr})::int = $${params.length}`;
       }
+
+      if (!targetAno || !targetMes) {
+        return res.json({});
+      }
+
+      // Se descobrimos o período via MAX, precisamos adicionar os filtros de ano/mes aos params
+      const kpiParams = [...params];
+      if (!anoFiltro || !mesFiltro) {
+        kpiParams.push(targetAno);
+        kpiParams.push(targetMes);
+      }
+
+      const anoPlaceholder = `$${kpiParams.length - 1}`;
+      const mesPlaceholder = `$${kpiParams.length}`;
+
       result = await pool.query(`
-        WITH lm AS (${lmSQL}),
-        rb AS (
-          SELECT SUM(tvp) AS receita_bruta
-          FROM (
-            SELECT "Order ID", MAX("Total Venda Pedido") AS tvp
-            FROM bd_vendas
-            WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)${fWhere}
-            GROUP BY "Order ID"
-          ) t
-        )
         SELECT
-          EXTRACT(YEAR  FROM "Data"::date) AS ano,
-          EXTRACT(MONTH FROM "Data"::date) AS mes,
-          (SELECT receita_bruta FROM rb) AS receita_bruta,
-          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Receita Liquida"::numeric, "Total Venda") ELSE 0 END) AS receita_liquida,
-          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"            ELSE 0 END) AS qtd_liquida,
-          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0)  ELSE 0 END) AS margem_bruta,
-          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0)     ELSE 0 END) AS custo_total
+          ${targetAno} AS ano,
+          ${targetMes} AS mes,
+          SUM(COALESCE("Total Venda Pedido", "Total Venda")) AS receita_bruta,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Total Venda", 0) ELSE 0 END) AS receita_liquida,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Quantidade Vendida", 0) ELSE 0 END) AS qtd_liquida,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_bruta,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0) ELSE 0 END) AS custo_total
         FROM bd_vendas
-        WHERE DATE_TRUNC('month', "Data"::date) = (SELECT m FROM lm)${fWhere}
-        GROUP BY 1, 2
-      `, params);
+        ${whereClause}
+          AND EXTRACT(YEAR FROM ${dataExpr})::int = ${anoPlaceholder}
+          AND EXTRACT(MONTH FROM ${dataExpr})::int = ${mesPlaceholder}
+        GROUP BY EXTRACT(YEAR FROM ${dataExpr}), EXTRACT(MONTH FROM ${dataExpr})
+      `, kpiParams);
       return res.json(result.rows[0] || {});
     }
     if (tabela === 'contas_pagar') {
@@ -447,35 +471,44 @@ module.exports = async function handleSopc(req, res, payload) {
       return res.json(result.rows);
     }
     if (tabela === 'ponto_pedido') {
-      const [ppRes, esRes, f1Map, f2Map] = await Promise.all([
+      const [ppRes, esRes, f1Map, f2Map, kitsRes] = await Promise.all([
         pool.query(`SELECT * FROM ponto_pedido LIMIT 5000`),
         pool.query(`SELECT sku, REPLACE(media_mensal::text,',','.')::numeric AS media_mensal FROM estoque_seguranca`).catch(() => ({ rows: [] })),
         lerEstoqueFullMap(pool, 'full_1').catch(() => ({})),
         lerEstoqueFullMap(pool, 'full_2').catch(() => ({})),
+        pool.query(`SELECT UPPER(TRIM(sku_componente)) AS sku_componente, UPPER(TRIM(sku_kit)) AS sku_kit, quantidade::float FROM sku_kits WHERE ativo = true`).catch(() => ({ rows: [] })),
       ]);
       const mediaMap = {};
       esRes.rows.forEach(r => { mediaMap[String(r.sku || '').trim()] = r.media_mensal; });
       const fullMap = {};
       Object.keys(f1Map).forEach(s => { fullMap[s] = (fullMap[s] || 0) + f1Map[s]; });
       Object.keys(f2Map).forEach(s => { fullMap[s] = (fullMap[s] || 0) + f2Map[s]; });
-      return res.json(ppRes.rows.map(r => {
+      const kits_by_comp = {};
+      kitsRes.rows.forEach(k => {
+        const comp = String(k.sku_componente || '').trim();
+        if (!comp) return;
+        if (!kits_by_comp[comp]) kits_by_comp[comp] = [];
+        kits_by_comp[comp].push({ sku_kit: String(k.sku_kit || '').trim(), quantidade: parseFloat(k.quantidade) || 1 });
+      });
+      const rows = ppRes.rows.map(r => {
         const sku = String(r.sku || '').trim();
         return {
           ...r,
           media_mensal: mediaMap[sku] ?? null,
           estoque_full: fullMap[sku] ?? (parseFloat(r.estoque_atual) || 0),
         };
-      }));
+      });
+      return res.json({ rows, kits_by_comp });
     }
     if (tabela === 'curva_abc') {
       try {
         result = await pool.query(`
           SELECT * FROM ${tabela}
-          WHERE "Ano" = (SELECT MAX("Ano") FROM ${tabela})
-            AND "Mês" = (
-              SELECT MAX("Mês") FROM ${tabela}
-              WHERE "Ano" = (SELECT MAX("Ano") FROM ${tabela})
-            )
+          WHERE ("Ano", "Mês") = (
+            SELECT "Ano", "Mês" FROM ${tabela}
+            ORDER BY "Ano" DESC, "Mês" DESC
+            LIMIT 1
+          )
           LIMIT 5000
         `);
         return res.json(result.rows);
@@ -510,7 +543,7 @@ module.exports = async function handleSopc(req, res, payload) {
         whereClause += ` AND "Ano" = $1 AND "Mes" = $2`;
         catParams.push(parseInt(ano), parseInt(mes));
       } else {
-        whereClause += ` AND "Ano" = (SELECT MAX("Ano") FROM bd_vendas) AND "Mes" = (SELECT MAX("Mes") FROM bd_vendas WHERE "Ano" = (SELECT MAX("Ano") FROM bd_vendas))`;
+        whereClause += ` AND ("Ano", "Mes") = (SELECT "Ano", "Mes" FROM bd_vendas WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL ORDER BY "Ano" DESC, "Mes" DESC LIMIT 1)`;
       }
       result = await pool.query(`
         SELECT
@@ -546,28 +579,39 @@ module.exports = async function handleSopc(req, res, payload) {
       return res.json(result.rows);
     }
     if (tabela === 'cadastros_sku') {
-      result = await pool.query(`
-        SELECT c.*,
-               ec_nome."Produto"
-        FROM cadastros_sku c
-        LEFT JOIN (
-          SELECT TRIM("SKU"::text) AS sku,
-                 MAX("Produto") AS "Produto"
-          FROM estoque_consolidado
-          WHERE "SKU" IS NOT NULL
-            AND TRIM("SKU"::text) != ''
-            AND "Produto" IS NOT NULL
-            AND TRIM("Produto"::text) != ''
-          GROUP BY TRIM("SKU"::text)
-        ) ec_nome ON ec_nome.sku = TRIM(c."Sku"::text)
-        LIMIT 5000
-      `);
+      try {
+        const ecCols = await getTableColumns(pool, 'estoque_consolidado');
+        const skuCol  = ecCols.find(c => c === 'SKU') || ecCols.find(c => c.toLowerCase() === 'sku') || null;
+        const prodCol = ecCols.find(c => c === 'Produto') || ecCols.find(c => c.toLowerCase() === 'produto') || null;
+        if (skuCol && prodCol) {
+          result = await pool.query(`
+            SELECT c.*,
+                   ec_nome.produto_ec AS "Produto"
+            FROM cadastros_sku c
+            LEFT JOIN (
+              SELECT TRIM("${skuCol}"::text) AS sku,
+                     MAX("${prodCol}") AS produto_ec
+              FROM estoque_consolidado
+              WHERE "${skuCol}" IS NOT NULL
+                AND TRIM("${skuCol}"::text) != ''
+                AND "${prodCol}" IS NOT NULL
+                AND TRIM("${prodCol}"::text) != ''
+              GROUP BY TRIM("${skuCol}"::text)
+            ) ec_nome ON ec_nome.sku = TRIM(c."Sku"::text)
+            LIMIT 5000
+          `);
+        } else {
+          result = await pool.query(`SELECT * FROM cadastros_sku LIMIT 5000`);
+        }
+      } catch {
+        result = await pool.query(`SELECT * FROM cadastros_sku LIMIT 5000`);
+      }
       return res.json(result.rows);
     }
     result = await pool.query(`SELECT * FROM ${tabela} LIMIT 5000`);
     res.json(result.rows);
   } catch (e) {
-    console.error(`[ERRO] ${payload.company} / ${tabela}:`, e.message);
+    console.error(`[ERRO] ${payload.company} / ${tabela}:`, e.message, e.stack);
     res.status(500).json({ error: e.message });
   }
 };

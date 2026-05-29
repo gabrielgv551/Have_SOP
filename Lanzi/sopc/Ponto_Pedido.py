@@ -40,6 +40,11 @@ import numpy as np
 from sqlalchemy import create_engine, text
 from datetime import datetime, timedelta
 
+import sys
+import pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from kit_utils import carregar_kits
+
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO
 # ─────────────────────────────────────────────
@@ -230,6 +235,29 @@ def ler_pedidos_aberto(engine) -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────
+# 4b. MARCAR KITS (não geram pedido de compra)
+# ─────────────────────────────────────────────
+def marcar_kits(df: pd.DataFrame, engine) -> pd.DataFrame:
+    """Marca SKUs que são kits — compra-se os componentes, não o kit montado."""
+    try:
+        kits = carregar_kits(engine, empresa="lanzi")
+        if not kits:
+            return df
+        kit_set = set(kits.keys())  # já em uppercase
+        mask = df["sku"].str.upper().isin(kit_set)
+        n = mask.sum()
+        if n > 0:
+            df.loc[mask, "qty_sugerida"]        = 0
+            df.loc[mask, "alerta"]              = "KIT"
+            df.loc[mask, "data_sugerida_pedido"] = None
+            print(f"[KITS] {n} SKU(s) marcados como KIT — comprar componentes, não o kit")
+        return df
+    except Exception as e:
+        print(f"[KITS] Erro ao marcar kits: {e}")
+        return df
+
+
+# ─────────────────────────────────────────────
 # 5. CALCULAR PONTO DE PEDIDO
 # ─────────────────────────────────────────────
 def calcular_ponto_pedido(demanda, es, estoque, pedidos) -> pd.DataFrame:
@@ -381,7 +409,7 @@ def gerar_semana_pedidos(df: pd.DataFrame) -> pd.DataFrame:
             (datas.notna() & (datas <= sexta)) |
             (df["alerta"].isin(["RUPTURA IMINENTE", "PEDIR AGORA"]))
         )
-        & (~df["alerta"].isin(["SEM MOVIMENTO", "SEM DADOS"]))
+        & (~df["alerta"].isin(["SEM MOVIMENTO", "SEM DADOS", "KIT"]))
     )
     semana = df[mascara].copy()
 
@@ -392,6 +420,7 @@ def gerar_semana_pedidos(df: pd.DataFrame) -> pd.DataFrame:
         "EXCESSO"         : 4,
         "SEM MOVIMENTO"   : 5,
         "SEM DADOS"       : 6,
+        "KIT"             : 7,
     })
 
     semana["semana_inicio"] = segunda
@@ -474,6 +503,7 @@ def main():
     estoque = ler_estoque_atual(engine)
     pedidos = ler_pedidos_aberto(engine)
     df      = calcular_ponto_pedido(demanda, es, estoque, pedidos)
+    df      = marcar_kits(df, engine)
     df      = aplicar_leadtime_fornecedores(df, engine)
     semana  = gerar_semana_pedidos(df)
     gravar(engine, df, semana)

@@ -52,6 +52,10 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine, text
 from datetime import datetime, timedelta
+import sys
+import pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from kit_utils import carregar_kits, explodir_vendas_kits
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO — mesmo banco dos demais scripts
@@ -342,6 +346,9 @@ def main():
     engine    = conectar()
     aplicar_config(engine)
     df_vendas = ler_vendas(engine)
+    _kits = carregar_kits(engine, empresa="marcon")
+    if _kits:
+        df_vendas = explodir_vendas_kits(df_vendas, _kits)
     df_mensal = agregar_mensal(df_vendas)
     stats     = calcular_desvio(df_mensal)
     media_fc  = ler_media_forecast(engine)

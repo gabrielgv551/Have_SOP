@@ -1223,6 +1223,39 @@
                 border: 1px solid var(--border);
             }
 
+            .alert-KIT {
+                background: rgba(0, 124, 220, 0.08);
+                color: #007cdc;
+                border: 1px solid rgba(0, 124, 220, 0.25);
+            }
+
+            .pp-kit-chevron {
+                all: unset;
+                cursor: pointer;
+                font-size: 9px;
+                color: #007cdc;
+                opacity: 0.7;
+                line-height: 1;
+                padding: 2px 3px;
+                border-radius: 3px;
+                transition: opacity 0.15s;
+                flex-shrink: 0;
+            }
+            .pp-kit-chevron:hover { opacity: 1; background: rgba(0,124,220,0.12); }
+            .pp-kit-spacer { display: inline-block; width: 18px; flex-shrink: 0; }
+            .pp-kit-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: rgba(0, 124, 220, 0.08);
+                border: 1px solid rgba(0, 124, 220, 0.2);
+                border-radius: 6px;
+                padding: 3px 10px;
+                font-size: 11px;
+                font-weight: 500;
+                color: #007cdc;
+            }
+
             /* Trend badges */
             .trend-ACELERANDO {
                 color: #00d68f;
@@ -8080,47 +8113,35 @@
             // ══════════════════════════════════════════════
             // DB QUERY via API com JWT Token
             // ══════════════════════════════════════════════
-            async function queryDB(tabela, params = {}) {
+            async function queryDB(tabela, params = {}, timeoutMs = 20000) {
                 const token = localStorage.getItem('have_token');
                 if (!token) { handleUnauthorized(); throw new Error('Token não disponível.'); }
 
                 const _qs = new URLSearchParams({ tabela, ...Object.fromEntries(Object.entries(params).filter(([,v]) => v !== '' && v != null)) }).toString();
-                const res = await fetch(`${API_BASE}/data?${_qs}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (res.status === 401) { handleUnauthorized(); throw new Error('Sessão expirada'); }
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || `Erro ao buscar ${tabela}`);
-                return data;
-            }
-
-            // ══════════════════════════════════════════════
-            // SALES KPIS DASHBOARD
-            // ══════════════════════════════════════════════
-            async function loadSalesKpisDashboard() {
-                const MESES_N = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-                const fK = v => v == null ? '–' : 'R$ ' + (Math.abs(v) >= 1e6 ? (v/1e6).toFixed(2)+'M' : Math.abs(v) >= 1e3 ? (v/1e3).toFixed(1)+'K' : (+v).toFixed(0));
-                const setEl = (id, txt, style) => { const e = document.getElementById(id); if (e) { e.textContent = txt; if (style) e.style.cssText = style; } };
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
                 try {
-                    const d = await queryDB('dashboard_kpis');
-                    if (!d || !d.receita_bruta) return;
-                    const rob = +d.receita_bruta || 0;
-                    const rl  = +d.receita_liquida || 0;
-                    const qtd = +d.qtd_liquida || 0;
-                    const ticket = qtd > 0 ? rl / qtd : 0;
-                    const sub = `${MESES_N[+d.mes] || d.mes}/${d.ano}`;
-                    setEl('vkpi-rob-val', fK(rob), 'color:var(--accent);font-weight:700');
-                    setEl('vkpi-rob-sub', sub);
-                    setEl('vkpi-rl-val',  fK(rl));
-                    setEl('vkpi-rl-sub',  sub);
-                    setEl('vkpi-ticket-val', fK(ticket));
-                    setEl('vkpi-ticket-sub', `${sub} · ${qtd.toLocaleString('pt-BR')} un.`);
-                } catch(e) { console.error('loadSalesKpisDashboard', e); }
+                    const res = await fetch(`${API_BASE}/data?${_qs}`, {
+                        method: 'GET',
+                        signal: controller.signal,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    clearTimeout(timer);
+
+                    if (res.status === 401) { handleUnauthorized(); throw new Error('Sessão expirada'); }
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || `Erro ao buscar ${tabela}`);
+                    return data;
+                } catch (err) {
+                    clearTimeout(timer);
+                    if (err.name === 'AbortError') {
+                        throw new Error(`Timeout ao buscar ${tabela} (${timeoutMs}ms)`);
+                    }
+                    throw err;
+                }
             }
 
             function updateSalesMarginKpis(totalMargem, totalVolume) {
@@ -8201,6 +8222,12 @@
             }
 
             function _renderDashKpis(kpiData) {
+                if (!kpiData || !Object.keys(kpiData).length) {
+                    document.getElementById('kpi-grid').innerHTML = `
+                        <div class="kpi-empty">Nenhum dado encontrado para os filtros selecionados.</div>
+                    `;
+                    return;
+                }
                 const MESES_OV = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
                 const rob    = +kpiData.receita_bruta   || 0;
                 const rl     = +kpiData.receita_liquida || 0;
@@ -8441,11 +8468,11 @@
 
             async function loadOverview() {
                 try {
-                    const [abcRaw, ppRaw, kpiData] = await Promise.all([
+                    const [abcRaw, ppRaw] = await Promise.all([
                         queryDB('curva_abc').catch(() => []),
-                        queryDB('ponto_pedido').catch(() => []),
-                        queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}))
+                        queryDB('ponto_pedido').catch(() => [])
                     ]);
+                    const kpiData = await queryDB('dashboard_kpis', getDashFilters()).catch(() => ({}));
 
                     // Filter deactivated SKUs from overview calculations
                     const _deactOv = getDeactivatedSkus();
@@ -8600,12 +8627,14 @@
 
             async function loadPontoPedido() {
                 try {
-                    const [data, cadData, discRes, esData] = await Promise.all([
+                    const [ppResp, cadData, discRes, esData] = await Promise.all([
                         queryDB('ponto_pedido'),
-                        queryDB('cadastros_sku'),
-                        queryDB('sku_discontinued'),
-                        queryDB('estoque_seguranca')
+                        queryDB('cadastros_sku').catch(() => []),
+                        queryDB('sku_discontinued').catch(() => []),
+                        queryDB('estoque_seguranca').catch(() => [])
                     ]);
+                    const data = Array.isArray(ppResp) ? ppResp : (ppResp.rows || []);
+                    const kitsByComp = Array.isArray(ppResp) ? {} : (ppResp.kits_by_comp || {});
                     state.pp = data;
                     if (data.length > 0) console.log('[debug-pp] cols:', Object.keys(data[0]), '| nome_produto sample:', data[0].nome_produto, data[1]?.nome_produto, data[2]?.nome_produto);
                     state.custoMap = {};
@@ -8622,6 +8651,13 @@
                     state.mediaMap = {};
                     (esData || []).forEach(r => { state.mediaMap[String(r.sku || '').trim()] = parseFloat(String(r.media_mensal || 0).replace(',', '.')) || 0; });
                     data.forEach(r => { r.media_mensal = state.mediaMap[String(r.sku || '').trim()] ?? null; const _c = state.custoMap[String(r.sku || '').trim()] || 0; r.custo_sugerido = _c * (+r.qty_sugerida || 0); const _mm = parseFloat(String(r.media_mensal || 0).replace(',', '.')) || 0; r.dias_estoque = _mm > 0 ? Math.round((+r.estoque_atual || 0) * 30 / _mm) : null; });
+                    state.kitsPerComp = {};
+                    Object.entries(kitsByComp).forEach(([comp, kitList]) => {
+                        state.kitsPerComp[comp] = kitList.map(k => ({
+                            sku_kit: k.sku_kit,
+                            contribuicao: Math.round((state.mediaMap[k.sku_kit] || 0) * k.quantidade * 10) / 10,
+                        })).filter(k => k.contribuicao > 0 || kitsByComp[comp].length > 0);
+                    });
                     renderPpKpis(data);
                     renderTable('pp', data);
                 } catch (e) {
@@ -9414,6 +9450,7 @@
                 });
 
                 let data = rawData.filter(r => {
+                    if (key === 'pp' && r.alerta === 'KIT') return false;
                     if (marcaFiltro) {
                         const _sku = String(r.sku || '').trim();
                         if ((state.marcaMap?.[_sku] || '') !== marcaFiltro) return false;
@@ -9496,7 +9533,7 @@
             function rowHTML(key, r) {
                 if (key === 'abc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada)}</span></td><td>${fmtN(r.volume_total)}</td><td>R$ ${fmtN(r.margem_total)}</td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${esc(r.abc_volume)}</span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${esc(r.abc_margem)}</span></td><td>${fmtPct(r.nivel_servico)}</td></tr>`;
 
-                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _nome = String(r.nome_produto || '').trim() || (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span class="sku-code"${_nome ? ` data-tooltip="${_nome}"` : ''}>${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${(r.data_sugerida_pedido && (+r.qty_sugerida || 0) > 0) ? fmtPedidoDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>`; }
+                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _skuId = _sku.replace(/[^a-zA-Z0-9]/g,'_'); const _kitLinks = (state.kitsPerComp || {})[_sku.toUpperCase()] || []; const _hasKits = _kitLinks.length > 0; const _chevron = _hasKits ? '<button class="pp-kit-chevron" id="pp-kit-btn-'+_skuId+'" onclick="toggleKitExpand(\'' +_skuId+ '\')">\u25b6</button>' : '<span class="pp-kit-spacer"></span>'; const _kitSubRow = _hasKits ? '<tr id="pp-kit-row-'+_skuId+'" style="display:none"><td colspan="13" style="padding:0;background:rgba(0,124,220,0.03)"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px 6px 36px">'+_kitLinks.map(k=>'<span class="pp-kit-pill">\u29c1 '+esc(k.sku_kit)+' <span style="color:var(--muted)">+'+fmtBR(k.contribuicao)+'/m\u00eas</span></span>').join('')+'</div></td></tr>' : ''; const _nome = String(r.nome_produto || '').trim() || (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span style="display:inline-flex;align-items:center;gap:4px">${_chevron}<span class="sku-code"${_nome ? ` data-tooltip="${_nome}"` : ''}>${esc(r.sku)}</span></span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${(r.data_sugerida_pedido && (+r.qty_sugerida || 0) > 0) ? fmtPedidoDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>` + _kitSubRow; }
 
                 if (key === 'es') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.desvio_padrao)}</td><td>${fmtN(r.lead_time)}</td><td>${fmtBR(r.fator_z)}</td><td>${fmtBR(r.es_estatistico)}</td><td>${fmtBR(r.es_teto)}</td><td><strong>${fmtN(r.estoque_seguranca)}</strong></td><td>${r.teto_aplicado === 'true' || r.teto_aplicado === true ? '<span style="color:var(--orange)">✓ Sim</span>' : '<span style="color:var(--muted)">Não</span>'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td></tr>`;
 
@@ -10644,6 +10681,15 @@ if (id === 'dfs-kpis') {
                 return fmtDate(v);
             }
 
+            function toggleKitExpand(skuId) {
+                const row = document.getElementById('pp-kit-row-' + skuId);
+                const btn = document.getElementById('pp-kit-btn-' + skuId);
+                if (!row) return;
+                const open = row.style.display !== 'none';
+                row.style.display = open ? 'none' : 'table-row';
+                if (btn) btn.textContent = open ? '\u25b6' : '\u25bc';
+            }
+
             function alertBadge(a) {
                 const map = {
                     'RUPTURA IMINENTE': ['alert-RUPTURA', '⚠ Ruptura'],
@@ -10651,6 +10697,7 @@ if (id === 'dfs-kpis') {
                     'OK': ['alert-OK', '✓ OK'],
                     'EXCESSO': ['alert-EXCESSO', '↑ Excesso'],
                     'SEM MOVIMENTO': ['alert-SEM', '– Sem mov'],
+                    'KIT': ['alert-KIT', '⬡ Kit'],
                 }
 
                     ;

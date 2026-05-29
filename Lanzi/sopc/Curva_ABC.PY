@@ -1,4 +1,4 @@
-Erro: Maximum call stack size exceededvercel --prod"""
+"""
 ╔══════════════════════════════════════════════════════════════╗
 ║           S&OP Intelligence · Curva ABC Cruzada              ║
 ║  Dimensões : Volume (Quantidade) × Margem (MC)               ║

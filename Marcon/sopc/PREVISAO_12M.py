@@ -4,7 +4,11 @@ from sqlalchemy import create_engine
 from statsforecast import StatsForecast
 from statsforecast.models import ADIDA
 import warnings
+import sys
+import pathlib
 warnings.filterwarnings("ignore")
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from kit_utils import carregar_kits, explodir_vendas_kits
 
 # ==============================
 # 1️⃣ Conexão com PostgreSQL
@@ -50,6 +54,12 @@ WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
 
 df = pd.read_sql(query, engine)
 print(f"✅ Total de linhas carregadas: {len(df)}")
+
+# ── Explosão de kits: substitui vendas de kit por demanda dos componentes ──
+_kits = carregar_kits(engine, empresa="marcon")
+if _kits:
+    df = explodir_vendas_kits(df, _kits)
+    print(f"✅ Após explosão de kits: {len(df)} linhas")
 
 # ==============================
 # 2️⃣ Preparar base mensal
