@@ -255,13 +255,13 @@ module.exports = async function handleSopc(req, res, payload) {
     if (tabela === 'dashboard_kpis') {
       const { mes: mesFiltro, ano: anoFiltro, marca: marcaFiltro, canal: canalFiltro } = req.query;
       const params = [];
-      // Usa "Data" válida quando disponível; senão, gera uma data a partir de Ano/Mes somente se ambos forem numéricos
-      const safeAno = `CASE WHEN TRIM("Ano"::text) ~ '^\\d+$' THEN "Ano"::int ELSE NULL END`;
-      const safeMes = `CASE WHEN TRIM("Mes"::text) ~ '^\\d+$' THEN "Mes"::int ELSE NULL END`;
-      const dataExpr = `COALESCE(
-          CASE WHEN TRIM("Data"::text) ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN "Data"::date ELSE NULL END,
-          CASE WHEN ${safeAno} IS NOT NULL AND ${safeMes} IS NOT NULL THEN MAKE_DATE(${safeAno}, ${safeMes}, 1) ELSE NULL END
-        )`;
+      // Usa "Data" válida (cast nativo timestamp->date); senão Ano/Mes -> MAKE_DATE
+      const dataExpr = `CASE
+          WHEN "Data" IS NOT NULL THEN "Data"::date
+          WHEN TRIM("Ano"::text) ~ '^\\d+$' AND TRIM("Mes"::text) ~ '^\\d+$'
+            THEN MAKE_DATE("Ano"::int, "Mes"::int, 1)
+          ELSE NULL
+        END`;
       const conditions = [`${dataExpr} IS NOT NULL`];
 
       if (canalFiltro) {
