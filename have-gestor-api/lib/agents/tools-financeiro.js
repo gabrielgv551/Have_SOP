@@ -99,6 +99,28 @@ async function loadEstrutura(pool, company, tipos) {
   return out;
 }
 
+function evaluateBalancoFormula(formula, balMap) {
+  let expr = formula.trim();
+  if (expr.startsWith('=')) expr = expr.slice(1).trim();
+
+  const codeRegex = /\b\d+(?:\.\d+)*\b/g;
+  const codes = [...new Set(expr.match(codeRegex) || [])];
+
+  codes.forEach(code => {
+    const val = parseFloat(balMap[String(code)] || 0);
+    const re = new RegExp(`\\b${code.replace(/\./g, '\\.')}`, 'g');
+    expr = expr.replace(re, val);
+  });
+
+  if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) return 0;
+  try {
+    // eslint-disable-next-line no-new-func
+    return +new Function('"use strict"; return (' + expr + ')')();
+  } catch (e) {
+    return 0;
+  }
+}
+
 function resolveBalancoTotals(structure, mappings, balMap) {
   const secTotals = {};
   Object.keys(SEC_ID_TO_LABEL).forEach(secId => {
@@ -109,14 +131,66 @@ function resolveBalancoTotals(structure, mappings, balMap) {
       const key = `${secId}:${row.code}`;
       const contas = mappings[key];
       if (!contas) return;
-      const contasList = Array.isArray(contas) ? contas : [contas];
-      const valor = contasList.reduce((s, c) => s + (parseFloat(balMap[String(c)] || 0)), 0);
+      let valor = 0;
+      if (typeof contas === 'string' && contas.startsWith('=')) {
+        valor = evaluateBalancoFormula(contas, balMap);
+      } else {
+        const contasList = Array.isArray(contas) ? contas : [contas];
+        valor = contasList.reduce((s, c) => s + (parseFloat(balMap[String(c)] || 0)), 0);
+      }
       rowDetails.push({ nome: row.name, valor: +valor.toFixed(2) });
       secTotal += valor;
     });
     secTotals[secId] = { label: SEC_ID_TO_LABEL[secId], total: +secTotal.toFixed(2), rows: rowDetails };
   });
   return secTotals;
+}
+
+function evaluateDreFormula(formula, balByContaMes, mesIds, calcMode) {
+  let expr = formula.trim();
+  if (expr.startsWith('=')) expr = expr.slice(1).trim();
+
+  const codeRegex = /\b\d+(?:\.\d+)*\b/g;
+  const codes = [...new Set(expr.match(codeRegex) || [])];
+
+  codes.forEach(code => {
+    let total = 0;
+    mesIds.forEach(m => {
+      const entry = balByContaMes[`${code}:${m}`];
+      if (!entry) return;
+      const mode = calcMode[m] || 'saldo';
+      const raw = mode === 'saldo' ? entry.saldo : entry.debito - entry.credito;
+      total += raw;
+    });
+    const re = new RegExp(`\\b${code.replace(/\./g, '\\.')}`, 'g');
+    expr = expr.replace(re, total);
+  });
+
+  if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) return 0;
+  try {
+    // eslint-disable-next-line no-new-func
+    return +new Function('"use strict"; return (' + expr + ')')();
+  } catch (e) {
+    return 0;
+  }
+}
+
+function resolveDreValue(mappingValue, balByContaMes, mesIds, calcMode, sign) {
+  if (typeof mappingValue === 'string' && mappingValue.startsWith('=')) {
+    return evaluateDreFormula(mappingValue, balByContaMes, mesIds, calcMode) * sign;
+  }
+  const contasList = Array.isArray(mappingValue) ? mappingValue : [mappingValue];
+  let total = 0;
+  contasList.forEach(conta => {
+    mesIds.forEach(m => {
+      const entry = balByContaMes[`${conta}:${m}`];
+      if (!entry) return;
+      const mode = calcMode[m] || 'saldo';
+      const raw = mode === 'saldo' ? entry.saldo : entry.debito - entry.credito;
+      total += raw;
+    });
+  });
+  return total * sign;
 }
 
 // ─── TOOL EXECUTOR — FINANCEIRO ──────────────────────────────────────────────
@@ -230,35 +304,16 @@ async function executeFinanceiroTool(toolName, input, pool, company) {
 
         rows.forEach(row => {
           const key = `${secId}:${row.code}`;
-          const contas = dreMappings[key];
-          if (!contas) return;
-          const contasList = Array.isArray(contas) ? contas : [contas];
-          contasList.forEach(conta => {
-            mesIds.forEach(m => {
-              const entry = balByContaMes[`${conta}:${m}`];
-              if (!entry) return;
-              const mode = calcMode[m] || 'saldo';
-              const raw  = mode === 'saldo' ? entry.saldo : entry.debito - entry.credito;
-              const sign = signs[secId] !== undefined ? Number(signs[secId]) : -1;
-              secTotal += sign * raw;
-            });
-          });
+          const val = dreMappings[key];
+          if (!val) return;
+          const sign = signs[secId] !== undefined ? Number(signs[secId]) : -1;
+          secTotal += resolveDreValue(val, balByContaMes, mesIds, calcMode, sign);
         });
 
         const directKey = `${secId}:__direct__`;
         if (dreMappings[directKey]) {
-          const contas = dreMappings[directKey];
-          const contasList = Array.isArray(contas) ? contas : [contas];
-          contasList.forEach(conta => {
-            mesIds.forEach(m => {
-              const entry = balByContaMes[`${conta}:${m}`];
-              if (!entry) return;
-              const mode = calcMode[m] || 'saldo';
-              const raw  = mode === 'saldo' ? entry.saldo : entry.debito - entry.credito;
-              const sign = signs[secId] !== undefined ? Number(signs[secId]) : -1;
-              secTotal += sign * raw;
-            });
-          });
+          const sign = signs[secId] !== undefined ? Number(signs[secId]) : -1;
+          secTotal += resolveDreValue(dreMappings[directKey], balByContaMes, mesIds, calcMode, sign);
         }
 
         secResults[secId] = { label: dreBodyIdToLabel[secId] || secId, valor: +secTotal.toFixed(2) };

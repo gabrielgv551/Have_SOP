@@ -1,9 +1,23 @@
 // ============================================================
 //  OLIST TINY — Estoque por Depósito (n8n Code Node)
 // ============================================================
+//
+// LIMITES OFICIAIS DA TINY API (v2/v3):
+//   • Básico/Crescer :  60 req/min (30 escrita)
+//   • Essencial/Evoluir: 120 req/min (60 escrita)
+//   • Grande/Potenc.: 240 req/min (100 escrita)
+//   • Regra: concorrência simultânea ≤ 1/4 do limite total
+//
+// Configuração abaixo respeita plano Essencial (120/min ≈ 2/seg)
+// com margem de segurança de ~20%.
+//
+// ⚠️  Com 1000+ produtos NÃO CABE nos 300s do n8n sem estourar
+//    rate limit. Use o script Python (tiny_estoque.py) fora do n8n.
+// ─────────────────────────────────────────────────────────────
 
 const TOKEN        = "adad5861e5d6cc4e25f4e0d6e2d17eafd87e7c90a2a535d3690a885761fd644e";
-const CONCORRENCIA = 5;
+const CONCORRENCIA = 2;      // ≤ 1/4 do limite (120/4 = 30, mas usamos 2 pra segurança)
+const DELAY_MS     = 500;    // 500ms entre lotes = ~1.6 req/seg (96/min, abaixo de 120)
 const BASE_URL     = "https://api.tiny.com.br/api2";
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -15,27 +29,57 @@ function parseNum(v) {
   return parseFloat(String(v).replace(",", ".")) || 0;
 }
 
-async function tinyPost(endpoint, params) {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(text) {
+  if (!text) return false;
+  const s = String(text).toLowerCase();
+  return s.includes("api bloqueada") || s.includes("excedido") || s.includes("aguarde");
+}
+
+async function tinyPost(endpoint, params, retries = 2) {
   const allParams = { token: TOKEN, formato: "JSON", ...params };
   const body = Object.entries(allParams)
     .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v))
     .join("&");
 
-  const resp = await this.helpers.httpRequest({
-    method : "POST",
-    url    : `${BASE_URL}/${endpoint}`,
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  return resp;
+  for (let tentativa = 0; tentativa <= retries; tentativa++) {
+    try {
+      const resp = await this.helpers.httpRequest({
+        method : "POST",
+        url    : `${BASE_URL}/${endpoint}`,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+
+      const respStr = typeof resp === "string" ? resp : JSON.stringify(resp);
+      if (isRateLimitError(respStr) && tentativa < retries) {
+        await sleep(60000); // aguarda 1 min e tenta de novo
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      if (isRateLimitError(String(err)) && tentativa < retries) {
+        await sleep(60000);
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 async function emLotes(items, tamanho, fn) {
   const resultados = [];
   for (let i = 0; i < items.length; i += tamanho) {
     const lote = items.slice(i, i + tamanho);
-    const res  = await Promise.all(lote.map(fn));
+    // Processa lote em paralelo (Promise.all)
+    const promessas = lote.map(fn);
+    const res = await Promise.all(promessas);
     resultados.push(...res);
+    // Delay apenas entre lotes, não entre itens
+    if (DELAY_MS > 0) await sleep(DELAY_MS);
   }
   return resultados;
 }

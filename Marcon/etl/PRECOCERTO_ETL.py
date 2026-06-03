@@ -567,7 +567,7 @@ def processar(linhas_api: list, order_map: dict = None) -> pd.DataFrame:
             "Diferenca Frete"     : 0.0,
             "Taxas"               : _n(icms_pct),
             "Embalagem"           : 0.0,
-            "Repasse Financeiro"  : 0.0,
+            "Repasse Financeiro"  : total_venda - comissao - frete_prod,
             "Margem Contribuicao" : margem_contrib,
             "Valor Liquido"       : 0.0,
             "Total Custo Pedido"  : 0.0,
@@ -743,7 +743,7 @@ def processar_orfaos(order_map: dict, order_ids_cobertos: set,
                 "Diferenca Frete"     : 0.0,
                 "Taxas"               : 0.0,
                 "Embalagem"           : 0.0,
-                "Repasse Financeiro"  : 0.0,
+                "Repasse Financeiro"  : (total_ped - frete_ped) / n,
                 "Margem Contribuicao" : margem_ped / n,
                 "Valor Liquido"       : 0.0,
                 "Total Custo Pedido"  : 0.0,
@@ -1202,7 +1202,7 @@ def processar_xlsx(df_raw: pd.DataFrame) -> pd.DataFrame:
         "Diferenca Frete"    : 0.0,
         "Taxas"              : _n("Percentual de ICMS de venda"),
         "Embalagem"          : 0.0,
-        "Repasse Financeiro" : 0.0,
+        "Repasse Financeiro" : total_venda - comissao - frete_prod,
         "Margem Contribuicao": _n("Lucro do pedido"),
         "Valor Liquido"      : 0.0,
         "Total Custo Pedido" : 0.0,
@@ -1316,6 +1316,14 @@ def main():
     for i, (d_after, d_before) in enumerate(janelas, 1):
         ts = datetime.now().strftime("%H:%M:%S")
         print(f"\n[{ts}] ─── Janela {i}/{len(janelas)}: {d_after} → {d_before}")
+
+        # SEMPRE re-download na última janela (pedidos do dia atual podem ter mudado)
+        is_ultima = (i == len(janelas))
+        if is_ultima:
+            cache_path = os.path.join(CACHE_DIR, f"export_{d_after}_{d_before}.xlsx")
+            if os.path.exists(cache_path):
+                os.remove(cache_path)
+                print(f"    [cache] Apagado cache da última janela → re-download forçado")
 
         try:
             df_raw = baixar_export_xlsx(session, d_after, d_before)

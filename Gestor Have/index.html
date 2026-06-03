@@ -130,13 +130,15 @@
                 flex-shrink: 0;
             }
 
-            .brand-logo svg {
+            .brand-logo svg,
+            .brand-logo img {
                 display: block;
                 height: 44px;
                 width: auto;
             }
 
-            .sidebar-header .brand-logo svg {
+            .sidebar-header .brand-logo svg,
+            .sidebar-header .brand-logo img {
                 height: 36px;
             }
 
@@ -372,6 +374,88 @@
                 padding: 12px 14px;
                 border-radius: 10px;
                 margin-top: 12px;
+            }
+
+            #company-select-page {
+                min-height: 100vh;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                position: relative;
+                overflow: hidden;
+            }
+
+            #company-select-page.active {
+                display: flex;
+            }
+
+            .company-cards {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+                margin-top: 24px;
+            }
+
+            .company-card {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 18px 20px;
+                border: 1.5px solid var(--border);
+                border-radius: 14px;
+                cursor: pointer;
+                transition: all 0.2s;
+                background: var(--surface2);
+            }
+
+            .company-card:hover {
+                border-color: rgba(0, 136, 255, 0.40);
+                background: rgba(0, 136, 255, 0.08);
+                transform: translateY(-1px);
+            }
+
+            .company-card-dot {
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+
+            .company-card-info {
+                flex: 1;
+            }
+
+            .company-card-name {
+                font-weight: 700;
+                font-size: 16px;
+                letter-spacing: -0.3px;
+            }
+
+            .company-card-tag {
+                font-size: 12px;
+                color: var(--muted);
+                margin-top: 2px;
+            }
+
+            .company-card-arrow {
+                color: var(--muted);
+            }
+
+            .back-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 20px;
+                color: var(--muted);
+                font-size: 13px;
+                cursor: pointer;
+                transition: color 0.2s;
+            }
+
+            .back-link:hover {
+                color: var(--accent);
             }
 
             /* ════════════════════════════════
@@ -1737,6 +1821,27 @@
             #panel-dfs-balanco:not(.balanco-edit) #bal-res-exercicio-sign { display: none; }
             #panel-dfs-balanco.balanco-edit #bal-res-exercicio-sign { display: inline-block; margin-left: 8px; font-size: 10px; border: 1px solid rgba(0,124,220,0.3); border-radius: 4px; padding: 1px 4px; background: rgba(0,124,220,0.08); color: #007CDC; }
 
+            /* Balanço — células editáveis em modo edição */
+            #panel-dfs-balanco.balanco-edit .manual-row .account-value {
+                padding: 0;
+            }
+            #panel-dfs-balanco.balanco-edit .manual-row .account-value input.manual-value-input {
+                width: 100%;
+                height: 100%;
+                border: none;
+                text-align: right;
+                padding: 4px 8px;
+                font-size: 12px;
+                font-family: inherit;
+                background: #fffbe6;
+                color: #323031;
+                box-sizing: border-box;
+            }
+            #panel-dfs-balanco.balanco-edit .manual-row .account-value input.manual-value-input:focus {
+                outline: 2px solid #007CDC;
+                background: #fff;
+            }
+
             /* Balanço — linha de conferência */
             #panel-dfs-balanco table.dfs-table tr.bal-check-row td {
                 border-top: 2px solid #c8d4e0;
@@ -2593,19 +2698,7 @@
             <div class="login-card">
                 <div class="login-logo">
                     <div class="brand-logo" aria-label="Have">
-                        <svg viewBox="0 0 280 90" role="img" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Caixa H (azul) -->
-                            <rect x="5" y="15" width="70" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
-                            <text x="40" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">H</text>
-                            
-                            <!-- Caixa A -->
-                            <rect x="85" y="15" width="70" height="60" fill="none" stroke="#ffffff" stroke-width="6" />
-                            <text x="120" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="#ffffff" text-anchor="middle">A</text>
-                            
-                            <!-- Caixa VE (azul) -->
-                            <rect x="165" y="15" width="110" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
-                            <text x="220" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">VE</text>
-                        </svg>
+                        <img src="../logo2.png" alt="Have" style="height:44px;width:auto;display:block;">
                     </div>
                     <div class="login-logo-text">
                         <div class="brand">Have</div>
@@ -2613,40 +2706,42 @@
                     </div>
                 </div>
                 <div class="login-title">Bem-vindo de volta</div>
-                <div class="login-subtitle">Selecione sua empresa e entre no painel</div>
-                <div class="company-label">Empresa</div>
-                <div class="company-select-wrapper" id="company-select-wrapper">
-                    <div class="company-select-trigger" onclick="toggleCompanyDropdown()">
-                        <div class="company-dot" id="company-dot-trigger" style="background:var(--accent)"></div>
-                        <div class="company-select-info">
-                            <div class="company-btn-name" id="company-select-name">Lanzi</div>
-                            <div class="company-btn-tag" id="company-select-tag">S&amp;OP · PostgreSQL</div>
-                        </div>
-                        <svg class="company-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="company-dropdown" id="company-dropdown"></div>
-                </div>
+                <div class="login-subtitle">Entre com seu usuário e senha</div>
                 <div class="form-group"><label>Usuário</label><input type="text" id="username" placeholder="seu usuário"
-                        value=""></div>
+                        value="" onblur="resolveUserCompanies()"></div>
                 <div class="form-group"><label>Senha</label><input type="password" id="password" placeholder="••••••••"
-                        onkeydown="if(event.key==='Enter')doLogin()"></div><button class="login-btn"
-                    onclick="doLogin()">Entrar no painel →</button>
+                        onkeydown="if(event.key==='Enter')preLogin()"></div><button class="login-btn"
+                    onclick="preLogin()">Entrar no painel →</button>
                 <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
             </div>
         </div><!-- ── DASHBOARD ── -->
+        <div id="company-select-page">
+            <div class="login-bg"></div>
+            <div class="login-card">
+                <div class="login-logo">
+                    <div class="brand-logo" aria-label="Have">
+                        <img src="../logo2.png" alt="Have" style="height:44px;width:auto;display:block;">
+                    </div>
+                    <div class="login-logo-text">
+                        <div class="brand">Have</div>
+                        <div class="sub">Gestor Inteligente</div>
+                    </div>
+                </div>
+                <div class="login-title">Escolha sua empresa</div>
+                <div class="login-subtitle">Você tem acesso a mais de uma empresa</div>
+                <div class="company-cards" id="company-cards"></div>
+                <div class="back-link" onclick="backToLogin()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    Voltar ao login
+                </div>
+            </div>
+        </div>
         <div id="dashboard-page">
             <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="sidebar" id="sidebar">
                 <div class="sidebar-header">
                     <div class="brand-logo" aria-label="Have">
-                        <svg viewBox="0 0 280 90" role="img" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="5" y="15" width="70" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
-                            <text x="40" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">H</text>
-                            <rect x="85" y="15" width="70" height="60" fill="none" stroke="#ffffff" stroke-width="6" />
-                            <text x="120" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="#ffffff" text-anchor="middle">A</text>
-                            <rect x="165" y="15" width="110" height="60" fill="none" stroke="var(--accent)" stroke-width="6" />
-                            <text x="220" y="60" font-family="Syne, sans-serif" font-size="42" font-weight="800" fill="var(--accent)" text-anchor="middle">VE</text>
-                        </svg>
+                        <img src="../logo2.png" alt="Have" style="height:36px;width:auto;display:block;">
                     </div>
                     <div class="sidebar-logo-text">
                         <div class="brand">Have</div>
@@ -2947,6 +3042,7 @@
                                 <thead>
                                     <tr>
                                         <th class="sortable" data-column="sku" data-type="string">SKU</th>
+                                        <th class="sortable" data-column="nome_produto" data-type="string">Nome</th>
                                         <th class="sortable" data-column="abc_cruzada" data-type="string">ABC</th>
                                         <th class="sortable" data-column="dias_estoque" data-type="number">Dias Est.</th>
                                         <th id="pp-th-media" class="sortable" data-column="media_mensal" data-type="number">Média Mensal</th>
@@ -2963,7 +3059,7 @@
                                 </thead>
                                 <tbody id="pp-tbody">
                                     <tr class="loading-row">
-                                        <td colspan="12">
+                                        <td colspan="13">
                                             <div class="loading-skeleton" style="width:100%"></div>
                                         </td>
                                     </tr>
@@ -4007,6 +4103,13 @@
                                         <td class="dfs-num" id="pct-dre-ebitda-mes1">–</td><td class="dfs-num" id="pct-dre-ebitda-mes2">–</td><td class="dfs-num" id="pct-dre-ebitda-mes3">–</td><td class="dfs-num" id="pct-dre-ebitda-mes4">–</td><td class="dfs-num" id="pct-dre-ebitda-mes5">–</td><td class="dfs-num" id="pct-dre-ebitda-mes6">–</td><td class="dfs-num" id="pct-dre-ebitda-mes7">–</td><td class="dfs-num" id="pct-dre-ebitda-mes8">–</td><td class="dfs-num" id="pct-dre-ebitda-mes9">–</td><td class="dfs-num" id="pct-dre-ebitda-mes10">–</td><td class="dfs-num" id="pct-dre-ebitda-mes11">–</td><td class="dfs-num" id="pct-dre-ebitda-mes12">–</td>
                                     </tr>
                                 </tbody>
+                                <!-- DESPESAS OPERACIONAIS -->
+                                <tbody>
+                                    <tr class="dfs-row-subsection dfs-row-gray">
+                                        <td class="dfs-col-desc">Despesas Operacionais<select class="dre-sign-sel" id="dre-sign-dre-despesas-body"><option value="-1">× −1</option><option value="1">× +1</option></select></td>
+                                        <td class="dfs-num" id="total-dre-despesas-mes1">–</td><td class="dfs-num" id="total-dre-despesas-mes2">–</td><td class="dfs-num" id="total-dre-despesas-mes3">–</td><td class="dfs-num" id="total-dre-despesas-mes4">–</td><td class="dfs-num" id="total-dre-despesas-mes5">–</td><td class="dfs-num" id="total-dre-despesas-mes6">–</td><td class="dfs-num" id="total-dre-despesas-mes7">–</td><td class="dfs-num" id="total-dre-despesas-mes8">–</td><td class="dfs-num" id="total-dre-despesas-mes9">–</td><td class="dfs-num" id="total-dre-despesas-mes10">–</td><td class="dfs-num" id="total-dre-despesas-mes11">–</td><td class="dfs-num" id="total-dre-despesas-mes12">–</td>
+                                    </tr>
+                                </tbody>
                                 <tbody id="dre-despesas-body"></tbody>
                                 <tbody>
                                     <tr class="dre-row-add">
@@ -4430,6 +4533,7 @@
                                 <select id="pmv-filter-marca" onchange="applyPmvFilter()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px;background:var(--bg);color:var(--text);"><option value="">Todas as marcas</option></select>
                                 <input id="pmv-filter-sku" type="text" placeholder="🔍 Filtrar SKU..." oninput="applyPmvFilter()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px;">
                                 <button onclick="downloadPmvExcel()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Baixar Excel">⬇ Excel</button>
+                                <button id="pmv-toggle-margem" onclick="togglePmvMargemAbs()" style="padding:7px 14px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;" title="Alternar entre % e R$">Marg.%</button>
                             </div>
                         </div>
                     </div>
@@ -4450,11 +4554,11 @@
                                         <th class="pmv-sep pmv-sortable" data-col="qtd_prev" onclick="sortPmv('qtd_prev')">Qtd <span id="pmv-sort-qtd_prev"></span></th>
                                         <th class="pmv-sortable" data-col="rev_prev" onclick="sortPmv('rev_prev')">R$ <span id="pmv-sort-rev_prev"></span></th>
                                         <th class="pmv-sortable" data-col="unit_prev" onclick="sortPmv('unit_prev')">Unit. <span id="pmv-sort-unit_prev"></span></th>
-                                        <th class="pmv-sortable" data-col="marpct_prev" onclick="sortPmv('marpct_prev')">Marg.% <span id="pmv-sort-marpct_prev"></span></th>
+                                        <th class="pmv-sortable" data-col="marpct_prev" onclick="sortPmv('marpct_prev')"><span id="pmv-label-marpct-prev">Marg.%</span> <span id="pmv-sort-marpct_prev"></span></th>
                                         <th class="pmv-sep pmv-sortable" data-col="qtd_curr" onclick="sortPmv('qtd_curr')">Qtd <span id="pmv-sort-qtd_curr"></span></th>
                                         <th class="pmv-sortable" data-col="rev_curr" onclick="sortPmv('rev_curr')">R$ <span id="pmv-sort-rev_curr"></span></th>
                                         <th class="pmv-sortable" data-col="unit_curr" onclick="sortPmv('unit_curr')">Unit. <span id="pmv-sort-unit_curr"></span></th>
-                                        <th class="pmv-sortable" data-col="marpct_curr" onclick="sortPmv('marpct_curr')">Marg.% <span id="pmv-sort-marpct_curr"></span></th>
+                                        <th class="pmv-sortable" data-col="marpct_curr" onclick="sortPmv('marpct_curr')"><span id="pmv-label-marpct-curr">Marg.%</span> <span id="pmv-sort-marpct_curr"></span></th>
                                         <th class="pmv-sep pmv-sortable" style="background:#1a3a6b" data-col="dqtd" onclick="sortPmv('dqtd')">Δ Qtd <span id="pmv-sort-dqtd"></span></th>
                                         <th class="pmv-sortable" style="background:#1a3a6b" data-col="drev" onclick="sortPmv('drev')">Δ R$ <span id="pmv-sort-drev"></span></th>
                                         <th class="pmv-sortable" style="background:#1a3a6b" data-col="vol" onclick="sortPmv('vol')">Volume <span id="pmv-sort-vol"></span></th>
@@ -5524,10 +5628,9 @@
                             <button onclick="loadSimuladorMargens()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">↺</button>
                         </div>
                     </div>
-                    <div style="margin-bottom:20px">
-                        <select id="sim-sku-select" onchange="renderSkuSimulador()" style="width:100%;max-width:520px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer">
-                            <option value="">Selecione um SKU para simular...</option>
-                        </select>
+                    <div style="margin-bottom:20px;position:relative;width:100%;max-width:520px" id="sim-sku-wrap">
+                        <input id="sim-sku-select" autocomplete="off" oninput="filterSimSku(this.value)" onfocus="showSimSkuList()" onblur="setTimeout(()=>hideSimSkuList(),200)" onkeydown="if(event.key==='Enter'){event.preventDefault();pickFirstSimSku()}" placeholder="Digite o SKU ou nome do produto..." style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;box-sizing:border-box">
+                        <div id="sim-sku-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:320px;overflow-y:auto;background:var(--surface);border:1.5px solid var(--border);border-top:none;border-radius:0 0 10px 10px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.12)"></div>
                     </div>
                     <div id="sim-margens-result">
                         <div style="padding:32px;text-align:center;color:var(--muted)">Selecione um período e um SKU para começar a simulação</div>
@@ -5920,14 +6023,8 @@
                     if (hasThisMonth) {
                         const v = parseFloat(cell.dataset.raw);
                         if (!isNaN(v)) {
-                            const modeSel = document.getElementById(`dre-mode-mes${m}`);
-                            const mode = modeSel ? modeSel.value : 'saldo';
-                            if (mode === 'saldo') {
-                                dreRLCumByMonth[m] = v;
-                            } else {
-                                cumRaw += v;
-                                dreRLCumByMonth[m] = cumRaw;
-                            }
+                            cumRaw += v;
+                            dreRLCumByMonth[m] = cumRaw;
                         }
                     } else {
                         dreRLCumByMonth[m] = null;
@@ -6060,6 +6157,21 @@
                             const raw = mappings[secId + ':' + code];
                             if (!raw) return;
                             totalMapped++;
+                            if (typeof raw === 'string' && raw.startsWith('=')) {
+                                for (let m = 1; m <= 12; m++) {
+                                    const rowsForMonth = monthDataMap[m] || [];
+                                    const balMap = {};
+                                    rowsForMonth.forEach(r => { balMap[String(r.conta || '').trim()] = parseFloat(r.saldo_atual || 0); });
+                                    const total = evaluateBalancoFormula(raw, balMap);
+                                    const cell = row.querySelector(`.account-value[data-month="${m}"]`);
+                                    if (cell) {
+                                        const isPassivo = ['passivo-circulante-body', 'passivo-nao-circulante-body', 'pl-body'].includes(secId);
+                                        cell.dataset.rawSaldo = total;
+                                        cell.textContent = fmtBal(isPassivo ? -total : total);
+                                    }
+                                }
+                                return;
+                            }
                             const contasList = Array.isArray(raw) ? raw : [raw];
                             for (let m = 1; m <= 12; m++) {
                                 const rowsForMonth = monthDataMap[m] || [];
@@ -6077,6 +6189,24 @@
                                 }
                             }
                         });
+                    });
+
+                    // Aplicar overrides manuais por cima dos valores calculados
+                    const manualOverrides = getManualOverrides();
+                    Object.keys(manualOverrides).forEach(key => {
+                        const [secId, code, mes] = key.split(':');
+                        const val = manualOverrides[key];
+                        const tbody = document.getElementById(secId);
+                        if (!tbody) return;
+                        const row = tbody.querySelector(`tr.manual-row[data-structure-code="${code}"]`);
+                        if (!row) return;
+                        const cell = row.querySelector(`.account-value[data-month="${mes}"]`);
+                        if (cell) {
+                            cell.dataset.rawSaldo = val;
+                            cell.textContent = fmtBal(val);
+                            cell.dataset.manualOverride = '1';
+                            cell.dataset.manualValue = String(val);
+                        }
                     });
 
                     // Track which months have data (for FCX zero-fill)
@@ -6166,10 +6296,11 @@
                 Object.keys(_dfsMonthPromises).forEach(k => delete _dfsMonthPromises[k]);
                 _structureCache = null;
                 _mappingsCache  = null;
+                _manualOverridesCache = null;
             }
 
             async function loadDfsConfig() {
-                if (_structureCache !== null && _mappingsCache !== null) return;
+                if (_structureCache !== null && _mappingsCache !== null && _manualOverridesCache !== null) return;
                 try {
                     const token = localStorage.getItem('have_token');
                     const res = await fetch(API_BASE + '/dfs-estrutura', { headers: { 'Authorization': 'Bearer ' + token } });
@@ -6178,6 +6309,7 @@
                     const data = await res.json();
                     _structureCache = data.structure || {};
                     _mappingsCache  = data.mappings  || {};
+                    _manualOverridesCache = data.manual_overrides || {};
                 } catch (e) { console.warn('loadDfsConfig error:', e); }
             }
 
@@ -6189,6 +6321,18 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                     body: JSON.stringify({ type: 'mappings', data: map })
+                });
+            }
+
+            let _manualOverridesCache = {};
+            function getManualOverrides() { return _manualOverridesCache || {}; }
+            async function persistManualOverrides(map) {
+                _manualOverridesCache = map;
+                const token = localStorage.getItem('have_token');
+                await fetch(API_BASE + '/dfs-estrutura', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ type: 'manual_overrides', data: map })
                 });
             }
 
@@ -6294,12 +6438,20 @@
                 const dreMappings = getDreMappings();
                 Object.entries(dreBodyIdToLabel).forEach(([secId, secLabel]) => {
                     const directMapped = dreMappings[secId + ':__direct__'];
-                    const dArr = Array.isArray(directMapped) ? directMapped : (directMapped ? [directMapped] : []);
-                    rows.push(['DRE', secLabel, secLabel + ' — total direto', dArr[0] || '', dArr[1] || '', dArr[2] || '']);
+                    if (typeof directMapped === 'string' && directMapped.startsWith('=')) {
+                        rows.push(['DRE', secLabel, secLabel + ' — total direto', directMapped, '', '']);
+                    } else {
+                        const dArr = Array.isArray(directMapped) ? directMapped : (directMapped ? [directMapped] : []);
+                        rows.push(['DRE', secLabel, secLabel + ' — total direto', dArr[0] || '', dArr[1] || '', dArr[2] || '']);
+                    }
                     (dreStructure[secId] || []).forEach(acc => {
                         const mapped = dreMappings[secId + ':' + acc.code];
-                        const arr = Array.isArray(mapped) ? mapped : (mapped ? [mapped] : []);
-                        rows.push(['DRE', secLabel, acc.name, arr[0] || '', arr[1] || '', arr[2] || '']);
+                        if (typeof mapped === 'string' && mapped.startsWith('=')) {
+                            rows.push(['DRE', secLabel, acc.name, mapped, '', '']);
+                        } else {
+                            const arr = Array.isArray(mapped) ? mapped : (mapped ? [mapped] : []);
+                            rows.push(['DRE', secLabel, acc.name, arr[0] || '', arr[1] || '', arr[2] || '']);
+                        }
                     });
                 });
 
@@ -6372,14 +6524,14 @@
                 tbody.innerHTML = '';
 
                 function _buildMappingRow(key, labelText, sublabel) {
-                    const saved = savedMappings[key] || [];
-                    const arr = Array.isArray(saved) ? saved : (saved ? [saved] : []);
+                    const saved = savedMappings[key];
+                    const isFormula = typeof saved === 'string' && saved.startsWith('=');
+                    const formula = isFormula ? saved.slice(1) : '';
+                    const arr = (!isFormula && saved) ? (Array.isArray(saved) ? saved : [saved]) : [];
+
                     const row = document.createElement('tr');
                     row.dataset.mappingKey = key;
-                    const selContainer = document.createElement('div');
-                    selContainer.className = 'mapping-sel-container';
-                    arr.forEach(v => _addMappingSelectRow(selContainer, v));
-                    if (!arr.length) _addMappingSelectRow(selContainer, '');
+
                     const td = document.createElement('td');
                     td.colSpan = 2;
                     td.style.padding = '6px 12px 10px';
@@ -6387,12 +6539,52 @@
                         <span style="font-size:13px;color:var(--text);font-weight:500;">${esc(labelText)}</span>
                         <small style="color:var(--muted);font-size:11px;">${esc(sublabel)}</small>
                     </div>`;
-                    td.appendChild(selContainer);
+
+                    const modeContainer = document.createElement('div');
+                    modeContainer.className = 'mapping-mode-container';
+                    modeContainer.dataset.formulaMode = isFormula ? '1' : '0';
+
+                    const formulaDiv = document.createElement('div');
+                    formulaDiv.className = 'formula-input-row';
+                    formulaDiv.style.cssText = 'display:' + (isFormula ? 'flex' : 'none') + ';align-items:center;gap:4px;margin-bottom:4px;';
+                    formulaDiv.innerHTML = `<input type="text" class="filter-select" data-formula style="flex:1;" placeholder="Ex: 3.1.01 - 3.1.02" value="${esc(formula)}" onchange="saveDreMappings()">`;
+
+                    const selContainer = document.createElement('div');
+                    selContainer.className = 'mapping-sel-container';
+                    selContainer.style.display = isFormula ? 'none' : '';
+                    arr.forEach(v => _addMappingSelectRow(selContainer, v));
+                    if (!arr.length) _addMappingSelectRow(selContainer, '');
+
+                    modeContainer.appendChild(formulaDiv);
+                    modeContainer.appendChild(selContainer);
+                    td.appendChild(modeContainer);
+
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.type = 'button';
+                    toggleBtn.textContent = isFormula ? 'modo contas' : 'fórmula';
+                    toggleBtn.className = 'add-account-btn';
+                    toggleBtn.style.cssText = 'margin-top:4px;font-size:11px;padding:2px 8px;';
+                    toggleBtn.onclick = () => {
+                        const inFormula = modeContainer.dataset.formulaMode === '1';
+                        modeContainer.dataset.formulaMode = inFormula ? '0' : '1';
+                        formulaDiv.style.display = inFormula ? 'none' : 'flex';
+                        selContainer.style.display = inFormula ? '' : 'none';
+                        toggleBtn.textContent = inFormula ? 'fórmula' : 'modo contas';
+                        addBtn.style.display = inFormula ? '' : 'none';
+                        if (!inFormula) {
+                            const inp = formulaDiv.querySelector('input');
+                            if (inp) inp.value = '';
+                        }
+                        saveDreMappings();
+                    };
+
                     const addBtn = document.createElement('button');
                     addBtn.textContent = '+ conta';
                     addBtn.className = 'add-account-btn';
-                    addBtn.style.cssText = 'margin-top:4px;font-size:11px;padding:2px 8px;';
+                    addBtn.style.cssText = 'margin-top:4px;font-size:11px;padding:2px 8px;' + (isFormula ? 'display:none;' : '');
                     addBtn.onclick = () => _addMappingSelectRow(selContainer, '');
+
+                    td.appendChild(toggleBtn);
                     td.appendChild(addBtn);
                     row.appendChild(td);
                     return row;
@@ -6418,6 +6610,14 @@
                     const mappings = {};
                     rows.forEach(row => {
                         const key = row.dataset.mappingKey;
+                        const modeContainer = row.querySelector('.mapping-mode-container');
+                        const inFormula = modeContainer && modeContainer.dataset.formulaMode === '1';
+                        if (inFormula) {
+                            const input = row.querySelector('[data-formula]');
+                            const val = input ? input.value.trim() : '';
+                            if (val) mappings[key] = '=' + val;
+                            return;
+                        }
                         const selects = row.querySelectorAll('.mapping-sel-row input[data-acct]');
                         const values = Array.from(selects).map(s => s.value.split(' – ')[0].trim()).filter(v => v);
                         if (key && values.length === 1) mappings[key] = values[0];
@@ -6459,36 +6659,70 @@
                 tbody.innerHTML = '';
                 allAccounts.forEach(acc => {
                     const mappingKey = acc.sectionId + ':' + acc.code;
+                    const saved = savedMappings[mappingKey];
+                    const isFormula = typeof saved === 'string' && saved.startsWith('=');
+                    const formula = isFormula ? saved.slice(1) : '';
+                    const savedArr = (!isFormula && saved) ? (Array.isArray(saved) ? saved : [saved]) : [];
+
                     const row = document.createElement('tr');
                     row.dataset.mappingKey = mappingKey;
 
-                    const saved = savedMappings[mappingKey];
-                    const savedArr = Array.isArray(saved) ? saved : (saved ? [saved] : []);
+                    const tdMap = document.createElement('td');
+                    const modeContainer = document.createElement('div');
+                    modeContainer.className = 'mapping-mode-container';
+                    modeContainer.dataset.formulaMode = isFormula ? '1' : '0';
 
-                    const td = document.createElement('td');
-                    const container = document.createElement('div');
-                    container.className = 'mapping-sel-container';
+                    const formulaDiv = document.createElement('div');
+                    formulaDiv.className = 'formula-input-row';
+                    formulaDiv.style.cssText = 'display:' + (isFormula ? 'flex' : 'none') + ';align-items:center;gap:4px;margin-bottom:4px;';
+                    formulaDiv.innerHTML = `<input type="text" class="filter-select" data-formula style="flex:1;" placeholder="Ex: 1.1.01 + 1.1.02 - 50000" value="${esc(formula)}" onchange="saveAccountMappings()">`;
 
+                    const selContainer = document.createElement('div');
+                    selContainer.className = 'mapping-sel-container';
+                    selContainer.style.display = isFormula ? 'none' : '';
                     if (savedArr.length) {
-                        savedArr.forEach(v => _addMappingSelectRow(container, v));
+                        savedArr.forEach(v => _addMappingSelectRow(selContainer, v));
                     } else {
-                        _addMappingSelectRow(container, '');
+                        _addMappingSelectRow(selContainer, '');
                     }
+
+                    modeContainer.appendChild(formulaDiv);
+                    modeContainer.appendChild(selContainer);
+                    tdMap.appendChild(modeContainer);
+
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.type = 'button';
+                    toggleBtn.textContent = isFormula ? 'modo contas' : 'fórmula';
+                    toggleBtn.className = 'add-account-btn';
+                    toggleBtn.style.cssText = 'margin-top:4px;font-size:11px;padding:2px 8px;';
+                    toggleBtn.onclick = () => {
+                        const inFormula = modeContainer.dataset.formulaMode === '1';
+                        modeContainer.dataset.formulaMode = inFormula ? '0' : '1';
+                        formulaDiv.style.display = inFormula ? 'none' : 'flex';
+                        selContainer.style.display = inFormula ? '' : 'none';
+                        toggleBtn.textContent = inFormula ? 'fórmula' : 'modo contas';
+                        addBtn.style.display = inFormula ? '' : 'none';
+                        if (!inFormula) {
+                            const inp = formulaDiv.querySelector('input');
+                            if (inp) inp.value = '';
+                        }
+                        saveAccountMappings();
+                    };
 
                     const addBtn = document.createElement('button');
                     addBtn.className = 'add-account-btn';
-                    addBtn.style.cssText = 'margin-top:4px;font-size:11px;padding:3px 8px;';
+                    addBtn.style.cssText = 'margin-top:4px;font-size:11px;padding:2px 8px;' + (isFormula ? 'display:none;' : '');
                     addBtn.textContent = '+ conta';
-                    addBtn.onclick = () => _addMappingSelectRow(container, '');
+                    addBtn.onclick = () => _addMappingSelectRow(selContainer, '');
 
-                    td.appendChild(container);
-                    td.appendChild(addBtn);
+                    tdMap.appendChild(toggleBtn);
+                    tdMap.appendChild(addBtn);
 
                     row.innerHTML = `
                         <td style="position:relative;"><span class="sku-code">${esc(acc.code)}</span><button onclick="removeAccountFromPlanoDeContas(this)" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--red,#e5534b);cursor:pointer;font-size:13px;padding:0;line-height:1;" title="Remover conta do plano">✕</button></td>
                         <td>${esc(acc.name)}<br><small style="color:var(--muted);font-size:11px;">${esc(bodyIdToLabel[acc.sectionId] || acc.sectionId)}</small></td>
                     `;
-                    row.appendChild(td);
+                    row.appendChild(tdMap);
                     tbody.appendChild(row);
                 });
                 const mapped = allAccounts.filter(a => savedMappings[a.sectionId + ':' + a.code]).length;
@@ -6502,6 +6736,14 @@
                     const mappings = {};
                     rows.forEach(row => {
                         const key = row.dataset.mappingKey;
+                        const modeContainer = row.querySelector('.mapping-mode-container');
+                        const inFormula = modeContainer && modeContainer.dataset.formulaMode === '1';
+                        if (inFormula) {
+                            const input = row.querySelector('[data-formula]');
+                            const val = input ? input.value.trim() : '';
+                            if (val) mappings[key] = '=' + val;
+                            return;
+                        }
                         const selects = row.querySelectorAll('.mapping-sel-row input[data-acct]');
                         const values = Array.from(selects).map(s => s.value.split(' – ')[0].trim()).filter(v => v);
                         if (key && values.length === 1) mappings[key] = values[0];
@@ -6519,14 +6761,43 @@
                 const panel = document.getElementById('panel-dfs-balanco');
                 if (on) {
                     panel.classList.add('balanco-edit');
+                    // transformar células de valor em inputs
+                    panel.querySelectorAll('.manual-row .account-value').forEach(cell => {
+                        const raw = cell.dataset.rawSaldo;
+                        const display = cell.textContent.trim();
+                        const isPassivoCell = ['passivo-circulante-body', 'passivo-nao-circulante-body', 'pl-body'].includes(cell.closest('tbody')?.id);
+                        let val = (raw !== undefined && raw !== '') ? (parseFloat(raw) / 100) : (display === '–' ? '' : display.replace(/\./g, '').replace(',', '.'));
+                        if (isPassivoCell && val !== '') val = -val;
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'manual-value-input';
+                        input.value = val ? Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '';
+                        input.dataset.month = cell.dataset.month;
+                        input.oninput = (e) => {
+                            const v = e.target.value.replace(/\./g, '').replace(',', '.');
+                            const n = parseFloat(v);
+                            cell.dataset.manualValue = isNaN(n) ? '' : Math.round(n * 100);
+                        };
+                        cell.innerHTML = '';
+                        cell.appendChild(input);
+                    });
                 } else {
                     panel.classList.remove('balanco-edit');
+                    // restaurar texto
+                    panel.querySelectorAll('.manual-row .account-value').forEach(cell => {
+                        const input = cell.querySelector('input.manual-value-input');
+                        if (!input) return;
+                        const raw = cell.dataset.rawSaldo;
+                        const isPassivo = ['passivo-circulante-body', 'passivo-nao-circulante-body', 'pl-body'].includes(cell.closest('tbody')?.id);
+                        cell.textContent = (raw !== undefined && raw !== '') ? fmtBal(isPassivo ? -parseFloat(raw) : parseFloat(raw)) : '–';
+                    });
                 }
             }
 
             async function saveBalanceSheetChanges() {
                 try {
                     const structure = {};
+                    const manualOverrides = {};
                     Object.keys(bodyIdToLabel).forEach(secId => {
                         const tbody = document.getElementById(secId);
                         if (!tbody) return;
@@ -6536,9 +6807,22 @@
                                 code: row.dataset.structureCode || (secId + '_' + idx),
                                 name: (row.querySelector('[data-role="name"]') || {}).value || ''
                             }));
+                            rows.forEach(row => {
+                                const code = row.dataset.structureCode;
+                                for (let m = 1; m <= 12; m++) {
+                                    const cell = row.querySelector(`.account-value[data-month="${m}"]`);
+                                    if (cell && cell.dataset.manualValue) {
+                                        manualOverrides[`${secId}:${code}:${m}`] = parseFloat(cell.dataset.manualValue);
+                                    }
+                                }
+                            });
                         }
                     });
                     await saveStructure(structure);
+                    await persistManualOverrides(manualOverrides);
+                    // recarregar dados para aplicar overrides
+                    const yr = document.getElementById('balanco-ano-select').value;
+                    await loadBalancoData(yr);
                     toggleBalancoEdit(false);
                     showToast('Estrutura salva — acesse Plano de Contas para mapear as contas', 'success');
                 } catch (e) {
@@ -6881,6 +7165,28 @@
                 }
             }
 
+            function _evalDreFormula(formula, monthDataMap, m) {
+                if (!formula) return { total: 0, hasData: false };
+                const tokens = formula.match(/([+\-])|([\w.]+)/g);
+                if (!tokens) return { total: 0, hasData: false };
+                let total = 0;
+                let op = '+';
+                let hasData = false;
+                for (const tok of tokens) {
+                    if (tok === '+' || tok === '-') {
+                        op = tok;
+                    } else {
+                        const _nc = tok.replace(/\./g, '');
+                        const match = (monthDataMap[m] || []).find(r => String(r.conta || '').replace(/\./g, '') === _nc);
+                        const val = match ? parseFloat(match.saldo_atual || 0) : 0;
+                        if (match) hasData = true;
+                        if (op === '+') total += val;
+                        else total -= val;
+                    }
+                }
+                return { total, hasData };
+            }
+
             function _applyDreValues(monthDataMap) {
                 const mappings = getDreMappings();
                 const calcMode = getDreCalcMode();
@@ -6925,7 +7231,26 @@
                         if (!raw) return;
                         const cells = {};
                         for (let m = 1; m <= 12; m++) cells[m] = row.querySelector(`.account-value[data-month="${m}"]`);
-                        _computeAndApply(Array.isArray(raw) ? raw : [raw], sign, cells);
+                        if (typeof raw === 'string' && raw.startsWith('=')) {
+                            const formula = raw.slice(1).trim();
+                            for (let m = 1; m <= 12; m++) {
+                                const mode = calcMode[m] || 'saldo';
+                                const cur = _evalDreFormula(formula, monthDataMap, m);
+                                const prev = m > 1 ? _evalDreFormula(formula, monthDataMap, m - 1) : null;
+                                let value, hasData;
+                                if (mode === 'movimento') {
+                                    hasData = cur.hasData;
+                                    value = (cur.total - (prev ? prev.total : 0)) * sign;
+                                } else {
+                                    hasData = cur.hasData;
+                                    value = cur.total * sign;
+                                }
+                                const cell = cells[m];
+                                if (cell) { cell.dataset.raw = hasData ? value : ''; cell.textContent = hasData ? fmtBal(value) : '–'; }
+                            }
+                        } else {
+                            _computeAndApply(Array.isArray(raw) ? raw : [raw], sign, cells);
+                        }
                     });
 
                     const directKey = secId + ':__direct__';
@@ -6948,7 +7273,26 @@
                             cells[m] = cell;
                         }
                         tbody.appendChild(vRow);
-                        _computeAndApply(Array.isArray(directRaw) ? directRaw : [directRaw], sign, cells);
+                        if (typeof directRaw === 'string' && directRaw.startsWith('=')) {
+                            const formula = directRaw.slice(1).trim();
+                            for (let m = 1; m <= 12; m++) {
+                                const mode = calcMode[m] || 'saldo';
+                                const cur = _evalDreFormula(formula, monthDataMap, m);
+                                const prev = m > 1 ? _evalDreFormula(formula, monthDataMap, m - 1) : null;
+                                let value, hasData;
+                                if (mode === 'movimento') {
+                                    hasData = cur.hasData;
+                                    value = (cur.total - (prev ? prev.total : 0)) * sign;
+                                } else {
+                                    hasData = cur.hasData;
+                                    value = cur.total * sign;
+                                }
+                                const cell = cells[m];
+                                if (cell) { cell.dataset.raw = hasData ? value : ''; cell.textContent = hasData ? fmtBal(value) : '–'; }
+                            }
+                        } else {
+                            _computeAndApply(Array.isArray(directRaw) ? directRaw : [directRaw], sign, cells);
+                        }
                     }
                 });
                 const secTotalMap = {
@@ -7019,6 +7363,7 @@
             let currentCompany = 'lanzi';
             let currentPanel = 'overview';
             let dbOnline = false;
+            let availableCompanies = null;
             const PAGE_SIZE = 50;
 
             const state = {}
@@ -7041,8 +7386,9 @@
             function renderCompanyDropdown() {
                 const dropdown = document.getElementById('company-dropdown');
                 if (!dropdown) return;
+                const list = availableCompanies || COMPANIES;
                 const checkSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="company-dropdown-check"><polyline points="20 6 9 17 4 12"/></svg>';
-                dropdown.innerHTML = COMPANIES.map(c => `
+                dropdown.innerHTML = list.map(c => `
                     <div class="company-dropdown-item ${c.key === currentCompany ? 'selected' : ''}" onclick="selectCompanyFromDropdown('${c.key}')">
                         <div class="company-dot" style="background:${c.color}"></div>
                         <div>
@@ -7054,19 +7400,34 @@
             }
 
             function toggleCompanyDropdown() {
+                const list = availableCompanies || COMPANIES;
+                if (list.length <= 1) return; // não abre se só há uma empresa
                 const wrapper = document.getElementById('company-select-wrapper');
                 wrapper.classList.toggle('open');
                 if (wrapper.classList.contains('open')) renderCompanyDropdown();
             }
 
             function selectCompanyFromDropdown(key) {
-                const c = COMPANIES.find(x => x.key === key);
+                const list = availableCompanies || COMPANIES;
+                const c = list.find(x => x.key === key);
                 if (!c) return;
                 currentCompany = key;
-                document.getElementById('company-dot-trigger').style.background = c.color;
-                document.getElementById('company-select-name').textContent = c.name;
-                document.getElementById('company-select-tag').textContent = c.tag;
-                document.getElementById('company-select-wrapper').classList.remove('open');
+                const dotTrigger = document.getElementById('company-dot-trigger');
+                if (dotTrigger) dotTrigger.style.background = c.color;
+                const nameEl = document.getElementById('company-select-name');
+                if (nameEl) nameEl.textContent = c.name;
+                const tagEl = document.getElementById('company-select-tag');
+                if (tagEl) tagEl.textContent = c.tag;
+                const wrapper = document.getElementById('company-select-wrapper');
+                if (wrapper) wrapper.classList.remove('open');
+
+                // Invalidar cache DFS ao trocar empresa
+                invalidateDfsCache();
+
+                // Se estiver em painel DFS, recarregar dados
+                if (currentPanel && currentPanel.startsWith('dfs-')) {
+                    showPanel(currentPanel);
+                }
             }
 
             document.addEventListener('click', function(e) {
@@ -7082,12 +7443,119 @@
             // ══════════════════════════════════════════════
             const API_BASE = 'https://have-gestor-api.vercel.app/api';
 
+            async function resolveUserCompanies() {
+                const email = document.getElementById('username').value.trim().toLowerCase();
+                if (!email) {
+                    availableCompanies = null;
+                    updateCompanySelectorVisibility();
+                    return;
+                }
+                try {
+                    const res = await fetch(`${API_BASE}/user-companies`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    if (!res.ok) {
+                        availableCompanies = null;
+                        updateCompanySelectorVisibility();
+                        return;
+                    }
+                    const data = await res.json();
+                    if (data.companies && data.companies.length > 0) {
+                        availableCompanies = data.companies;
+                        if (data.companies.length === 1) {
+                            selectCompanyFromDropdown(data.companies[0].key);
+                        }
+                    } else {
+                        availableCompanies = null;
+                    }
+                    updateCompanySelectorVisibility();
+                } catch (e) {
+                    console.error('Erro ao resolver empresas:', e);
+                    availableCompanies = null;
+                    updateCompanySelectorVisibility();
+                }
+            }
+
+            function updateCompanySelectorVisibility() {
+                const list = availableCompanies || COMPANIES;
+                if (list.length === 1 && list[0].key !== currentCompany) {
+                    selectCompanyFromDropdown(list[0].key);
+                }
+            }
+
+            async function preLogin() {
+                const err = document.getElementById('login-error');
+                err.style.display = 'none';
+
+                const email = document.getElementById('username').value.trim().toLowerCase();
+                const password = document.getElementById('password').value;
+
+                if (!email || !password) {
+                    err.style.display = 'block';
+                    err.textContent = 'Informe usuário e senha.';
+                    return;
+                }
+
+                if (!availableCompanies) {
+                    await resolveUserCompanies();
+                }
+
+                const list = availableCompanies || [];
+                if (list.length === 0) {
+                    err.style.display = 'block';
+                    err.textContent = 'Usuário não encontrado.';
+                    return;
+                }
+
+                if (list.length === 1) {
+                    if (!currentCompany || currentCompany !== list[0].key) {
+                        selectCompanyFromDropdown(list[0].key);
+                    }
+                    doLogin();
+                    return;
+                }
+
+                // Mais de uma empresa: mostra tela de escolha
+                showCompanySelect(list);
+            }
+
+            function showCompanySelect(list) {
+                document.getElementById('login-page').style.display = 'none';
+                const page = document.getElementById('company-select-page');
+                page.style.display = 'flex';
+                const container = document.getElementById('company-cards');
+                container.innerHTML = list.map(c => `
+                    <div class="company-card" onclick="selectCompanyAndLogin('${c.key}')">
+                        <div class="company-card-dot" style="background:${c.color}"></div>
+                        <div class="company-card-info">
+                            <div class="company-card-name">${c.name}</div>
+                            <div class="company-card-tag">${c.tag}</div>
+                        </div>
+                        <svg class="company-card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
+                `).join('');
+            }
+
+            function selectCompanyAndLogin(key) {
+                selectCompanyFromDropdown(key);
+                doLogin();
+            }
+
+            function backToLogin() {
+                document.getElementById('company-select-page').style.display = 'none';
+                document.getElementById('login-page').style.display = 'flex';
+            }
+
             async function doLogin() {
                 const email = document.getElementById('username').value.trim().toLowerCase(); // Campo agora é email
                 const password = document.getElementById('password').value;
                 const err = document.getElementById('login-error');
 
-                if (!currentCompany) {
+                const list = availableCompanies || COMPANIES;
+                if (!currentCompany || !list.find(x => x.key === currentCompany)) {
+                    backToLogin();
                     err.style.display = 'block';
                     err.textContent = 'Selecione uma empresa.';
                     return;
@@ -7110,6 +7578,7 @@
 
                     startDashboard(currentCompany, data.user, data.companyName);
                 } catch (e) {
+                    backToLogin();
                     err.style.display = 'block';
                     err.textContent = e.message;
                 }
@@ -7164,15 +7633,28 @@
                     const v = parseFloat(el.dataset.raw);
                     return isNaN(v) ? null : v / 100;
                 };
+                const getRawDreCum = (prefix) => {
+                    let total = 0;
+                    let hasAny = false;
+                    for (let k = 1; k <= m; k++) {
+                        const el = document.getElementById(`${prefix}-mes${k}`);
+                        if (!el || el.dataset.raw === '' || el.dataset.raw === undefined || el.dataset.raw === null) continue;
+                        const v = parseFloat(el.dataset.raw);
+                        if (isNaN(v)) continue;
+                        total += v;
+                        hasAny = true;
+                    }
+                    return hasAny ? total / 100 : null;
+                };
 
-                const rol        = getRawDre(`total-dre-rol-mes${m}`);
-                const rl         = getRawDre(`total-dre-rl-mes${m}`);
-                const ebitdaRaw  = getRawDre(`total-dre-ebitda-mes${m}`);
-                const custos     = getRawDre(`total-dre-custos-mes${m}`);
-                const despVar    = getRawDre(`total-dre-desp-var-mes${m}`);
-                const despFixas  = getRawDre(`total-dre-desp-fixas-mes${m}`);
-                const fin        = getRawDre(`total-dre-fin-mes${m}`);
-                const ircsll     = getRawDre(`total-dre-ircsll-mes${m}`);
+                const rol        = getRawDreCum('total-dre-rol');
+                const rl         = getRawDreCum('total-dre-rl');
+                const ebitdaRaw  = getRawDreCum('total-dre-ebitda');
+                const custos     = getRawDreCum('total-dre-custos');
+                const despVar    = getRawDreCum('total-dre-desp-var');
+                const despFixas  = getRawDreCum('total-dre-desp-fixas');
+                const fin        = getRawDreCum('total-dre-fin');
+                const ircsll     = getRawDreCum('total-dre-ircsll');
 
                 const parseNumber  = (str) => parseFloat(String(str).replace(/\./g, '').replace(',', '.')) || 0;
                 const readPassivo  = (el) => (el.dataset.rawSaldo !== undefined && el.dataset.rawSaldo !== '') ? parseFloat(el.dataset.rawSaldo) / 100 : parseNumber(el.textContent);
@@ -7187,12 +7669,8 @@
                 let resExercicio = 0;
                 const dreRLCell = document.getElementById(`total-dre-rl-mes${m}`);
                 if (dreRLCell && dreRLCell.dataset.raw !== '' && dreRLCell.dataset.raw !== undefined) {
-                    const modeSel = document.getElementById(`dre-mode-mes${m}`);
-                    const mode = modeSel ? modeSel.value : 'saldo';
                     let cumRawVal;
-                    if (mode === 'saldo') {
-                        cumRawVal = parseFloat(dreRLCell.dataset.raw);
-                    } else {
+                    {
                         let cumRaw = 0;
                         for (let k = 1; k <= m; k++) {
                             const c = document.getElementById(`total-dre-rl-mes${k}`);
@@ -7341,11 +7819,11 @@
                 sg:  { label: 'Solvência Geral',                expr: 'A/(B+C)',     vars: {A:'bal:total-ativo',   B:'bal:total-pc',    C:'bal:total-pnc'},                             fmt:'ratio' },
                 ta:  { label: 'Teste Ácido',                    expr: '(A-B)/C',     vars: {A:'bal:total-ac',      B:'',                C:'bal:total-pc'},                              fmt:'ratio' },
                 tc:  { label: 'Taxa de Caixa',                  expr: 'A/B',         vars: {A:'',                  B:'bal:total-pc'},                                                   fmt:'ratio' },
-                re:  { label: 'Rotatividade de Estoque',        expr: 'A/B',         vars: {A:'dre:total-dre-cmv', B:''},                                                               fmt:'ratio' },
-                ed:  { label: 'Estoque de Dias',                expr: '(B/A)*30',    vars: {A:'dre:total-dre-cmv', B:''},                                                               fmt:'days'  },
-                rr:  { label: 'Rotatividade de Recebíveis',     expr: 'A/B',         vars: {A:'dre:total-dre-rol', B:''},                                                               fmt:'ratio' },
-                crd: { label: 'Contas a Receber (Dias)',        expr: '(A/B)*30',    vars: {A:'',                  B:'dre:total-dre-rol'},                                              fmt:'days'  },
-                cpd: { label: 'Contas a Pagar (Dias)',          expr: '(A/B)*30',    vars: {A:'',                  B:'dre:total-dre-cmv'},                                              fmt:'days'  },
+                re:  { label: 'Rotatividade de Estoque',        expr: 'A/B',         vars: {A:'dre:total-dre-cmv', B:'bal:total-ac'},                                                   fmt:'ratio' },
+                ed:  { label: 'Estoque de Dias',                expr: '(B/A)*30',    vars: {A:'dre:total-dre-cmv', B:'bal:total-ac'},                                                   fmt:'days'  },
+                rr:  { label: 'Rotatividade de Recebíveis',     expr: 'A/B',         vars: {A:'dre:total-dre-rol', B:'bal:total-ac'},                                                   fmt:'ratio' },
+                crd: { label: 'Contas a Receber (Dias)',        expr: '(A/B)*30',    vars: {A:'bal:total-ac',      B:'dre:total-dre-rol'},                                              fmt:'days'  },
+                cpd: { label: 'Contas a Pagar (Dias)',          expr: '(A/B)*30',    vars: {A:'bal:total-pc',      B:'dre:total-dre-cmv'},                                              fmt:'days'  },
                 ccc: { label: 'Ciclo de Conversão de Caixa',   expr: 'A+B-C',       vars: {A:'kpi:crd',           B:'kpi:ed',          C:'kpi:cpd'},                               fmt:'days'  },
                 ml:  { label: 'Margem de Lucro Líquido',       expr: 'A/B',         vars: {A:'dre:total-dre-rl',  B:'dre:total-dre-rol'},                                             fmt:'pct'   },
                 roa: { label: 'Retorno sobre o Ativo (ROA)',   expr: 'A/B',         vars: {A:'dre:total-dre-rl',  B:'bal:total-ativo'},                                               fmt:'pct'   },
@@ -8068,6 +8546,7 @@
             async function startDashboard(company, user, companyName) {
                 currentCompany = company;
                 document.getElementById('login-page').style.display = 'none';
+                document.getElementById('company-select-page').style.display = 'none';
                 document.getElementById('dashboard-page').style.display = 'block';
                 document.getElementById('sidebar-company').textContent = companyName;
                 document.getElementById('user-name-display').textContent = localStorage.getItem('have_user');
@@ -8260,7 +8739,7 @@
                 const rl     = +kpiData.receita_liquida || 0;
                 const qtd    = +kpiData.qtd_liquida     || 0;
                 const mbRaw  = kpiData.margem_bruta != null ? +kpiData.margem_bruta : null;
-                const mb     = mbRaw !== null ? mbRaw : _ovTotalMargem;
+                const mb     = mbRaw !== null ? mbRaw : 0;
                 const ticket = qtd > 0 ? rl / qtd : 0;
                 const ct     = kpiData.custo_total != null ? +kpiData.custo_total : null;
                 const mbPct  = rl > 0 ? (mb / rl * 100) : 0;
@@ -8283,7 +8762,7 @@
                         <div class="kpi-icon">=</div>
                         <div class="kpi-label">Receita Líquida</div>
                         <div class="kpi-value">${rl ? fKPI(rl) : '–'}</div>
-                        <div class="kpi-sub">${mesSub}${subTag} · excl. cancelamentos</div>
+                        <div class="kpi-sub">${mesSub}${subTag} · excl. cancelamentos e impostos</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-icon">▲</div>
@@ -8678,7 +9157,7 @@
                     state.discontinuedSkus = new Set((discRes || []).map(s => String(s).trim()));
                     state.mediaMap = {};
                     (esData || []).forEach(r => { state.mediaMap[String(r.sku || '').trim()] = parseFloat(String(r.media_mensal || 0).replace(',', '.')) || 0; });
-                    data.forEach(r => { r.media_mensal = state.mediaMap[String(r.sku || '').trim()] ?? null; const _c = state.custoMap[String(r.sku || '').trim()] || 0; r.custo_sugerido = _c * (+r.qty_sugerida || 0); const _mm = parseFloat(String(r.media_mensal || 0).replace(',', '.')) || 0; r.dias_estoque = _mm > 0 ? Math.round((+r.estoque_atual || 0) * 30 / _mm) : null; });
+                    data.forEach(r => { r.media_mensal = state.mediaMap[String(r.sku || '').trim()] ?? null; const _c = state.custoMap[String(r.sku || '').trim()] || 0; r.custo_sugerido = _c * (+r.qty_sugerida || 0); const _mm = parseFloat(String(r.media_mensal || 0).replace(',', '.')) || 0; r.dias_estoque = _mm > 0 ? Math.round((+r.estoque_atual || 0) * 30 / _mm) : null; if (!r.nome_produto) { const _skuKey = String(r.sku || '').trim(); r.nome_produto = (state.nomeMap || {})[_skuKey] || ''; } });
                     state.kitsPerComp = {};
                     Object.entries(kitsByComp).forEach(([comp, kitList]) => {
                         state.kitsPerComp[comp] = kitList.map(k => ({
@@ -9484,6 +9963,7 @@
                         if ((state.marcaMap?.[_sku] || '') !== marcaFiltro) return false;
                     }
                     const skuMatch = (r.sku || '').toLowerCase().includes(search) ||
+                        (key === 'pp' && ((r.nome_produto || '') || (state.nomeMap?.[String(r.sku || '').trim()] || '')).toLowerCase().includes(search)) ||
                         (key === 'fc' && (r.canal || '').toLowerCase().includes(search));
                     let filterMatch = true;
 
@@ -9561,7 +10041,7 @@
             function rowHTML(key, r) {
                 if (key === 'abc') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada)}</span></td><td>${fmtN(r.volume_total)}</td><td>R$ ${fmtN(r.margem_total)}</td><td><span class="abc-badge abc-${r.abc_volume}${r.abc_volume}">${esc(r.abc_volume)}</span></td><td><span class="abc-badge abc-${r.abc_margem}${r.abc_margem}">${esc(r.abc_margem)}</span></td><td>${fmtPct(r.nivel_servico)}</td></tr>`;
 
-                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _skuId = _sku.replace(/[^a-zA-Z0-9]/g,'_'); const _kitLinks = (state.kitsPerComp || {})[_sku.toUpperCase()] || []; const _hasKits = _kitLinks.length > 0; const _chevron = _hasKits ? '<button class="pp-kit-chevron" id="pp-kit-btn-'+_skuId+'" onclick="toggleKitExpand(\'' +_skuId+ '\')">\u25b6</button>' : '<span class="pp-kit-spacer"></span>'; const _kitSubRow = _hasKits ? '<tr id="pp-kit-row-'+_skuId+'" style="display:none"><td colspan="13" style="padding:0;background:rgba(0,124,220,0.03)"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px 6px 36px">'+_kitLinks.map(k=>'<span class="pp-kit-pill">\u29c1 '+esc(k.sku_kit)+' <span style="color:var(--muted)">+'+fmtBR(k.contribuicao)+'/m\u00eas</span></span>').join('')+'</div></td></tr>' : ''; const _nome = String(r.nome_produto || '').trim() || (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span style="display:inline-flex;align-items:center;gap:4px">${_chevron}<span class="sku-code"${_nome ? ` data-tooltip="${_nome}"` : ''}>${esc(r.sku)}</span></span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${(r.data_sugerida_pedido && (+r.qty_sugerida || 0) > 0) ? fmtPedidoDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>` + _kitSubRow; }
+                if (key === 'pp') { const _sku = String(r.sku || '').trim(); const _skuId = _sku.replace(/[^a-zA-Z0-9]/g,'_'); const _kitLinks = (state.kitsPerComp || {})[_sku.toUpperCase()] || []; const _hasKits = _kitLinks.length > 0; const _chevron = _hasKits ? '<button class="pp-kit-chevron" id="pp-kit-btn-'+_skuId+'" onclick="toggleKitExpand(\'' +_skuId+ '\')">\u25b6</button>' : '<span class="pp-kit-spacer"></span>'; const _kitSubRow = _hasKits ? '<tr id="pp-kit-row-'+_skuId+'" style="display:none"><td colspan="13" style="padding:0;background:rgba(0,124,220,0.03)"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px 6px 36px">'+_kitLinks.map(k=>'<span class="pp-kit-pill">\u29c1 '+esc(k.sku_kit)+' <span style="color:var(--muted)">+'+fmtBR(k.contribuicao)+'/m\u00eas</span></span>').join('')+'</div></td></tr>' : ''; const _nome = String(r.nome_produto || '').trim() || (state.nomeMap || {})[_sku] || ''; const _custo = (state.custoMap || {})[_sku] || 0; const _custoSug = _custo * (+r.qty_sugerida || 0); const _media = (state.mediaMap || {})[_sku]; const _mm = +(r.media_mensal ?? _media ?? 0); const _est = +r.estoque_atual || 0; const _diasEst = (_mm > 0) ? Math.round(_est * 30 / _mm) : null; const _dCor = _diasEst === null ? 'var(--muted)' : _diasEst >= 30 ? '#22a76b' : _diasEst >= 15 ? '#e6a817' : '#e5534b'; const _dHtml = _diasEst === null ? '–' : `<span style="color:${_dCor};font-weight:600">${_diasEst}d</span>`; const _vv = !!state.ppValorView; const _preco = _vv ? ((state.precoVendaMap || {})[_sku] || 0) : 0; const _fv = (n, c) => { const v = +n || 0; return (_vv && c > 0) ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtN(v * c)}</span>` : fmtN(v); }; const _fmm = _vv ? (_preco > 0 ? `<span style="color:#22a76b;font-weight:600">R$\u00a0${fmtBR(_mm * _preco)}</span>` : (_custo > 0 ? `<span style="color:var(--accent);font-weight:600">R$\u00a0${fmtBR(_mm * _custo)}</span>` : '–')) : (_media != null ? fmtBR(_media) : '–'); return `<tr><td><span style="display:inline-flex;align-items:center;gap:4px">${_chevron}<span class="sku-code"${_nome ? ` data-tooltip="${_nome}"` : ''}>${esc(r.sku)}</span></span></td><td style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${esc(_nome)}</td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${_dHtml}</td><td>${_fmm}</td><td>${_fv(r.estoque_atual, _custo)}</td><td>${_fv(r.pedidos_aberto, _custo)}</td><td>${_fv(r.ponto_pedido, _custo)}</td><td>${_fv(r.estoque_seguranca, _custo)}</td><td>${_vv ? `<strong style="color:var(--accent)">R$\u00a0${fmtN(_custoSug)}</strong>` : `<strong>${fmtN(r.qty_sugerida)}</strong>`}</td><td style="font-weight:600;color:var(--accent)">${_custo > 0 ? 'R$\u00a0' + fmtN(_custoSug) : '–'}</td><td>${(r.data_sugerida_pedido && (+r.qty_sugerida || 0) > 0) ? fmtPedidoDate(r.data_sugerida_pedido) : '–'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td><td>${alertBadge(r.alerta)}</td></tr>` + _kitSubRow; }
 
                 if (key === 'es') return `<tr><td><span class="sku-code">${esc(r.sku)}</span></td><td><span class="abc-badge abc-${r.abc_cruzada}">${esc(r.abc_cruzada || '–')}</span></td><td>${fmtBR(r.media_mensal)}</td><td>${fmtBR(r.desvio_padrao)}</td><td>${fmtN(r.lead_time)}</td><td>${fmtBR(r.fator_z)}</td><td>${fmtBR(r.es_estatistico)}</td><td>${fmtBR(r.es_teto)}</td><td><strong>${fmtN(r.estoque_seguranca)}</strong></td><td>${r.teto_aplicado === 'true' || r.teto_aplicado === true ? '<span style="color:var(--orange)">✓ Sim</span>' : '<span style="color:var(--muted)">Não</span>'}</td><td><span class="conf-${r.confianca}">${esc(r.confianca || '–')}</span></td></tr>`;
 
@@ -9735,6 +10215,7 @@ function filterTable(key) {
             let _pmvSort = { col: 'rev_curr', dir: -1 };
             let _pmvLastParams = {};
             const _pmvExpandCache = {};
+            let _pmvMargemAbs = false;
 
             async function loadCategoriasOverview() {
                 const el = document.getElementById('overview-categorias');
@@ -9866,12 +10347,12 @@ function filterTable(key) {
             }
 
             function _pmvCalcRow(r) {
-                const qtdPrev = +r.qtd_prev||0, revPrev = +r.rev_prev||0, marPrev = +r.mar_prev||0;
-                const qtdCurr = +r.qtd_curr||0, revCurr = +r.rev_curr||0, marCurr = +r.mar_curr||0;
+                const qtdPrev = +r.qtd_prev||0, revPrev = +r.rev_prev||0, rlPrev = +r.rl_prev||0, marPrev = +r.mar_prev||0;
+                const qtdCurr = +r.qtd_curr||0, revCurr = +r.rev_curr||0, rlCurr = +r.rl_curr||0, marCurr = +r.mar_curr||0;
                 const unitPrev = qtdPrev ? revPrev/qtdPrev : 0;
                 const unitCurr = qtdCurr ? revCurr/qtdCurr : 0;
-                const marpctPrev = revPrev ? (marPrev/revPrev)*100 : 0;
-                const marpctCurr = revCurr ? (marCurr/revCurr)*100 : 0;
+                const marpctPrev = rlPrev ? (marPrev/rlPrev)*100 : 0;
+                const marpctCurr = rlCurr ? (marCurr/rlCurr)*100 : 0;
                 const dQtd = qtdCurr - qtdPrev;
                 const dRev = revCurr - revPrev;
                 let vol, preco, mix;
@@ -9884,8 +10365,8 @@ function filterTable(key) {
                 }
                 return { sku: r.sku, nome_produto: r.nome_produto||'', categoria: r.categoria||'', marca: r.marca||'–',
                          estoque_atual: +r.estoque_atual||0,
-                         qtd_prev: qtdPrev, rev_prev: revPrev, unit_prev: unitPrev, marpct_prev: marpctPrev,
-                         qtd_curr: qtdCurr, rev_curr: revCurr, unit_curr: unitCurr, marpct_curr: marpctCurr,
+                         qtd_prev: qtdPrev, rev_prev: revPrev, rl_prev: rlPrev, unit_prev: unitPrev, marpct_prev: marpctPrev, mar_prev: marPrev,
+                         qtd_curr: qtdCurr, rev_curr: revCurr, rl_curr: rlCurr, unit_curr: unitCurr, marpct_curr: marpctCurr, mar_curr: marCurr,
                          dqtd: dQtd, drev: dRev, vol, preco, mix };
             }
 
@@ -9896,10 +10377,25 @@ function filterTable(key) {
                 applyPmvFilter();
             }
 
+            function _renderPmvKpis(rows) {
+                let totRevPrev=0,totRevCurr=0,totVol=0,totPreco=0,totMix=0;
+                rows.forEach(r => { totRevPrev+=r.rev_prev; totRevCurr+=r.rev_curr; totVol+=r.vol; totPreco+=r.preco; totMix+=r.mix; });
+                const dRevAll = totRevCurr - totRevPrev;
+                const kpiColor = v => v >= 0 ? 'pos' : 'neg';
+                document.getElementById('pmv-summary').innerHTML = `
+                    <div class="pmv-kpi"><div class="pk-label">Δ Receita</div><div class="pk-val ${kpiColor(dRevAll)}">${dRevAll>=0?'+':''}R$ ${fmtBR(dRevAll)}</div></div>
+                    <div class="pmv-kpi"><div class="pk-label">Efeito Volume</div><div class="pk-val ${kpiColor(totVol)}">${totVol>=0?'+':''}R$ ${fmtBR(totVol)}</div></div>
+                    <div class="pmv-kpi"><div class="pk-label">Efeito Preço</div><div class="pk-val ${kpiColor(totPreco)}">${totPreco>=0?'+':''}R$ ${fmtBR(totPreco)}</div></div>
+                    <div class="pmv-kpi"><div class="pk-label">Efeito Mix</div><div class="pk-val ${kpiColor(totMix)}">${totMix>=0?'+':''}R$ ${fmtBR(totMix)}</div></div>
+                    <div class="pmv-kpi"><div class="pk-label">SKUs analisados</div><div class="pk-val" style="color:var(--text)">${rows.length}</div></div>
+                `;
+                document.getElementById('pmv-summary').style.display = 'flex';
+            }
+
             function applyPmvFilter() {
                 const q = (document.getElementById('pmv-filter-sku')?.value || '').trim().toUpperCase();
                 const _STR_COLS = new Set(['sku', 'nome_produto', 'categoria']);
-                const _NUM_COLS = ['qtd_prev','rev_prev','unit_prev','marpct_prev','qtd_curr','rev_curr','unit_curr','marpct_curr','dqtd','drev','vol','preco','mix'];
+                const _NUM_COLS = ['qtd_prev','rev_prev','rl_prev','unit_prev','marpct_prev','qtd_curr','rev_curr','rl_curr','unit_curr','marpct_curr','dqtd','drev','vol','preco','mix'];
 
                 // Read per-column filter values
                 const colFilters = {};
@@ -9950,6 +10446,7 @@ function filterTable(key) {
                     if (el) el.textContent = col === c ? (dir === 1 ? ' ▲' : ' ▼') : '';
                 });
                 _renderPmvTable(rows);
+                _renderPmvKpis(rows);
             }
 
             function renderPmv(rawRows) {
@@ -9964,19 +10461,7 @@ function filterTable(key) {
                 });
                 _pmvSort = { col: 'rev_curr', dir: -1 };
 
-                // KPI summary over all rows
-                let totRevPrev=0,totRevCurr=0,totVol=0,totPreco=0,totMix=0;
-                _pmvRows.forEach(r => { totRevPrev+=r.rev_prev; totRevCurr+=r.rev_curr; totVol+=r.vol; totPreco+=r.preco; totMix+=r.mix; });
-                const dRevAll = totRevCurr - totRevPrev;
-                const kpiColor = v => v >= 0 ? 'pos' : 'neg';
-                document.getElementById('pmv-summary').innerHTML = `
-                    <div class="pmv-kpi"><div class="pk-label">Δ Receita</div><div class="pk-val ${kpiColor(dRevAll)}">${dRevAll>=0?'+':''}R$ ${fmtBR(dRevAll)}</div></div>
-                    <div class="pmv-kpi"><div class="pk-label">Efeito Volume</div><div class="pk-val ${kpiColor(totVol)}">${totVol>=0?'+':''}R$ ${fmtBR(totVol)}</div></div>
-                    <div class="pmv-kpi"><div class="pk-label">Efeito Preço</div><div class="pk-val ${kpiColor(totPreco)}">${totPreco>=0?'+':''}R$ ${fmtBR(totPreco)}</div></div>
-                    <div class="pmv-kpi"><div class="pk-label">Efeito Mix</div><div class="pk-val ${kpiColor(totMix)}">${totMix>=0?'+':''}R$ ${fmtBR(totMix)}</div></div>
-                    <div class="pmv-kpi"><div class="pk-label">SKUs analisados</div><div class="pk-val" style="color:var(--text)">${_pmvRows.length}</div></div>
-                `;
-                document.getElementById('pmv-summary').style.display = 'flex';
+                _renderPmvKpis(_pmvRows);
                 applyPmvFilter();
             }
 
@@ -10005,19 +10490,20 @@ function filterTable(key) {
                 };
 
                 const fPct = v => { const n=+v||0; const c=n>0?'pmv-pos':n<0?'pmv-neg':'pmv-zero'; return `<span class="${c}">${n.toFixed(1)}%</span>`; };
+                const fMarg = v => { const n=+v||0; const c=n>0?'pmv-pos':n<0?'pmv-neg':'pmv-zero'; return `<span class="${c}">R$ ${fmtBR(Math.abs(n))}</span>`; };
                 let totQtdPrev=0,totRevPrev=0,totMarPrev=0,totQtdCurr=0,totRevCurr=0,totMarCurr=0,totVol=0,totPreco=0,totMix=0;
                 const tbody = rows.map(r => {
                     totQtdPrev+=r.qtd_prev; totRevPrev+=r.rev_prev; totQtdCurr+=r.qtd_curr; totRevCurr+=r.rev_curr;
                     totVol+=r.vol; totPreco+=r.preco; totMix+=r.mix;
-                    totMarPrev+=(r.rev_prev?(r.marpct_prev/100)*r.rev_prev:0);
-                    totMarCurr+=(r.rev_curr?(r.marpct_curr/100)*r.rev_curr:0);
+                    totMarPrev+=(r.mar_prev||0);
+                    totMarCurr+=(r.mar_curr||0);
                     const mediaDiaria = diasPeriodo > 0 && r.qtd_curr > 0 ? r.qtd_curr / diasPeriodo : 0;
                     const diasEst = mediaDiaria > 0 ? Math.round(r.estoque_atual / mediaDiaria) : null;
                     return `<tr id="pmv-row-${esc(r.sku)}">
                         <td class="pmv-sku"><button class="pmv-expand-btn" onclick="togglePmvExpand('${esc(r.sku)}')" title="Ver por canal">▶</button>${esc(r.sku)}</td>
                         <td class="pmv-sku" style="font-weight:400;color:var(--text);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.nome_produto)} · ${esc(r.categoria)}">${esc(r.nome_produto)||'–'}</td>
-                        <td>${fN2(r.qtd_prev)}</td><td>${fR(r.rev_prev)}</td><td>${fmtBR(r.unit_prev)}</td><td>${fPct(r.marpct_prev)}</td>
-                        <td style="border-left:2px solid var(--border)">${fN2(r.qtd_curr)}</td><td>${fR(r.rev_curr)}</td><td>${fmtBR(r.unit_curr)}</td><td>${fPct(r.marpct_curr)}</td>
+                        <td>${fN2(r.qtd_prev)}</td><td>${fR(r.rev_prev)}</td><td>${fmtBR(r.unit_prev)}</td><td>${_pmvMargemAbs ? fMarg(r.mar_prev) : fPct(r.marpct_prev)}</td>
+                        <td style="border-left:2px solid var(--border)">${fN2(r.qtd_curr)}</td><td>${fR(r.rev_curr)}</td><td>${fmtBR(r.unit_curr)}</td><td>${_pmvMargemAbs ? fMarg(r.mar_curr) : fPct(r.marpct_curr)}</td>
                         <td style="border-left:2px solid #c8d4e8">${fDelta(r.dqtd)}</td>
                         <td>${fDeltaR(r.drev)}</td>
                         <td>${fDeltaR(r.vol)}</td>
@@ -10034,8 +10520,8 @@ function filterTable(key) {
                 const tfoot = `<tr>
                     <td class="pmv-sku">TOTAL (${rows.length})</td>
                     <td></td>
-                    <td>${fN2(totQtdPrev)}</td><td>${fR(totRevPrev)}</td><td>–</td><td>${fPct(totMarpctPrev)}</td>
-                    <td style="border-left:2px solid #c8d4e8">${fN2(totQtdCurr)}</td><td>${fR(totRevCurr)}</td><td>–</td><td>${fPct(totMarpctCurr)}</td>
+                    <td>${fN2(totQtdPrev)}</td><td>${fR(totRevPrev)}</td><td>–</td><td>${_pmvMargemAbs ? fMarg(totMarPrev) : fPct(totMarpctPrev)}</td>
+                    <td style="border-left:2px solid #c8d4e8">${fN2(totQtdCurr)}</td><td>${fR(totRevCurr)}</td><td>–</td><td>${_pmvMargemAbs ? fMarg(totMarCurr) : fPct(totMarpctCurr)}</td>
                     <td style="border-left:2px solid #c8d4e8">${fDelta(totQtdCurr-totQtdPrev)}</td>
                     <td>${fDeltaR(totRevCurr-totRevPrev)}</td>
                     <td>${fDeltaR(totVol)}</td>
@@ -10078,25 +10564,41 @@ function filterTable(key) {
                 const fR2  = v => 'R$ ' + fmtBR(+v||0);
                 const fN2x = v => fmtBR(+v||0);
                 const fPctx = v => { const n=+v||0; const c=n>0?'pmv-pos':n<0?'pmv-neg':'pmv-zero'; return `<span class="${c}">${n.toFixed(1)}%</span>`; };
+                const fMargx = v => { const n=+v||0; const c=n>0?'pmv-pos':n<0?'pmv-neg':'pmv-zero'; return `<span class="${c}">R$ ${fmtBR(Math.abs(n))}</span>`; };
                 const canais = _pmvExpandCache[sku];
                 const fragment = document.createDocumentFragment();
                 canais.forEach(c => {
-                    const qp=+c.qtd_prev||0, rp=+c.rev_prev||0, mp=+c.mar_prev||0;
-                    const qc=+c.qtd_curr||0, rc=+c.rev_curr||0, mc=+c.mar_curr||0;
+                    const qp=+c.qtd_prev||0, rp=+c.rev_prev||0, rlp=+c.rl_prev||0, mp=+c.mar_prev||0;
+                    const qc=+c.qtd_curr||0, rc=+c.rev_curr||0, rlc=+c.rl_curr||0, mc=+c.mar_curr||0;
                     const up=qp?rp/qp:0, uc=qc?rc/qc:0;
-                    const mpp=rp?(mp/rp)*100:0, mpc=rc?(mc/rc)*100:0;
+                    const mpp=rlp?(mp/rlp)*100:0, mpc=rlc?(mc/rlc)*100:0;
                     const tr = document.createElement('tr');
                     tr.className = 'pmv-canal-row';
                     tr.dataset.sku = sku;
                     tr.innerHTML = `
                         <td class="pmv-canal-label">${esc(c.canal)}</td>
                         <td colspan="2"></td>
-                        <td>${fN2x(qp)}</td><td>${fR2(rp)}</td><td>${fmtBR(up)}</td><td>${fPctx(mpp)}</td>
-                        <td style="border-left:2px solid var(--border)">${fN2x(qc)}</td><td>${fR2(rc)}</td><td>${fmtBR(uc)}</td><td>${fPctx(mpc)}</td>
+                        <td>${fN2x(qp)}</td><td>${fR2(rp)}</td><td>${fmtBR(up)}</td><td>${_pmvMargemAbs ? fMargx(mp) : fPctx(mpp)}</td>
+                        <td style="border-left:2px solid var(--border)">${fN2x(qc)}</td><td>${fR2(rc)}</td><td>${fmtBR(uc)}</td><td>${_pmvMargemAbs ? fMargx(mc) : fPctx(mpc)}</td>
                         <td colspan="6" style="border-left:2px solid #c8d4e8"></td>`;
                     fragment.appendChild(tr);
                 });
                 row.after(fragment);
+            }
+
+            function _updatePmvMargemLabels() {
+                const labelPrev = document.getElementById('pmv-label-marpct-prev');
+                const labelCurr = document.getElementById('pmv-label-marpct-curr');
+                const btn = document.getElementById('pmv-toggle-margem');
+                const txt = _pmvMargemAbs ? 'Marg. R$' : 'Marg.%';
+                if (labelPrev) labelPrev.textContent = txt;
+                if (labelCurr) labelCurr.textContent = txt;
+                if (btn) btn.textContent = _pmvMargemAbs ? 'Marg.%' : 'Marg. R$';
+            }
+            function togglePmvMargemAbs() {
+                _pmvMargemAbs = !_pmvMargemAbs;
+                _updatePmvMargemLabels();
+                applyPmvFilter();
             }
 
             // ══════════════════════════════════════════════
@@ -10160,7 +10662,7 @@ if (id === 'dfs-kpis') {
                     const yr = document.getElementById('kpi-ano-select').value;
                     const ex = document.getElementById('kpi-exercicio');
                     if (ex) ex.textContent = yr;
-                    updateKpiTable();
+                    loadFcxConfig().then(() => updateKpiTable());
                 }
                 if (id === 'dfs-dupont') { updateDuPont(); }
                 if (id === 'dfs-pmv') { loadPmvMonths(); }
@@ -10682,6 +11184,24 @@ if (id === 'dfs-kpis') {
             function fmtPct(v) {
                 const n = parseFloat(v);
                 return isNaN(n) ? '–' : (n * 100).toFixed(1) + '%';
+            }
+
+            function evaluateBalancoFormula(formula, balMap) {
+                let expr = formula.trim();
+                if (expr.startsWith('=')) expr = expr.slice(1).trim();
+                const codeRegex = /\b\d+(?:\.\d+)*\b/g;
+                const codes = [...new Set(expr.match(codeRegex) || [])];
+                codes.forEach(code => {
+                    const val = parseFloat(balMap[String(code)] || 0);
+                    const re = new RegExp('\\b' + code.replace(/\./g, '\\.') + '\\b', 'g');
+                    expr = expr.replace(re, val);
+                });
+                if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) return 0;
+                try {
+                    return +new Function('"use strict"; return (' + expr + ')')();
+                } catch (e) {
+                    return 0;
+                }
             }
 
             function fmtM(v) {
@@ -17534,13 +18054,37 @@ if (id === 'dfs-kpis') {
                     if (r.status === 401) { handleUnauthorized(); return; }
                     const data = await r.json();
                     _simData = data.skus || [];
-                    skuSel.innerHTML = '<option value="">Selecione um SKU para simular...</option>' +
-                        _simData.map(s => `<option value="${esc(s.sku)}">${esc(s.sku)} — ${esc((s.nome_produto||'').slice(0,45))}</option>`).join('');
+                    filterSimSku('');
                     renderSkuSimulador();
                 } catch(e) {
                     document.getElementById('sim-margens-result').innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted)">Erro ao carregar dados</div>';
                     console.error('[SIMULADOR]', e);
                 }
+            }
+
+            function showSimSkuList() {
+                const dd = document.getElementById('sim-sku-dropdown');
+                filterSimSku(document.getElementById('sim-sku-select').value);
+                dd.style.display = 'block';
+            }
+            function hideSimSkuList() {
+                document.getElementById('sim-sku-dropdown').style.display = 'none';
+            }
+            function filterSimSku(q) {
+                const dd = document.getElementById('sim-sku-dropdown');
+                const term = (q || '').toLowerCase().trim();
+                const filtered = term ? _simData.filter(s => s.sku.toLowerCase().includes(term) || (s.nome_produto || '').toLowerCase().includes(term)) : _simData;
+                if (!filtered.length) { dd.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:13px">Nenhum SKU encontrado</div>'; return; }
+                dd.innerHTML = filtered.map(s => `<div onclick="pickSimSku('${esc(s.sku)}')" style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px" onmouseover="this.style.background='rgba(0,124,220,0.08)'" onmouseout="this.style.background=''" data-sku="${esc(s.sku)}"><span style="font-weight:600;color:var(--text)">${esc(s.sku)}</span><span style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((s.nome_produto || '').slice(0, 45))}</span></div>`).join('');
+            }
+            function pickSimSku(sku) {
+                document.getElementById('sim-sku-select').value = sku;
+                hideSimSkuList();
+                renderSkuSimulador();
+            }
+            function pickFirstSimSku() {
+                const first = document.querySelector('#sim-sku-dropdown [data-sku]');
+                if (first) pickSimSku(first.getAttribute('data-sku'));
             }
 
             function calcSim(s, ajustePct) {
@@ -17598,7 +18142,13 @@ if (id === 'dfs-kpis') {
                     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
                         <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Margem</div>
                         <div style="font-size:22px;font-weight:700;color:var(--accent);margin-top:6px">${fmtPct(s.margem_pct)}</div>
-                        <div style="font-size:12px;color:var(--muted);margin-top:2px">Custo R$ ${fmt(s.custo_unitario)}</div>
+                        <div style="margin-top:8px">
+                            ${s.custo_total_unit ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:1.5px 0"><span>CMV</span><span>R$ ${fmt(Math.abs(s.custo_total_unit))}</span></div>` : ''}
+                            ${s.imposto_unit ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:1.5px 0"><span>Imposto</span><span>R$ ${fmt(Math.abs(s.imposto_unit))}</span></div>` : ''}
+                            ${s.frete_unit ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:1.5px 0"><span>Frete</span><span>R$ ${fmt(Math.abs(s.frete_unit))}</span></div>` : ''}
+                            ${s.comissao_unit ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:1.5px 0"><span>Comissão</span><span>R$ ${fmt(Math.abs(s.comissao_unit))}</span></div>` : ''}
+                            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--text);padding:2px 0;border-top:1px solid var(--border);margin-top:3px"><span>Custo Total</span><span>R$ ${fmt(Math.abs(s.custo_unitario))}</span></div>
+                        </div>
                     </div>
                     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
                         <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Preço Médio</div>

@@ -23,6 +23,13 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Routing interno para /api/user-companies
+  const url = req.url || '';
+  if (url.includes('/user-companies')) {
+    return handleUserCompanies(req, res);
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
   const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
@@ -109,3 +116,56 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Erro interno no servidor de autenticação' });
   }
 };
+
+// ── user-companies (consolidado aqui para economizar função serverless) ──
+async function handleUserCompanies(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+
+  let body = req.body || {};
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch(e) {}
+  }
+
+  const email = (body.email || '').toLowerCase().trim();
+  if (!email) {
+    return res.status(400).json({ error: 'Email obrigatório' });
+  }
+
+  const results = [];
+  for (const [key, config] of Object.entries(companies)) {
+    if (config.users && config.users[email]) {
+      results.push({ key, name: config.name, tag: 'S&OP · PostgreSQL', color: getCompanyColor(key), source: 'env' });
+      continue;
+    }
+    const dbHost = process.env[`${config.dbEnvKey}_HOST`];
+    if (!dbHost) continue;
+    try {
+      const pool = getPool(key);
+      const result = await pool.query(
+        'SELECT 1 FROM usuarios WHERE LOWER(usuario) = $1 AND ativo = TRUE LIMIT 1',
+        [email]
+      );
+      if (result.rowCount > 0) {
+        results.push({ key, name: config.name, tag: 'S&OP · PostgreSQL', color: getCompanyColor(key), source: 'db' });
+      }
+    } catch (e) {
+      console.error(`[user-companies] Erro ao verificar ${key}:`, e.message);
+    }
+  }
+  return res.status(200).json({ companies: results });
+}
+
+function getCompanyColor(key) {
+  switch (key) {
+    case 'lanzi': return 'var(--accent)';
+    case 'supershop': return '#9b27af';
+    case 'marcon': return '#e67e22';
+    case 'shopgra': return '#28a745';
+    default: return '#666';
+  }
+}

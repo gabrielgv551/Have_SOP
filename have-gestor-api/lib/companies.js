@@ -30,6 +30,15 @@ module.exports = {
       have:   process.env.MARCON_PASS_HAVE,
     }
   },
+  shopgra: {
+    name: "Shopgra",
+    dbEnvKey: "SHOPGRA",
+    users: {
+      admin:  process.env.SHOPGRA_PASS_ADMIN,
+      gestor: process.env.SHOPGRA_PASS_GESTOR,
+      have:   process.env.SHOPGRA_PASS_HAVE,
+    }
+  },
   // Para adicionar nova empresa, basta copiar o bloco acima e
   // adicionar as variáveis de ambiente correspondentes no Vercel.
   // empresa2: {

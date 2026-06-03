@@ -114,7 +114,7 @@ CREATE OR REPLACE FUNCTION calcular_receita_bruta(
 ) RETURNS NUMERIC AS $$
 BEGIN
   RETURN COALESCE(
-    (SELECT SUM(COALESCE("Total Venda Pedido", "Total Venda", 0))
+    (SELECT SUM(COALESCE("Total Venda", 0)) - SUM(COALESCE("Valor Desconto", 0))
      FROM bd_vendas
      WHERE empresa = p_empresa
        AND EXTRACT(YEAR FROM "Data"::date)::int = p_ano

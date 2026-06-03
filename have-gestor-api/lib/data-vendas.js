@@ -1,4 +1,5 @@
 const { getPool, getCompanyPool } = require('./db');
+const { CANAL_GRUPO_SQL } = require('./data-helpers');
 
 module.exports = async function handleVendas(req, res, payload) {
 
@@ -144,6 +145,86 @@ module.exports = async function handleVendas(req, res, payload) {
       return res.json({ skus: r.rows, receita_bruta_global: parseFloat(rbRow.rows[0]?.receita_bruta_global) || 0 });
     } catch(e) {
       console.error('[MARGENS]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── Módulo Simulador de Margens ────────────────────────────────────────
+  if (req.query.module === 'simulador-margens') {
+    const { company, pool } = getCompanyPool(payload);
+    const { ano, mes, marca, canal } = req.query;
+    try {
+      let targetAno = parseInt(ano);
+      let targetMes = parseInt(mes);
+      if (!targetAno || !targetMes) {
+        const last = await pool.query(`
+          SELECT "Ano"::int AS ano, "Mes"::int AS mes
+          FROM bd_vendas
+          WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL
+          ORDER BY "Ano" DESC, "Mes" DESC
+          LIMIT 1
+        `);
+        if (!last.rows.length) return res.json({ skus: [], periodo: null });
+        targetAno = last.rows[0].ano;
+        targetMes = last.rows[0].mes;
+      }
+      const params = [targetAno, targetMes];
+      let whereClause = `DATE_TRUNC('month', "Data"::date) = DATE_TRUNC('month', MAKE_DATE($1::int, $2::int, 1))
+          AND "Sku" IS NOT NULL AND TRIM("Sku"::text) != ''`;
+      if (canal) {
+        params.push(canal);
+        whereClause += `\n          AND (${CANAL_GRUPO_SQL}) = $${params.length}`;
+      }
+      if (marca) {
+        params.push(marca);
+        whereClause += `\n          AND "Sku" IN (SELECT "Sku" FROM cadastros_sku WHERE TRIM("Marca") = $${params.length})`;
+      }
+      const r = await pool.query(`
+        SELECT
+          "Sku" AS sku,
+          MAX("Nome Produto") AS nome_produto,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END)::numeric, 2) AS receita_liquida,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END)::numeric, 2) AS margem_contribuicao,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END)::numeric, 1) AS qtd_liquida,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total",0) ELSE 0 END)::numeric, 2) AS custo_total,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Imposto Produto"::numeric,0) ELSE 0 END)::numeric, 2) AS imposto_produto,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Frete Pago Prod"::numeric,0) ELSE 0 END)::numeric, 2) AS frete_pago_prod,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Comissao Produto"::numeric,0) ELSE 0 END)::numeric, 2) AS comissao_produto,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END)::numeric, 2) AS repasse_financeiro
+        FROM bd_vendas
+        WHERE ${whereClause}
+        GROUP BY "Sku"
+        HAVING SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END) > 0
+        ORDER BY receita_liquida DESC
+      `, params);
+
+      const skus = r.rows.map(row => {
+        const receita = parseFloat(row.receita_liquida) || 0;
+        const qtd = parseFloat(row.qtd_liquida) || 0;
+        const margem = parseFloat(row.margem_contribuicao) || 0;
+        const preco_medio = qtd > 0 ? receita / qtd : 0;
+        const custo_unitario = qtd > 0 ? (receita - margem) / qtd : 0;
+        const margem_pct = receita > 0 ? (margem / receita) * 100 : 0;
+        const unit = v => qtd > 0 ? (parseFloat(v) || 0) / qtd : 0;
+        return {
+          sku: row.sku,
+          nome_produto: row.nome_produto,
+          receita_liquida: receita,
+          qtd_liquida: qtd,
+          margem_contribuicao: margem,
+          preco_medio: +preco_medio.toFixed(2),
+          custo_unitario: +custo_unitario.toFixed(2),
+          margem_pct: +margem_pct.toFixed(1),
+          custo_total_unit: +unit(row.custo_total).toFixed(2),
+          imposto_unit: +unit(row.imposto_produto).toFixed(2),
+          frete_unit: +unit(row.frete_pago_prod).toFixed(2),
+          comissao_unit: +unit(row.comissao_produto).toFixed(2),
+          repasse_unit: +unit(row.repasse_financeiro).toFixed(2),
+        };
+      });
+      return res.json({ skus, periodo: { ano: targetAno, mes: targetMes } });
+    } catch(e) {
+      console.error('[SIMULADOR-MARGENS]', e.message);
       return res.status(500).json({ error: e.message });
     }
   }

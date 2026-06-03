@@ -6,7 +6,7 @@ const handleVendas = require('../lib/data-vendas');
 const handleSopc   = require('../lib/data-sopc');
 
 const TINY_MODULES  = ['tiny-oauth','tiny-debug','tiny-sync','cron-tiny','tiny-skip-old','tiny-enrich','tiny-margem','tiny-canais','import-margem'];
-const VENDAS_MODULES = ['margens','vendas','forecast-canais','forecast-recebimentos','forecast-diario'];
+const VENDAS_MODULES = ['margens','simulador-margens','vendas','forecast-canais','forecast-recebimentos','forecast-diario'];
 const SOPC_MODULES  = ['sopc-config','fornecedores-config','sku-desativadas'];
 
 module.exports = async (req, res) => {

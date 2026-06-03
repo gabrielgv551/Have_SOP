@@ -309,7 +309,7 @@ def processar(pedidos: list) -> pd.DataFrame:
                 "Estoque Total"      : produto.get("totalStock", 0),
                 "Custo Total"        : produto.get("totalCost", 0),
                 "Total Venda"        : produto.get("totalSale", 0),
-                "Valor Desconto"     : produto.get("valueWithDiscount", 0),
+                "Valor Desconto"     : produto.get("discountValue", 0),
                 "Margem Produto"     : produto.get("margin", 0),
                 "Valor Liquido Prod" : produto.get("liquidValue", 0),
                 "Perc Custo"         : produto.get("costPercentage", 0),

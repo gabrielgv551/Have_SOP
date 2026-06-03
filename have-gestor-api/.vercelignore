@@ -1,0 +1,6 @@
+node_modules
+migrations
+*.md
+.env*
+*.log
+scripts

@@ -269,8 +269,9 @@ module.exports = async function handleSopc(req, res, payload) {
       let targetAno = anoFiltro ? parseInt(anoFiltro, 10) : null;
       let targetMes = mesFiltro ? parseInt(mesFiltro, 10) : null;
 
-      // Sem filtro: descobrir o período mais recente
-      if (!targetAno || !targetMes) {
+      // Resolver período quando filtro parcial ou ausente
+      if (!targetAno && !targetMes) {
+        // Nenhum filtro: período mais recente
         const periodRes = await pool.query(`
           SELECT "Ano"::int AS ano, "Mes"::int AS mes
           FROM bd_vendas
@@ -279,6 +280,26 @@ module.exports = async function handleSopc(req, res, payload) {
           LIMIT 1
         `, params);
         targetAno = periodRes.rows[0]?.ano || null;
+        targetMes = periodRes.rows[0]?.mes || null;
+      } else if (!targetAno && targetMes) {
+        // Só mês selecionado: ano mais recente com dados para esse mês
+        const periodRes = await pool.query(`
+          SELECT "Ano"::int AS ano
+          FROM bd_vendas
+          ${whereClause} AND "Mes" = $${params.length + 1}
+          ORDER BY "Ano" DESC
+          LIMIT 1
+        `, [...params, targetMes]);
+        targetAno = periodRes.rows[0]?.ano || null;
+      } else if (targetAno && !targetMes) {
+        // Só ano selecionado: mês mais recente dentro desse ano
+        const periodRes = await pool.query(`
+          SELECT "Mes"::int AS mes
+          FROM bd_vendas
+          ${whereClause} AND "Ano" = $${params.length + 1}
+          ORDER BY "Mes" DESC
+          LIMIT 1
+        `, [...params, targetAno]);
         targetMes = periodRes.rows[0]?.mes || null;
       }
 
@@ -290,18 +311,21 @@ module.exports = async function handleSopc(req, res, payload) {
       params.push(targetMes);
 
       result = await pool.query(`
+        WITH dados_filtrados AS (
+          SELECT * FROM bd_vendas
+          ${whereClause}
+            AND "Ano" = $${params.length - 1} AND "Mes" = $${params.length}
+        )
         SELECT
           ${targetAno} AS ano,
           ${targetMes} AS mes,
-          SUM(COALESCE("Total Venda Pedido", "Total Venda")) AS receita_bruta,
+          COALESCE((SELECT SUM(tvp) FROM (SELECT "Order ID", MAX("Total Venda Pedido") AS tvp FROM dados_filtrados GROUP BY "Order ID") t), 0) AS receita_bruta,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Total Venda", 0) ELSE 0 END) AS receita_liquida,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Quantidade Vendida", 0) ELSE 0 END) AS qtd_liquida,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_bruta,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0) ELSE 0 END) AS custo_total
-        FROM bd_vendas
-        ${whereClause}
-          AND "Ano" = $${params.length - 1} AND "Mes" = $${params.length}
-        GROUP BY "Ano", "Mes"
+        FROM dados_filtrados
+        GROUP BY 1, 2
       `, params);
       return res.json(result.rows[0] || {});
     }
@@ -330,22 +354,22 @@ module.exports = async function handleSopc(req, res, payload) {
       const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
       result = await pool.query(`
         SELECT ano, mes,
-               SUM(tvp)  AS receita,
-               SUM(qtd)  AS qtd,
+               SUM(CASE WHEN rn = 1 THEN tvp ELSE 0 END) AS receita,
+               SUM(qtd) AS qtd,
                CASE WHEN SUM(receita_liq) > 0
                     THEN ROUND((
                       SUM(margem_liq) / SUM(receita_liq) * 100
                     )::numeric, 2)
                     ELSE NULL END AS mc_pct
         FROM (
-          SELECT "Ano" AS ano, "Mes" AS mes, "Order ID",
-                 MAX("Total Venda Pedido") AS tvp,
-                 SUM("Quantidade Vendida") AS qtd,
-                 SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"                ELSE 0 END) AS receita_liq,
-                 SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_liq
+          SELECT "Ano" AS ano, "Mes" AS mes,
+                 MAX("Total Venda Pedido") OVER (PARTITION BY "Order ID") AS tvp,
+                 "Quantidade Vendida" AS qtd,
+                 CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Total Venda", 0) ELSE 0 END AS receita_liq,
+                 CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END AS margem_liq,
+                 ROW_NUMBER() OVER (PARTITION BY "Order ID" ORDER BY "Produto ID") AS rn
           FROM bd_vendas
           WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL${fWhere}
-          GROUP BY "Ano", "Mes", "Order ID"
         ) t
         GROUP BY ano, mes
         ORDER BY ano ASC, mes ASC
@@ -368,9 +392,9 @@ module.exports = async function handleSopc(req, res, payload) {
       const pad = n => String(n).padStart(2, '0');
       const lastDay = (y, m) => new Date(+y, +m, 0).getDate();
       const dIniPrev = dia_ini_prev ? +dia_ini_prev : 1;
-      const dFimPrev = dia_fim_prev ? +dia_fim_prev : lastDay(ano_prev, mes_prev);
+      const dFimPrev = Math.min(dia_fim_prev ? +dia_fim_prev : lastDay(ano_prev, mes_prev), lastDay(ano_prev, mes_prev));
       const dIniCurr = dia_ini_curr ? +dia_ini_curr : 1;
-      const dFimCurr = dia_fim_curr ? +dia_fim_curr : lastDay(ano_curr, mes_curr);
+      const dFimCurr = Math.min(dia_fim_curr ? +dia_fim_curr : lastDay(ano_curr, mes_curr), lastDay(ano_curr, mes_curr));
       const datePrevIni = `${ano_prev}-${pad(mes_prev)}-${pad(dIniPrev)}`;
       const datePrevFim = `${ano_prev}-${pad(mes_prev)}-${pad(dFimPrev)}`;
       const dateCurrIni = `${ano_curr}-${pad(mes_curr)}-${pad(dIniCurr)}`;
@@ -382,28 +406,33 @@ module.exports = async function handleSopc(req, res, payload) {
         pmvCanalWhere = ` AND (${CANAL_GRUPO_SQL}) = $${pmvParams.length}`;
       }
       result = await pool.query(`
+        WITH todos AS (
+          SELECT *
+          FROM bd_vendas v
+          WHERE (
+            v."Data"::date BETWEEN $1::date AND $2::date OR
+            v."Data"::date BETWEEN $3::date AND $4::date
+          )${pmvCanalWhere}
+        )
         SELECT
           v."Sku" AS sku,
           MAX(v."Nome Produto") AS nome_produto,
           MAX(v."Categoria") AS categoria,
           COALESCE(NULLIF(TRIM(MAX(cs."Marca")), ''), '–') AS marca,
           COALESCE(MAX(pp.estoque_atual::numeric), 0) AS estoque_atual,
-          SUM(CASE WHEN v."Data"::date BETWEEN $1::date AND $2::date THEN v."Quantidade Vendida" ELSE 0 END) AS qtd_prev,
+          SUM(CASE WHEN v."Status" !~* '(cancel|devol|n[aã]o.?pago)' AND v."Data"::date BETWEEN $1::date AND $2::date THEN v."Quantidade Vendida" ELSE 0 END) AS qtd_prev,
           SUM(CASE WHEN v."Data"::date BETWEEN $1::date AND $2::date THEN v."Total Venda" ELSE 0 END) AS rev_prev,
-          SUM(CASE WHEN v."Data"::date BETWEEN $1::date AND $2::date THEN COALESCE(v."Margem Produto",0) ELSE 0 END) AS mar_prev,
-          SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN v."Quantidade Vendida" ELSE 0 END) AS qtd_curr,
+          SUM(CASE WHEN v."Status" !~* '(cancel|devol|n[aã]o.?pago)' AND v."Data"::date BETWEEN $1::date AND $2::date THEN COALESCE(v."Total Venda", 0) ELSE 0 END) AS rl_prev,
+          SUM(CASE WHEN v."Status" !~* '(cancel|devol|n[aã]o.?pago)' AND v."Data"::date BETWEEN $1::date AND $2::date THEN COALESCE(v."Margem Produto",0) ELSE 0 END) AS mar_prev,
+          SUM(CASE WHEN v."Status" !~* '(cancel|devol|n[aã]o.?pago)' AND v."Data"::date BETWEEN $3::date AND $4::date THEN v."Quantidade Vendida" ELSE 0 END) AS qtd_curr,
           SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN v."Total Venda" ELSE 0 END) AS rev_curr,
-          SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN COALESCE(v."Margem Produto",0) ELSE 0 END) AS mar_curr
-        FROM bd_vendas v
+          SUM(CASE WHEN v."Status" !~* '(cancel|devol|n[aã]o.?pago)' AND v."Data"::date BETWEEN $3::date AND $4::date THEN COALESCE(v."Total Venda", 0) ELSE 0 END) AS rl_curr,
+          SUM(CASE WHEN v."Status" !~* '(cancel|devol|n[aã]o.?pago)' AND v."Data"::date BETWEEN $3::date AND $4::date THEN COALESCE(v."Margem Produto",0) ELSE 0 END) AS mar_curr
+        FROM todos v
         LEFT JOIN cadastros_sku cs ON TRIM(cs."Sku"::text) = TRIM(v."Sku"::text)
         LEFT JOIN ponto_pedido pp ON TRIM(pp.sku::text) = TRIM(v."Sku"::text)
-        WHERE v."Status" !~* '(cancel|devol|n[aã]o.?pago)'
-          AND (
-            v."Data"::date BETWEEN $1::date AND $2::date OR
-            v."Data"::date BETWEEN $3::date AND $4::date
-          )${pmvCanalWhere}
         GROUP BY v."Sku"
-        HAVING SUM(v."Quantidade Vendida") > 0
+        HAVING SUM(v."Total Venda") > 0
         ORDER BY SUM(CASE WHEN v."Data"::date BETWEEN $3::date AND $4::date THEN v."Total Venda" ELSE 0 END) DESC
       `, pmvParams);
       return res.json(result.rows);
@@ -415,9 +444,9 @@ module.exports = async function handleSopc(req, res, payload) {
       const pad = n => String(n).padStart(2, '0');
       const lastDay = (y, m) => new Date(+y, +m, 0).getDate();
       const dIniPrev = dia_ini_prev ? +dia_ini_prev : 1;
-      const dFimPrev = dia_fim_prev ? +dia_fim_prev : lastDay(ano_prev, mes_prev);
+      const dFimPrev = Math.min(dia_fim_prev ? +dia_fim_prev : lastDay(ano_prev, mes_prev), lastDay(ano_prev, mes_prev));
       const dIniCurr = dia_ini_curr ? +dia_ini_curr : 1;
-      const dFimCurr = dia_fim_curr ? +dia_fim_curr : lastDay(ano_curr, mes_curr);
+      const dFimCurr = Math.min(dia_fim_curr ? +dia_fim_curr : lastDay(ano_curr, mes_curr), lastDay(ano_curr, mes_curr));
       const datePrevIni = `${ano_prev}-${pad(mes_prev)}-${pad(dIniPrev)}`;
       const datePrevFim = `${ano_prev}-${pad(mes_prev)}-${pad(dFimPrev)}`;
       const dateCurrIni = `${ano_curr}-${pad(mes_curr)}-${pad(dIniCurr)}`;
@@ -429,23 +458,28 @@ module.exports = async function handleSopc(req, res, payload) {
         canaisCanalWhere = ` AND (${CANAL_GRUPO_SQL}) = $${canaisParams.length}`;
       }
       result = await pool.query(`
+        WITH todos AS (
+          SELECT *
+          FROM bd_vendas
+          WHERE "Sku" = $5
+            AND (
+              "Data"::date BETWEEN $1::date AND $2::date OR
+              "Data"::date BETWEEN $3::date AND $4::date
+            )${canaisCanalWhere}
+        )
         SELECT
           COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal') AS canal,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_prev,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date BETWEEN $1::date AND $2::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_prev,
           SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN "Total Venda" ELSE 0 END) AS rev_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_prev,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_curr,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Total Venda", 0) ELSE 0 END) AS rl_prev,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date BETWEEN $1::date AND $2::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_prev,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date BETWEEN $3::date AND $4::date THEN "Quantidade Vendida" ELSE 0 END) AS qtd_curr,
           SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) AS rev_curr,
-          SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_curr
-        FROM bd_vendas
-        WHERE "Status" !~* '(cancel|devol|n[aã]o.?pago)'
-          AND "Sku" = $5
-          AND (
-            "Data"::date BETWEEN $1::date AND $2::date OR
-            "Data"::date BETWEEN $3::date AND $4::date
-          )${canaisCanalWhere}
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Total Venda", 0) ELSE 0 END) AS rl_curr,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' AND "Data"::date BETWEEN $3::date AND $4::date THEN COALESCE("Margem Produto",0) ELSE 0 END) AS mar_curr
+        FROM todos
         GROUP BY COALESCE(NULLIF(TRIM("Canal Apelido"::text), ''), TRIM("Canal de venda"), 'Sem canal')
-        HAVING SUM("Quantidade Vendida") > 0
+        HAVING SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END) > 0
         ORDER BY SUM(CASE WHEN "Data"::date BETWEEN $3::date AND $4::date THEN "Total Venda" ELSE 0 END) DESC
       `, canaisParams);
       return res.json(result.rows);

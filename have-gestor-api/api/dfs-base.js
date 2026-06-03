@@ -60,14 +60,19 @@ module.exports = async (req, res) => {
       const a = parseInt(ano), m = parseInt(mes);
       if (m < 1 || m > 12) return res.status(400).json({ error: 'Mes invalido' });
 
+      // Deduplicar por conta, mantendo última ocorrência
+      const seen = new Map();
+      rows.forEach(r => seen.set(String(r.conta || '').trim(), r));
+      const uniqueRows = Array.from(seen.values());
+
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
         await client.query('DELETE FROM dfs_balanco WHERE empresa=$1 AND ano=$2 AND mes=$3', [company, a, m]);
 
         const CHUNK = 200;
-        for (let i = 0; i < rows.length; i += CHUNK) {
-          const chunk = rows.slice(i, i + CHUNK);
+        for (let i = 0; i < uniqueRows.length; i += CHUNK) {
+          const chunk = uniqueRows.slice(i, i + CHUNK);
           const vals = [];
           const params = [];
           chunk.forEach((r, idx) => {
@@ -82,7 +87,7 @@ module.exports = async (req, res) => {
         }
 
         await client.query('COMMIT');
-        return res.json({ ok: true, count: rows.length });
+        return res.json({ ok: true, count: uniqueRows.length });
       } catch (e) {
         await client.query('ROLLBACK');
         throw e;

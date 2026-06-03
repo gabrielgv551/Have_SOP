@@ -16,6 +16,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/user-companies",
+      "destination": "/api/login"
+    },
+    {
       "source": "/api/admin/usuarios/:id/reset-password",
       "destination": "/api/admin/usuarios?id=:id&action=reset-password"
     },
