@@ -135,15 +135,32 @@ async function consolidarMes(pool, company, ano, mes, opts = {}) {
   ).catch(() => ({ rows: [] }));
   const depara = dpR.rows;
 
-  const extFiltro = fonte === 'manual' ? ' AND e.belvo_tx_id IS NULL'
-                  : fonte === 'openfinance' ? ' AND e.belvo_tx_id IS NOT NULL'
-                  : '';
   const extSubFilter = subempresaId
     ? ` AND (b.subempresa_id = ${subempresaId} OR e.banco_id IS NULL)` : '';
-  const extR = await pool.query(
-    `SELECT e.dia, e.descricao, e.razao_social, e.valor FROM caixa_extrato e LEFT JOIN caixa_bancos b ON e.banco_id = b.id WHERE e.empresa=$1 AND e.ano=$2 AND e.mes=$3${extFiltro}${extSubFilter}`,
-    [company, a, m]
-  ).catch(() => ({ rows: [] }));
+
+  const extSqlManual = `
+    SELECT e.dia, e.descricao, e.razao_social, e.valor
+    FROM caixa_extrato e
+    LEFT JOIN caixa_bancos b ON e.banco_id = b.id
+    WHERE e.empresa=$1 AND e.ano=$2 AND e.mes=$3 AND e.belvo_tx_id IS NULL ${extSubFilter}
+  `;
+
+  const extSqlOF = `
+    SELECT
+      EXTRACT(DAY FROM data_lancamento)::int AS dia,
+      descricao,
+      razao_social,
+      ROUND(valor * 100)::int AS valor
+    FROM extrato_openfinance
+    WHERE cliente=$1 AND EXTRACT(YEAR FROM data_lancamento)=$2 AND EXTRACT(MONTH FROM data_lancamento)=$3
+  `;
+
+  let finalSql = '';
+  if (fonte === 'manual') finalSql = extSqlManual;
+  else if (fonte === 'openfinance') finalSql = extSqlOF;
+  else finalSql = `(${extSqlManual}) UNION ALL (${extSqlOF})`;
+
+  const extR = await pool.query(finalSql, [company, a, m]).catch(() => ({ rows: [] }));
 
   const valores = {};
   for (const extRow of extR.rows) {
@@ -425,10 +442,33 @@ async function consolidarAnual(pool, company, ano, opts = {}) {
   const extSubFilter = subempresaId
     ? ` AND (b.subempresa_id = ${subempresaId} OR (e.banco_id IS NULL AND EXISTS (SELECT 1 FROM subempresas s WHERE s.id = ${subempresaId} AND s.empresa = e.empresa)))`
     : '';
+
+  const extSqlManualAno = `
+    SELECT e.mes, e.dia, e.descricao, e.razao_social, e.valor, b.nome AS banco_nome
+    FROM caixa_extrato e
+    LEFT JOIN caixa_bancos b ON e.banco_id = b.id
+    WHERE e.empresa=$1 AND e.ano=$2 AND e.belvo_tx_id IS NULL ${extSubFilter}
+  `;
+
+  const extSqlOFAno = `
+    SELECT
+      EXTRACT(MONTH FROM data_lancamento)::int AS mes,
+      EXTRACT(DAY FROM data_lancamento)::int AS dia,
+      descricao,
+      razao_social,
+      ROUND(valor * 100)::int AS valor,
+      banco AS banco_nome
+    FROM extrato_openfinance
+    WHERE cliente=$1 AND EXTRACT(YEAR FROM data_lancamento)=$2
+  `;
+
+  let finalSqlAno = '';
+  if (fonte === 'manual') finalSqlAno = extSqlManualAno;
+  else if (fonte === 'openfinance') finalSqlAno = extSqlOFAno;
+  else finalSqlAno = `(${extSqlManualAno}) UNION ALL (${extSqlOFAno})`;
+
   const [extR, cpR, pcR, vR, repR, fcR] = await Promise.all([
-    pool.query(`SELECT e.mes, e.dia, e.descricao, e.razao_social, e.valor, b.nome AS banco_nome FROM caixa_extrato e LEFT JOIN caixa_bancos b ON e.banco_id = b.id WHERE e.empresa=$1 AND e.ano=$2${
-      fonte === 'manual' ? ' AND e.belvo_tx_id IS NULL' :
-      fonte === 'openfinance' ? ' AND e.belvo_tx_id IS NOT NULL' : ''}${extSubFilter}`, [company, ano]),
+    pool.query(finalSqlAno, [company, ano]),
     deparaCP.length > 0
       ? (() => {
           const cpBase = 'SELECT fornecedor, saldo, data_vencimento FROM contas_pagar WHERE data_vencimento IS NOT NULL AND data_vencimento::date BETWEEN $1::date AND $2::date';

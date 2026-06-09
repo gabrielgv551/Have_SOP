@@ -12,6 +12,7 @@ async function upsertConfig(pool, company, chave, valor) {
 }
 
 function isTinyTable(t) { return /^bd_(pedidos|estoque)_tiny_[a-z0-9_]+$/.test(t); }
+function isBlingTable(t) { return /^bd_(pedidos|estoque)_bling_[a-z0-9_]+$/.test(t); }
 
 const TABELAS_PERMITIDAS = [
   'curva_abc',
@@ -131,6 +132,7 @@ module.exports = {
   parseBody,
   upsertConfig,
   isTinyTable,
+  isBlingTable,
   TABELAS_PERMITIDAS,
   CANAL_COL,
   CANAL_GRUPO_SQL,
@@ -140,3 +142,6 @@ module.exports = {
   lerEstoqueFullMap,
   getMlToken,
 };
+
+
+

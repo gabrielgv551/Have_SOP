@@ -48,8 +48,8 @@ DB_CONFIG = {
 }
 
 PC_URL       = "https://sys.precocerto.co"
-PC_EMAIL     = os.getenv("PRECOCERTO_EMAIL",    "comercial@casaeletromarcon.com.br")
-PC_SENHA     = os.getenv("PRECOCERTO_PASSWORD", "eletro123")
+PC_EMAIL     = "comercial@casaeletromarcon.com.br"
+PC_SENHA     = "eletro123"
 FULL_RELOAD     = bool(os.getenv("FULL_RELOAD"))
 REPROCESS       = bool(os.getenv("REPROCESS"))       # REPROCESS=1: reprocessa do cache, sem API
 FORCE_DOWNLOAD  = os.getenv("FORCE_DOWNLOAD", "0") not in ("", "0", "false", "False")  # FORCE_DOWNLOAD=1: ignora cache
@@ -249,7 +249,12 @@ def _buscar_pagina(auth: dict, url: str, params_extra: dict, offset: int) -> dic
         try:
             r = _session.get(url, headers=_api_headers(auth), params=params, timeout=90)
             if r.status_code == 200:
-                return r.json()
+                try:
+                    return r.json()
+                except ValueError as e:
+                    with open("erro_api_precocerto.html", "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    raise RuntimeError(f"JSON inválido (API retornou HTML/Texto). Salvo em erro_api_precocerto.html. Erro: {e}")
             if r.status_code in (401, 403):
                 raise RuntimeError(f"Sessão expirada (HTTP {r.status_code}).")
             wait = 10 * (tentativa + 1)
@@ -806,21 +811,13 @@ def conectar():
 
 
 def obter_data_ultimo_sync(engine) -> str:
-    try:
-        with engine.connect() as conn:
-            resultado = conn.execute(
-                text(f'SELECT MAX("Data") FROM {TABLE}')
-            ).scalar()
-        if resultado:
-            ultimo = pd.to_datetime(resultado)
-            primeiro_do_mes = ultimo.replace(day=1).strftime("%Y-%m-%d")
-            print(f"  ✔  Último registro: {ultimo.strftime('%d/%m/%Y')}")
-            print(f"     Buscando desde: {primeiro_do_mes} (início do mês atual)")
-            return primeiro_do_mes
-    except Exception:
-        pass
-    print("  [i] Tabela vazia → carga inicial completa")
-    return FIRST_DATE
+    hoje = datetime.now()
+    primeiro_deste_mes = hoje.replace(day=1)
+    ultimo_do_mes_anterior = primeiro_deste_mes - timedelta(days=1)
+    primeiro_mes_anterior = ultimo_do_mes_anterior.replace(day=1)
+    d = primeiro_mes_anterior.strftime("%Y-%m-%d")
+    print(f"  [i] Buscando desde: {d} (início do mês anterior)")
+    return d
 
 
 def upsert_banco(engine, df: pd.DataFrame):
@@ -1283,10 +1280,10 @@ def main():
     # ── Etapa 1: Auth ─────────────────────────────────────────────
     if REPROCESS:
         print("  Modo: REPROCESS — usando cache local, sem chamadas à API")
-        session = None
+        auth = None
     else:
-        _step(1, 4, "Autenticando no Preco Certo")
-        session = autenticar_requests()
+        _step(1, 4, "Autenticando no Preco Certo via Browser")
+        auth = autenticar_playwright()
 
     # ── Etapa 2: Banco ────────────────────────────────────────────
     _step(2, 4, "Conectando ao banco e criando tabela")
@@ -1325,27 +1322,35 @@ def main():
                 os.remove(cache_path)
                 print(f"    [cache] Apagado cache da última janela → re-download forçado")
 
-        try:
-            df_raw = baixar_export_xlsx(session, d_after, d_before)
-        except Exception as e:
-            print(f"  [ERRO export] {e}")
+        # Usar o auth dict já retornado pelo playwright
+        if not REPROCESS and not auth:
+            print("Erro: sem autenticação")
             continue
 
-        # Em modo FULL_RELOAD: apagar registros do período antes de inserir (idempotente)
-        if FULL_RELOAD or REPROCESS:
-            with engine.begin() as conn:
-                deleted = conn.execute(
-                    text(f'DELETE FROM "{TABLE}" WHERE "Data" >= :d1 AND "Data" < :d2'),
-                    {"d1": d_after, "d2": (datetime.strptime(d_before, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")}
-                ).rowcount
-                if deleted:
-                    print(f"  [clean] {deleted:,} registros antigos removidos do período")
+        try:
+            print("    [fallback] Usando API paginada devido a falha no export...")
+            linhas_api = baixar_todos(auth, d_after, d_before)
+            if not linhas_api:
+                df = pd.DataFrame()
+            else:
+                orders_map = baixar_orders(auth, d_after, d_before)
+                df = processar(linhas_api, orders_map)
+        except Exception as e:
+            print(f"  [ERRO api] {e}")
+            continue
 
-        if df_raw.empty:
+        # Sempre apagar registros do período antes de inserir para evitar duplicação (idempotente)
+        with engine.begin() as conn:
+            deleted = conn.execute(
+                text(f'DELETE FROM "{TABLE}" WHERE "Data" >= :d1 AND "Data" < :d2'),
+                {"d1": d_after, "d2": (datetime.strptime(d_before, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")}
+            ).rowcount
+            if deleted:
+                print(f"  [clean] {deleted:,} registros antigos removidos do período")
+
+        if df.empty:
             print(f"  → 0 linhas nesta janela, pulando")
             continue
-
-        df = processar_xlsx(df_raw)
 
         if not df.empty:
             upsert_banco(engine, df)

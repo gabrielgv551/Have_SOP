@@ -1,5 +1,5 @@
 const { getPool, getCompanyPool } = require('./db');
-const { isTinyTable, TABELAS_PERMITIDAS, CANAL_GRUPO_SQL, getTableColumns, lerEstoqueFullMap } = require('./data-helpers');
+const { isTinyTable, isBlingTable, TABELAS_PERMITIDAS, CANAL_GRUPO_SQL, getTableColumns, lerEstoqueFullMap } = require('./data-helpers');
 
 module.exports = async function handleSopc(req, res, payload) {
 
@@ -142,7 +142,7 @@ module.exports = async function handleSopc(req, res, payload) {
 
   // ── Generic table queries ──────────────────────────────────────────────
   const { tabela } = req.query;
-  if (!tabela || (!TABELAS_PERMITIDAS.includes(tabela) && !isTinyTable(tabela)))
+  if (!tabela || (!TABELAS_PERMITIDAS.includes(tabela) && !isTinyTable(tabela) && !isBlingTable(tabela)))
     return res.status(400).json({ error: `Tabela '${tabela}' não permitida.` });
 
   const pool = getPool(payload.company);
@@ -319,8 +319,8 @@ module.exports = async function handleSopc(req, res, payload) {
         SELECT
           ${targetAno} AS ano,
           ${targetMes} AS mes,
-          COALESCE((SELECT SUM(tvp) FROM (SELECT "Order ID", MAX("Total Venda Pedido") AS tvp FROM dados_filtrados GROUP BY "Order ID") t), 0) AS receita_bruta,
-          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Total Venda", 0) ELSE 0 END) AS receita_liquida,
+          SUM("Total Venda") AS receita_bruta,
+          SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric, 0)) ELSE 0 END) AS receita_liquida,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Quantidade Vendida", 0) ELSE 0 END) AS qtd_liquida,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END) AS margem_bruta,
           SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total", 0) ELSE 0 END) AS custo_total
@@ -354,7 +354,7 @@ module.exports = async function handleSopc(req, res, payload) {
       const fWhere = filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : '';
       result = await pool.query(`
         SELECT ano, mes,
-               SUM(CASE WHEN rn = 1 THEN tvp ELSE 0 END) AS receita,
+               SUM(receita_bruta) AS receita,
                SUM(qtd) AS qtd,
                CASE WHEN SUM(receita_liq) > 0
                     THEN ROUND((
@@ -363,11 +363,10 @@ module.exports = async function handleSopc(req, res, payload) {
                     ELSE NULL END AS mc_pct
         FROM (
           SELECT "Ano" AS ano, "Mes" AS mes,
-                 MAX("Total Venda Pedido") OVER (PARTITION BY "Order ID") AS tvp,
+                 "Total Venda" AS receita_bruta,
                  "Quantidade Vendida" AS qtd,
-                 CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Total Venda", 0) ELSE 0 END AS receita_liq,
-                 CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END AS margem_liq,
-                 ROW_NUMBER() OVER (PARTITION BY "Order ID" ORDER BY "Produto ID") AS rn
+                 CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric, 0)) ELSE 0 END AS receita_liq,
+                 CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto", 0) ELSE 0 END AS margem_liq
           FROM bd_vendas
           WHERE "Ano" IS NOT NULL AND "Mes" IS NOT NULL${fWhere}
         ) t
@@ -562,7 +561,7 @@ module.exports = async function handleSopc(req, res, payload) {
       result = await pool.query(`
         SELECT
           "Categoria"                                                              AS categoria,
-          ROUND(SUM("Total Venda"), 2)                                             AS receita,
+          ROUND(SUM("Total Venda" + COALESCE("Imposto Produto"::numeric, 0)), 2)   AS receita,
           ROUND(SUM(COALESCE("Margem Produto", 0)), 2)                             AS margem,
           ROUND(SUM(COALESCE("Custo Total", 0)), 2)                                AS custo,
           SUM("Quantidade Vendida")                                                AS qtd,

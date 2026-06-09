@@ -1,0 +1,12 @@
+{
+  "cliente_1": {
+    "access_token": "",
+    "refresh_token": "COLOQUE_AQUI_O_REFRESH_TOKEN_SE_JA_TIVER_OU_USE_O_COMANDO_DE_AUTORIZACAO",
+    "expires_at": ""
+  },
+  "cliente_2": {
+    "access_token": "",
+    "refresh_token": "COLOQUE_AQUI_O_REFRESH_TOKEN_SE_JA_TIVER_OU_USE_O_COMANDO_DE_AUTORIZACAO",
+    "expires_at": ""
+  }
+}

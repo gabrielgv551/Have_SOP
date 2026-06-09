@@ -39,6 +39,24 @@ module.exports = {
       have:   process.env.SHOPGRA_PASS_HAVE,
     }
   },
+  autoequip: {
+    name: "Autoequip",
+    dbEnvKey: "AUTOEQUIP",
+    users: {
+      admin:  process.env.AUTOEQUIP_PASS_ADMIN,
+      gestor: process.env.AUTOEQUIP_PASS_GESTOR,
+      have:   process.env.AUTOEQUIP_PASS_HAVE,
+    }
+  },
+  amjls: {
+    name: "Amjls",
+    dbEnvKey: "AMJLS",
+    users: {
+      admin:  process.env.AMJLS_PASS_ADMIN,
+      gestor: process.env.AMJLS_PASS_GESTOR,
+      have:   process.env.AMJLS_PASS_HAVE,
+    }
+  },
   // Para adicionar nova empresa, basta copiar o bloco acima e
   // adicionar as variáveis de ambiente correspondentes no Vercel.
   // empresa2: {

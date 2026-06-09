@@ -38,24 +38,44 @@ async function pluggyDelete(apiKey, path) {
   return fetch(`${PLUGGY_BASE}${path}`, { method: 'DELETE', headers: pluggyHeaders(apiKey) });
 }
 
-async function fetchAllPluggyTransactions(apiKey, itemId, date_from, date_to) {
-  const accRes = await pluggyGet(apiKey, `/accounts?itemId=${itemId}`);
-  if (!accRes.ok) throw new Error(`Pluggy accounts error ${accRes.status}: ${await accRes.text()}`);
-  const accData = await accRes.json();
-  const accounts = accData.results || [];
-  const transactions = [];
-  for (const account of accounts) {
-    let page = 1;
-    while (true) {
-      const r = await pluggyGet(apiKey, `/transactions?accountId=${account.id}&from=${date_from}&to=${date_to}&pageSize=500&page=${page}`);
-      if (!r.ok) break;
-      const data = await r.json();
-      transactions.push(...(data.results || []));
-      if (page >= (data.totalPages || 1)) break;
-      page++;
-    }
+async function fetchAllExtratosTransactions(link_id, date_from, date_to) {
+  const { Client } = require('pg');
+  const client = new Client({
+    host: process.env.EXTRATOS_HOST || '37.60.236.200',
+    port: process.env.EXTRATOS_PORT || 5432,
+    database: process.env.EXTRATOS_DB || 'extratos',
+    user: process.env.EXTRATOS_USER || 'postgres',
+    password: process.env.EXTRATOS_PASSWORD || '131105Gv',
+  });
+  await client.connect();
+  try {
+    const res = await client.query(`
+      SELECT id, date, description, type, amount
+      FROM transactions
+      WHERE pluggy_item_id = $1
+        AND date::date >= $2::date
+        AND date::date <= $3::date
+
+      UNION ALL
+
+      SELECT id, date, description, type, amount
+      FROM credit_transactions
+      WHERE pluggy_item_id = $1
+        AND date::date >= $2::date
+        AND date::date <= $3::date
+
+      ORDER BY date ASC
+    `, [link_id, date_from, date_to]);
+    return res.rows.map(tx => ({
+      id: tx.id,
+      date: tx.date,
+      description: tx.description,
+      type: tx.type, // 'DEBIT' or 'CREDIT'
+      amount: tx.amount
+    }));
+  } finally {
+    await client.end();
   }
-  return transactions;
 }
 
 async function handleBancos(req, res, pool, company) {
@@ -140,34 +160,58 @@ async function handlePluggy(req, res, pool, company) {
       if (!link_id || !date_from || !date_to)
         return res.status(400).json({ error: 'link_id, date_from e date_to sao obrigatorios' });
 
-      const apiKey = await pluggyGetApiKey();
-      const transactions = await fetchAllPluggyTransactions(apiKey, link_id, date_from, date_to);
+      const transactions = await fetchAllExtratosTransactions(link_id, date_from, date_to);
+      await pool.query('UPDATE belvo_links SET ultimo_sync=NOW() WHERE empresa=$1 AND link_id=$2', [company, link_id]);
+      
       if (!transactions.length)
         return res.json({ ok: true, count: 0, message: 'Nenhuma transacao encontrada no periodo' });
 
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
+        
+        // Find banco_id
+        let bancoId = null;
+        const linkRes = await client.query('SELECT institution FROM belvo_links WHERE empresa=$1 AND link_id=$2', [company, link_id]);
+        if (linkRes.rows.length) {
+          const inst = linkRes.rows[0].institution;
+          if (inst) {
+            const bancoRes = await client.query('SELECT id FROM caixa_bancos WHERE empresa=$1 AND nome=$2', [company, inst]);
+            if (bancoRes.rows.length) {
+              bancoId = bancoRes.rows[0].id;
+            } else {
+              const newBanco = await client.query(
+                'INSERT INTO caixa_bancos (empresa, nome) VALUES ($1, $2) ON CONFLICT (empresa, nome) DO UPDATE SET nome=EXCLUDED.nome RETURNING id',
+                [company, inst.substring(0, 100)]
+              );
+              bancoId = newBanco.rows[0].id;
+            }
+          }
+        }
+
         let imported = 0;
         for (const tx of transactions) {
-          const rawDate = tx.date;
-          if (!rawDate) continue;
-          const d = new Date(rawDate);
+          let rawDateStr = tx.date;
+          if (tx.date instanceof Date) {
+              rawDateStr = tx.date.toISOString();
+          }
+          if (!rawDateStr) continue;
+          const d = new Date(rawDateStr);
           const ano = d.getUTCFullYear(), mes = d.getUTCMonth() + 1, dia = d.getUTCDate();
           const descricao = String(tx.description || tx.descriptionRaw || '').substring(0, 500);
           const sinal = (tx.type === 'DEBIT') ? -1 : 1;
           const valor = Math.round((parseFloat(tx.amount) || 0) * 100) * sinal;
+          
           await client.query(
-            `INSERT INTO caixa_extrato (empresa, ano, mes, dia, descricao, valor, belvo_tx_id)
-             VALUES ($1,$2,$3,$4,$5,$6,$7)
+            `INSERT INTO caixa_extrato (empresa, ano, mes, dia, descricao, valor, belvo_tx_id, banco_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
              ON CONFLICT (empresa, belvo_tx_id) DO UPDATE
                SET ano=EXCLUDED.ano, mes=EXCLUDED.mes, dia=EXCLUDED.dia,
-                   descricao=EXCLUDED.descricao, valor=EXCLUDED.valor, atualizado_em=CURRENT_TIMESTAMP`,
-            [company, ano, mes, dia, descricao, valor, String(tx.id)]
+                   descricao=EXCLUDED.descricao, valor=EXCLUDED.valor, banco_id=EXCLUDED.banco_id, atualizado_em=CURRENT_TIMESTAMP`,
+            [company, ano, mes, dia, descricao, valor, String(tx.id), bancoId]
           );
           imported++;
         }
-        await client.query('UPDATE belvo_links SET ultimo_sync=NOW() WHERE empresa=$1 AND link_id=$2', [company, link_id]);
         await client.query('COMMIT');
         return res.json({ ok: true, count: imported });
       } catch (e) { await client.query('ROLLBACK'); throw e; }
@@ -275,16 +319,34 @@ module.exports = async (req, res) => {
         const bancoId = banco_id ? parseInt(banco_id) : null;
         const [r, dpR] = await Promise.all([
           pool.query(
-            `SELECT e.id, e.dia, e.descricao, e.razao_social, e.account_number,
+            `SELECT e.id::text AS id, e.dia, e.descricao, e.razao_social, e.account_number,
                     e.counterparty_document, e.valor,
                     e.belvo_tx_id, e.banco_id, b.nome AS banco_nome,
                     e.atualizado_em
              FROM caixa_extrato e
              LEFT JOIN caixa_bancos b ON b.id = e.banco_id
-              WHERE e.empresa=$1 AND e.ano=$2 AND e.mes=$3
-                AND ($4::int IS NULL OR e.banco_id = $4)
-              ORDER BY e.dia, e.id`,
-            [company, parseInt(ano), parseInt(mes), bancoId]
+             WHERE e.empresa=$1 AND e.ano=$2 AND e.mes=$3 AND e.belvo_tx_id IS NULL
+               ${bancoId ? `AND e.banco_id = ${bancoId}` : ''}
+
+             UNION ALL
+
+             SELECT eof.id::text AS id, 
+                    EXTRACT(DAY FROM eof.data_lancamento)::int AS dia, 
+                    eof.descricao, 
+                    eof.razao_social, 
+                    eof.agencia_numero AS account_number,
+                    eof.cnpj_cpf AS counterparty_document, 
+                    ROUND(eof.valor * 100)::int AS valor,
+                    eof.id::text AS belvo_tx_id, 
+                    NULL::int AS banco_id, 
+                    eof.banco AS banco_nome,
+                    eof.data_lancamento AS atualizado_em
+             FROM extrato_openfinance eof
+             LEFT JOIN caixa_bancos b ON LOWER(b.nome) = LOWER(eof.banco) AND b.empresa = $1
+             WHERE LOWER(eof.cliente)=LOWER($1) AND EXTRACT(YEAR FROM eof.data_lancamento)=$2 AND EXTRACT(MONTH FROM eof.data_lancamento)=$3
+               ${bancoId ? `AND b.id = ${bancoId}` : ''}
+             ORDER BY dia, id`,
+            [company, parseInt(ano), parseInt(mes)]
           ),
           pool.query(
             "SELECT palavra_chave, razao_social, cnpj, categoria_nome FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato' ORDER BY categoria_nome",
@@ -323,8 +385,16 @@ module.exports = async (req, res) => {
       }
       // List months with data
       const r = await pool.query(
-        `SELECT ano, mes, COUNT(*)::int as total_registros, MAX(atualizado_em) as ultima_atualizacao
-         FROM caixa_extrato WHERE empresa=$1 GROUP BY ano, mes ORDER BY ano DESC, mes DESC`,
+        `WITH meses_unificados AS (
+           SELECT ano, mes, atualizado_em FROM caixa_extrato WHERE empresa=$1 AND belvo_tx_id IS NULL
+           UNION ALL
+           SELECT EXTRACT(YEAR FROM data_lancamento)::int AS ano, 
+                  EXTRACT(MONTH FROM data_lancamento)::int AS mes,
+                  data_lancamento AS atualizado_em
+           FROM extrato_openfinance WHERE LOWER(cliente)=LOWER($1)
+         )
+         SELECT ano, mes, COUNT(*)::int as total_registros, MAX(atualizado_em) as ultima_atualizacao
+         FROM meses_unificados GROUP BY ano, mes ORDER BY ano DESC, mes DESC`,
         [company]
       );
       return res.json({ meses: r.rows });

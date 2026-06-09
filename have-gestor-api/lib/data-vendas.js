@@ -24,8 +24,8 @@ module.exports = async function handleVendas(req, res, payload) {
             SELECT
               "Mes"::int AS mes,
               SUM("Total Venda") AS receita_bruta,
-              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS receita_liquida,
-              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) AS receita_liquida,
+              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) AS devolucoes,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END) AS repasse_financeiro,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Frete Pago Prod"::numeric,0) ELSE 0 END) AS frete_pago_prod,
@@ -38,13 +38,9 @@ module.exports = async function handleVendas(req, res, payload) {
             ORDER BY "Mes"::int
           `, [parseInt(ano)]),
           pool.query(`
-            SELECT "Mes"::int AS mes, SUM(tvp) AS receita_bruta_global
-            FROM (
-              SELECT "Mes", "Order ID", MAX("Total Venda Pedido") AS tvp
-              FROM bd_vendas
-              WHERE "Ano"::int = $1
-              GROUP BY "Mes", "Order ID"
-            ) t
+            SELECT "Mes"::int AS mes, SUM("Total Venda") AS receita_bruta_global
+            FROM bd_vendas
+            WHERE "Ano"::int = $1
             GROUP BY "Mes"
             ORDER BY "Mes"::int
           `, [parseInt(ano)]),
@@ -54,15 +50,15 @@ module.exports = async function handleVendas(req, res, payload) {
               MAX("Nome Produto")                                                                  AS nome_produto,
               MAX("Categoria")                                                                     AS categoria,
               SUM("Total Venda")                                                                   AS receita_bruta,
-              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
-              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) AS receita_liquida,
+              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) AS devolucoes,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END) AS repasse_financeiro,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
               ROUND(
-                (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
+                (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) > 0
                   THEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END)
-                     / NULLIF(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END),0) * 100
+                     / NULLIF(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END),0) * 100
                   ELSE 0 END)::numeric
               , 1) AS margem_pct
             FROM bd_vendas
@@ -77,8 +73,8 @@ module.exports = async function handleVendas(req, res, payload) {
               "Sku"            AS sku,
               "Mes"::int       AS mes,
               SUM("Total Venda")                                                                                AS receita_bruta,
-              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"    ELSE 0 END)      AS receita_liquida,
-              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"    ELSE 0 END)      AS devolucoes,
+              SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0))    ELSE 0 END)      AS receita_liquida,
+              SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0))    ELSE 0 END)      AS devolucoes,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Repasse Financeiro"::numeric,0) ELSE 0 END) AS repasse_financeiro,
               SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Frete Pago Prod"::numeric,0) ELSE 0 END) AS frete_pago_prod,
@@ -115,14 +111,14 @@ module.exports = async function handleVendas(req, res, payload) {
             MAX("Nome Produto")                                                                  AS nome_produto,
             MAX("Categoria")                                                                     AS categoria,
             SUM("Total Venda")                                                                   AS receita_bruta,
-            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda"            ELSE 0 END) AS receita_liquida,
-            SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) AS devolucoes,
+            SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) AS receita_liquida,
+            SUM(CASE WHEN "Status"  ~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) AS devolucoes,
             SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END) AS margem_contribuicao,
             SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida"     ELSE 0 END) AS qtd_liquida,
             ROUND(
-              (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END) > 0
+              (CASE WHEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END) > 0
                 THEN SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END)
-                   / NULLIF(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END),0) * 100
+                   / NULLIF(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END),0) * 100
                 ELSE 0 END)::numeric
             , 1) AS margem_pct
           FROM bd_vendas
@@ -133,13 +129,9 @@ module.exports = async function handleVendas(req, res, payload) {
           ORDER BY receita_liquida DESC
         `, [parseInt(ano), parseInt(mes)]),
         pool.query(`
-          SELECT SUM(tvp) AS receita_bruta_global
-          FROM (
-            SELECT "Order ID", MAX("Total Venda Pedido") AS tvp
-            FROM bd_vendas
-            WHERE DATE_TRUNC('month', "Data"::date) = DATE_TRUNC('month', MAKE_DATE($1::int, $2::int, 1))
-            GROUP BY "Order ID"
-          ) t
+          SELECT SUM("Total Venda") AS receita_bruta_global
+          FROM bd_vendas
+          WHERE DATE_TRUNC('month', "Data"::date) = DATE_TRUNC('month', MAKE_DATE($1::int, $2::int, 1))
         `, [parseInt(ano), parseInt(mes)])
       ]);
       return res.json({ skus: r.rows, receita_bruta_global: parseFloat(rbRow.rows[0]?.receita_bruta_global) || 0 });
@@ -183,7 +175,7 @@ module.exports = async function handleVendas(req, res, payload) {
         SELECT
           "Sku" AS sku,
           MAX("Nome Produto") AS nome_produto,
-          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Total Venda" ELSE 0 END)::numeric, 2) AS receita_liquida,
+          ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN ("Total Venda" + COALESCE("Imposto Produto"::numeric,0)) ELSE 0 END)::numeric, 2) AS receita_liquida,
           ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Margem Produto",0) ELSE 0 END)::numeric, 2) AS margem_contribuicao,
           ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN "Quantidade Vendida" ELSE 0 END)::numeric, 1) AS qtd_liquida,
           ROUND(SUM(CASE WHEN "Status" !~* '(cancel|devol|n[aã]o.?pago)' THEN COALESCE("Custo Total",0) ELSE 0 END)::numeric, 2) AS custo_total,

@@ -1,11 +1,13 @@
-﻿const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const { getPool, getCompanyPool } = require('../lib/db');
 const { parseBody, upsertConfig } = require('../lib/data-helpers');
 const handleTiny   = require('../lib/data-tiny');
+const handleBling  = require('../lib/data-bling');
 const handleVendas = require('../lib/data-vendas');
 const handleSopc   = require('../lib/data-sopc');
 
 const TINY_MODULES  = ['tiny-oauth','tiny-debug','tiny-sync','cron-tiny','tiny-skip-old','tiny-enrich','tiny-margem','tiny-canais','import-margem'];
+const BLING_MODULES = ['bling-oauth','bling-sync','cron-bling','bling-accounts'];
 const VENDAS_MODULES = ['margens','simulador-margens','vendas','forecast-canais','forecast-recebimentos','forecast-diario'];
 const SOPC_MODULES  = ['sopc-config','fornecedores-config','sku-desativadas'];
 
@@ -153,6 +155,7 @@ module.exports = async (req, res) => {
 
   // Dispatch to module handlers (see lib/)
   if (TINY_MODULES.includes(mod))   return handleTiny(req, res, payload);
+  if (BLING_MODULES.includes(mod))  return handleBling(req, res, payload);
   if (VENDAS_MODULES.includes(mod)) return handleVendas(req, res, payload);
   return handleSopc(req, res, payload);
 };

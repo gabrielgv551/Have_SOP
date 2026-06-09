@@ -166,6 +166,7 @@ function getCompanyColor(key) {
     case 'supershop': return '#9b27af';
     case 'marcon': return '#e67e22';
     case 'shopgra': return '#28a745';
+    case 'autoequip': return '#2980b9';
     default: return '#666';
   }
 }

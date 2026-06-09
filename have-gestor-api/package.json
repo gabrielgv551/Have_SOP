@@ -6,7 +6,7 @@
     "bcrypt": "^5.1.0",
     "chrome-cookies-secure": "^3.0.2",
     "dotenv": "^17.4.0",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.11.3"
   },
   "devDependencies": {

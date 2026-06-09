@@ -73,12 +73,20 @@ module.exports = async (req, res) => {
 
       // Return unclassified Open Finance (Pluggy) transactions grouped by CNPJ/RS
       if (source === 'openfinance') {
+        const { ano, mes } = req.query;
+        const params = [company];
+        let dateFilter = '';
+        if (ano && mes) {
+          dateFilter = ` AND EXTRACT(YEAR FROM data_lancamento)=$2 AND EXTRACT(MONTH FROM data_lancamento)=$3`;
+          params.push(parseInt(ano), parseInt(mes));
+        }
+
         const r = await pool.query(
-          `SELECT DISTINCT counterparty_document, razao_social, descricao
-           FROM caixa_extrato
-           WHERE empresa=$1 AND belvo_tx_id IS NOT NULL
+          `SELECT DISTINCT NULL AS counterparty_document, razao_social, descricao
+           FROM extrato_openfinance
+           WHERE LOWER(cliente)=LOWER($1)${dateFilter}
            ORDER BY razao_social NULLS LAST, descricao`,
-          [company]
+          params
         );
         const dpR = await pool.query(
           "SELECT palavra_chave, razao_social, cnpj FROM caixa_de_para WHERE empresa=$1 AND tipo='extrato'",

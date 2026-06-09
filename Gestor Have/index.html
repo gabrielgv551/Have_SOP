@@ -2740,9 +2740,6 @@
             <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="sidebar" id="sidebar">
                 <div class="sidebar-header">
-                    <div class="brand-logo" aria-label="Have">
-                        <img src="../logo2.png" alt="Have" style="height:36px;width:auto;display:block;">
-                    </div>
                     <div class="sidebar-logo-text">
                         <div class="brand">Have</div>
                         <div class="company" id="sidebar-company">Lanzi</div>
@@ -4887,7 +4884,30 @@
                     <!-- Open Finance tab content -->
                     <div id="dp-tab-content-openfinance" style="display:none;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                         <div class="table-card" style="padding:16px;">
-                            <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent);">Transações não classificadas</div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <div style="font-size:13px;font-weight:600;color:var(--accent);">Transações não classificadas</div>
+                                <div style="display:flex;gap:8px;">
+                                    <select id="cx-depara-of-mes" onchange="loadCaixaDeParaOF()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;cursor:pointer;">
+                                        <option value="">Todos os meses</option>
+                                        <option value="1">Janeiro</option>
+                                        <option value="2">Fevereiro</option>
+                                        <option value="3">Março</option>
+                                        <option value="4">Abril</option>
+                                        <option value="5" selected>Maio</option>
+                                        <option value="6">Junho</option>
+                                        <option value="7">Julho</option>
+                                        <option value="8">Agosto</option>
+                                        <option value="9">Setembro</option>
+                                        <option value="10">Outubro</option>
+                                        <option value="11">Novembro</option>
+                                        <option value="12">Dezembro</option>
+                                    </select>
+                                    <select id="cx-depara-of-ano" onchange="loadCaixaDeParaOF()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;cursor:pointer;">
+                                        <option value="2026">2026</option>
+                                        <option value="2025">2025</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Transações Open Finance (Pluggy) sem categoria. Clique em "→ Mapear" para classificar por CNPJ, Razão Social ou Descrição.</div>
                             <div id="cx-depara-of-nao-class">
                                 <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</div>
@@ -5857,7 +5877,8 @@
                           <span>📦</span>
                           <span class="int-section-title">Meus ERPs</span>
                           <span class="int-section-badge" id="int-erp-badge">0/99 ERPs criados</span>
-                          <button class="int-add-btn" onclick="intOpenAdd('erp')">+ Adicionar</button>
+                          <button class="int-add-btn" onclick="intOpenAdd('erp')">+ Adicionar Tiny</button>
+                          <button class="int-add-btn" onclick="intOpenAdd('bling')" style="margin-left:8px;background:#00B28A;color:#fff;border-color:#00B28A;">+ Adicionar Bling</button>
                         </div>
                         <div class="int-grid" id="int-erp-grid"></div>
                       </div>
@@ -7381,6 +7402,8 @@
                 { key: 'lanzi',     name: 'Lanzi',     tag: 'S&OP · PostgreSQL', color: 'var(--accent)' },
                 { key: 'supershop', name: 'Supershop', tag: 'S&OP · PostgreSQL', color: '#9b27af' },
                 { key: 'marcon',    name: 'Marcon',    tag: 'S&OP · PostgreSQL', color: '#e67e22' },
+                { key: 'shopgra',   name: 'Shopgra',   tag: 'S&OP · PostgreSQL', color: '#27ae60' },
+                { key: 'autoequip', name: 'Autoequip', tag: 'S&OP · PostgreSQL', color: '#2980b9' },
             ];
 
             function renderCompanyDropdown() {
@@ -12952,9 +12975,13 @@ if (id === 'dfs-kpis') {
                 const naoClassEl = document.getElementById('cx-depara-of-nao-class');
                 const tableEl    = document.getElementById('cx-depara-of-table');
                 try {
+                    const mes = document.getElementById('cx-depara-of-mes')?.value || '';
+                    const ano = document.getElementById('cx-depara-of-ano')?.value || '2026';
+                    const ofUrl = API_BASE + '/caixa-depara?source=openfinance' + (mes ? `&ano=${ano}&mes=${mes}` : '');
+                    
                     const [mappingsRes, naoClassRes] = await Promise.all([
                         fetch(API_BASE + '/caixa-depara?tipo=extrato', { headers:{'Authorization':'Bearer '+token} }),
-                        fetch(API_BASE + '/caixa-depara?source=openfinance', { headers:{'Authorization':'Bearer '+token} })
+                        fetch(ofUrl, { headers:{'Authorization':'Bearer '+token} })
                     ]);
                     if (!mappingsRes.ok) { const e = await mappingsRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+mappingsRes.status); }
                     if (!naoClassRes.ok) { const e = await naoClassRes.json().catch(()=>({})); throw new Error(e.error||'HTTP '+naoClassRes.status); }
@@ -14640,6 +14667,42 @@ if (id === 'dfs-kpis') {
                 }
             }
 
+            async function atualizarBelvoLink(linkId) {
+                const token = localStorage.getItem('have_token');
+                try {
+                    showToast('Abrindo conexão com o banco para atualização...', 'info');
+
+                    const tokenRes = await fetch(API_BASE + '/caixa-extrato?module=pluggy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ action: 'widget_token' })
+                    });
+                    if (!tokenRes.ok) throw new Error('Erro ao gerar token Pluggy');
+                    const { access } = await tokenRes.json();
+                    if (!access) throw new Error('Token Pluggy inválido');
+
+                    await _loadPluggySDK();
+                    if (!window.PluggyConnect) throw new Error('Pluggy SDK não encontrado. Recarregue a página.');
+
+                    const pluggy = new window.PluggyConnect({
+                        connectToken: access,
+                        updateItem: linkId,
+                        onSuccess: () => {
+                            showToast('Conta bancária atualizada com sucesso!', 'success');
+                            loadBelvoLinks();
+                        },
+                        onError: (error) => {
+                            showToast('Erro no widget: ' + (error?.message || JSON.stringify(error)), 'error');
+                        },
+                        onClose: () => {}
+                    });
+                    pluggy.init();
+
+                } catch (e) {
+                    showToast('Erro: ' + e.message, 'error');
+                }
+            }
+
             // ══════════════════════════════════════════════
             // AGENTES IA
             // ══════════════════════════════════════════════
@@ -14932,7 +14995,7 @@ if (id === 'dfs-kpis') {
                         .forEach(s => {
                             const m = s.mes;
                             if (!mesAgg[m]) mesAgg[m] = { mes: m, receita_bruta_global:0, receita_liquida:0, devolucoes:0, margem_contribuicao:0, repasse_financeiro:0, frete_pago_prod:0, comissao_produto:0, imposto_produto:0, qtd_liquida:0 };
-                            mesAgg[m].receita_bruta_global  += parseFloat(s.receita_bruta)        || 0;
+                            mesAgg[m].receita_bruta  += parseFloat(s.receita_bruta)        || 0;
                             mesAgg[m].receita_liquida       += parseFloat(s.receita_liquida)       || 0;
                             mesAgg[m].devolucoes            += parseFloat(s.devolucoes)            || 0;
                             mesAgg[m].margem_contribuicao   += parseFloat(s.margem_contribuicao)   || 0;
@@ -14968,7 +15031,7 @@ if (id === 'dfs-kpis') {
 
                 // Totals
                 const tot = rows.reduce((a, m) => {
-                    a.rb  += m.receita_bruta_global; a.rl  += m.receita_liquida;
+                    a.rb  += m.receita_bruta || m.receita_bruta_global || 0; a.rl  += m.receita_liquida;
                     a.dev += m.devolucoes;           a.mc  += m.margem_contribuicao;
                     a.rep  += m.repasse_financeiro || 0;
                     a.fret += m.frete_pago_prod    || 0;
@@ -15071,7 +15134,7 @@ if (id === 'dfs-kpis') {
                     </thead>
                     <tbody>
                         ${buildRow('(+) Receita Bruta', NAVY,
-                            (d) => d.receita_bruta_global ? fmtR(d.receita_bruta_global) : '—',
+                            (d) => (d.receita_bruta || d.receita_bruta_global) ? fmtR(d.receita_bruta || d.receita_bruta_global) : '—',
                             () => fmtR(tot.rb),
                             { labelStyle: NAVY_L, totStyle: NAVY_T, cellStyle: NAVY_C }
                         )}
@@ -15192,7 +15255,7 @@ if (id === 'dfs-kpis') {
                         <tbody>${filteredSkus.slice(0,150).map(s => {
                             const cls = dreClassify(s.margem_pct);
                             const labels = { boa:'🟢 Boa', media:'🟡 Média', ruim:'🔴 Ruim', negativa:'⛔ Negativa' };
-                            const fmtRS = v => { const n=parseFloat(v)||0; const a=Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); return n<0?`<span style="color:#dc2626">-R$ ${a}</span>`:`R$ ${a}`; };
+                            const fmtRS = v => { const n=parseFloat(v)||0; const a=Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}); return n<0?`<span style="color:#dc2626">-R$ ${a}</span>`:`R$ ${a}`; };
                             return `<tr>
                                 <td style="font-weight:600">${s.sku}</td>
                                 <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(s.nome_produto||'')}">${esc(s.nome_produto||'–')}</td>
@@ -15296,7 +15359,7 @@ if (id === 'dfs-kpis') {
                 const fmtR = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
                 const fmtRSigned = v => {
                     const n = parseFloat(v) || 0;
-                    const abs = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+                    const abs = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits:0, maximumFractionDigits:0 });
                     return n < 0 ? `<span style="color:#dc2626">-R$ ${abs}</span>` : `R$ ${abs}`;
                 };
                 const fmtP = (v, invert) => {
@@ -18545,6 +18608,7 @@ if (id === 'dfs-kpis') {
 
       const ML_LOGO_IMG   = '<img src="/logo%20mercado%20livre.png" style="width:38px;height:38px;object-fit:contain" alt="ML">';
       const TINY_LOGO_IMG  = '<div style="width:38px;height:38px;background:#e91e8c;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;line-height:1.1;text-align:center">olist<br>tiny</div>';
+      const BLING_LOGO_IMG = '<div style="width:38px;height:38px;background:#00B28A;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;line-height:1.1;text-align:center">Bling</div>';
 
       const INT_CATALOG = {
         marketplaces: [],
@@ -18744,6 +18808,48 @@ if (id === 'dfs-kpis') {
           footer.innerHTML = `
             <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
             <button class="btn-int-save" onclick="intAddERP()">Conectar ao Tiny →</button>`;
+        } else if(type==='bling') {
+          document.getElementById('int-modal-logo').innerHTML  = BLING_LOGO_IMG;
+          document.getElementById('int-modal-title').textContent = 'Adicionar Bling ERP';
+          document.getElementById('int-modal-sub').textContent   = 'Conecte sua conta do Bling ERP';
+          body.innerHTML = `
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">Nome da conta (ex: Autoequip)</label>
+              <input class="int-form-input" type="text" id="int-f-bling-label" placeholder="Ex: Autoequip">
+              <div class="int-hint">Identificador desta conexão.</div>
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">Client ID <span style="color:var(--muted);font-size:11px">(API V3)</span></label>
+              <input class="int-form-input" type="text" id="int-f-bling-client-id" placeholder="Client ID" autocomplete="off">
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">Client Secret <span style="color:var(--muted);font-size:11px">(API V3)</span></label>
+              <input class="int-form-input" type="password" id="int-f-bling-client-secret" placeholder="••••••••" autocomplete="off">
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">Token de Acesso <span style="color:var(--muted);font-size:11px">(Access Token V3)</span></label>
+              <input class="int-form-input" type="text" id="int-f-bling-access-token" placeholder="Opcional" autocomplete="off">
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="int-form-lbl">API Key <span style="color:var(--muted);font-size:11px">(API V2)</span></label>
+              <input class="int-form-input" type="text" id="int-f-bling-api-key" placeholder="Opcional" autocomplete="off">
+            </div>
+            <div style="margin-bottom:4px">
+              <label class="int-form-lbl">O que deseja sincronizar?</label>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" id="int-f-bling-mod-vendas" checked style="width:15px;height:15px;accent-color:var(--accent)">
+                  <span>&#128722; <b>Vendas</b> <span style="color:var(--muted);font-size:11px">(pedidos, receita)</span></span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" id="int-f-bling-mod-estoque" checked style="width:15px;height:15px;accent-color:var(--accent)">
+                  <span>&#128230; <b>Estoque</b> <span style="color:var(--muted);font-size:11px">(posição atual por SKU)</span></span>
+                </label>
+              </div>
+            </div>`;
+          footer.innerHTML = `
+            <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
+            <button class="btn-int-save" onclick="intAddBling()" style="background:#00B28A;">Salvar Bling</button>`;
         }
         document.getElementById('int-modal-overlay').classList.add('open');
       };
@@ -18782,6 +18888,40 @@ if (id === 'dfs-kpis') {
         const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/tiny-callback');
         const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access&state=${id}`;
         window.open(authUrl, '_blank', 'width=620,height=720');
+      };
+
+      window.intAddBling = async function(){
+        const label    = document.getElementById('int-f-bling-label').value.trim();
+        const clientId = document.getElementById('int-f-bling-client-id').value.trim();
+        const clientSc = document.getElementById('int-f-bling-client-secret').value.trim();
+        const accToken = document.getElementById('int-f-bling-access-token').value.trim();
+        const apiKey   = document.getElementById('int-f-bling-api-key').value.trim();
+        
+        if(!label){ alert('Informe o nome da conta.'); return; }
+        
+        const id = 'bling_'+label.toLowerCase().replace(/\s+/g,'_');
+        
+        // Adiciona card temporário
+        if(!INT_CATALOG.erps.find(i=>i.id===id)){
+          INT_CATALOG.erps.push({ id, label:'Bling - '+label, logo:BLING_LOGO_IMG, type:'token', chave: id+'_token' });
+          intRender();
+        }
+        
+        try {
+          const t = localStorage.getItem('have_token');
+          await fetch(API_BASE+'/data?module=configuracoes', {
+            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},
+            body: JSON.stringify({ 
+              [id+'_client_id']: clientId, 
+              [id+'_client_secret']: clientSc,
+              [id+'_access_token']: accToken,
+              [id+'_api_key']: apiKey
+            })
+          });
+          alert('Configurações do Bling salvas com sucesso!');
+        } catch(e){ console.warn('Erro ao salvar Bling', e); }
+        
+        intCloseModalDirect();
       };
 
       function _mlBuildAuthUrl(id) {
