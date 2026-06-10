@@ -5706,6 +5706,7 @@
                         <button class="sc-tab" id="cfg-tab-canais" onclick="showCfgTab('canais')">Canais de Venda</button>
                         <button class="sc-tab" id="cfg-tab-empresas" onclick="showCfgTab('empresas')">🏢 Empresas</button>
                         <button class="sc-tab" id="cfg-tab-kits" onclick="showCfgTab('kits')">📦 Kits</button>
+                        <button class="sc-tab" id="cfg-tab-extrator" onclick="showCfgTab('extrator')">📥 Extrator</button>
                     </div>
                     <!-- Tab: Canais de Venda (grupos) -->
                     <div id="cfg-panel-canais" style="display:none">
@@ -5811,6 +5812,29 @@
                                 </tr></thead>
                                 <tbody id="cfg-kits-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Carregando...</td></tr></tbody>
                             </table>
+                        </div>
+                    </div>
+                    <!-- Tab: Extrator de Vendas -->
+                    <div id="cfg-panel-extrator" style="display:none">
+                        <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">
+                            <div style="font-size:28px;flex-shrink:0">📥</div>
+                            <div>
+                                <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:3px">Extrator de Vendas</div>
+                                <div style="font-size:13px;color:var(--muted);line-height:1.5">Defina a origem dos dados de vendas para que o dashboard calcule corretamente o faturamento,<br>receita líquida e margens de acordo com o formato do seu extrator.</div>
+                            </div>
+                        </div>
+                        <div style="max-width:480px">
+                            <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:8px">Extrator utilizado</label>
+                            <select id="cfg-extrator-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface2);color:var(--text)">
+                                <option value="ge_finance">GE Finance</option>
+                                <option value="preco_certo">Preço Certo</option>
+                            </select>
+                            <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
+                                <strong>GE Finance:</strong> usa "Total Venda Pedido" para receita bruta e não soma imposto na receita líquida.<br>
+                                <strong>Preço Certo:</strong> usa "Total Venda" por item e soma imposto (negativo) na receita líquida.
+                            </p>
+                            <button onclick="salvarCfgExtrator()" style="margin-top:16px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💾 Salvar configuração</button>
+                            <div id="cfg-extrator-status" style="margin-top:10px;font-size:13px"></div>
                         </div>
                     </div>
                     <!-- Tab: APIs -->
@@ -7404,6 +7428,7 @@
                 { key: 'marcon',    name: 'Marcon',    tag: 'S&OP · PostgreSQL', color: '#e67e22' },
                 { key: 'shopgra',   name: 'Shopgra',   tag: 'S&OP · PostgreSQL', color: '#27ae60' },
                 { key: 'autoequip', name: 'Autoequip', tag: 'S&OP · PostgreSQL', color: '#2980b9' },
+                { key: 'amjls',     name: 'Amjls',     tag: 'S&OP · PostgreSQL', color: '#e74c3c' },
             ];
 
             function renderCompanyDropdown() {
@@ -15496,6 +15521,7 @@ if (id === 'dfs-kpis') {
                 if (tab === 'canais') loadCfgCanais();
                 if (tab === 'empresas') loadCfgEmpresas();
                 if (tab === 'kits') loadCfgKits();
+                if (tab === 'extrator') loadCfgExtrator();
             }
 
             // ══════════════════════════════════════════════
@@ -15634,6 +15660,42 @@ if (id === 'dfs-kpis') {
                     showToast('✔ Removido.');
                     await loadCfgKits();
                 } catch(e) { showToast('✕ ' + e.message); }
+            }
+
+            // ══════════════════════════════════════════════
+            // EXTRATOR DE VENDAS
+            // ══════════════════════════════════════════════
+            async function loadCfgExtrator() {
+                const sel = document.getElementById('cfg-extrator-select');
+                if (!sel) return;
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/data?module=configuracoes', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const d = await r.json();
+                    sel.value = d.extrator_vendas || 'ge_finance';
+                } catch(e) {
+                    sel.value = 'ge_finance';
+                }
+            }
+
+            async function salvarCfgExtrator() {
+                const sel = document.getElementById('cfg-extrator-select');
+                const val = sel.value;
+                const status = document.getElementById('cfg-extrator-status');
+                const token = localStorage.getItem('have_token');
+                try {
+                    const r = await fetch(API_BASE + '/data?module=configuracoes', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ extrator_vendas: val })
+                    });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    if (status) status.innerHTML = '<span style="color:#16a34a">✔ Configuração salva!</span>';
+                    setTimeout(() => { if (status) status.innerHTML = ''; }, 3000);
+                } catch(e) {
+                    if (status) status.innerHTML = '<span style="color:#dc2626">✕ Erro: ' + e.message + '</span>';
+                }
             }
 
             // ══════════════════════════════════════════════
@@ -18441,6 +18503,9 @@ if (id === 'dfs-kpis') {
                             <option value="lanzi">Lanzi</option>
                             <option value="supershop">Supershop</option>
                             <option value="marcon">Marcon</option>
+                            <option value="shopgra">Shopgra</option>
+                            <option value="autoequip">Autoequip</option>
+                            <option value="amjls">Amjls</option>
                         </select>
                     </div>
                     <div class="admin-form-group" id="admin-form-ativo-row" style="display:none">
@@ -18819,18 +18884,26 @@ if (id === 'dfs-kpis') {
               <div class="int-hint">Identificador desta conexão.</div>
             </div>
             <div style="margin-bottom:12px">
+              <button class="btn-int-save" onclick="intAddBlingOAuth()" style="background:#00B28A;width:100%;">&#128279; Autorizar com Bling</button>
+              <div class="int-hint" style="text-align:center;margin-top:4px">Abre o login do Bling em nova janela para autorizar automaticamente.</div>
+            </div>
+            <div style="margin:14px 0;text-align:center;position:relative">
+              <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border)"></div>
+              <span style="position:relative;background:var(--panel);padding:0 10px;font-size:12px;color:var(--muted)">ou insira manualmente</span>
+            </div>
+            <div style="margin-bottom:10px">
               <label class="int-form-lbl">Client ID <span style="color:var(--muted);font-size:11px">(API V3)</span></label>
               <input class="int-form-input" type="text" id="int-f-bling-client-id" placeholder="Client ID" autocomplete="off">
             </div>
-            <div style="margin-bottom:12px">
+            <div style="margin-bottom:10px">
               <label class="int-form-lbl">Client Secret <span style="color:var(--muted);font-size:11px">(API V3)</span></label>
               <input class="int-form-input" type="password" id="int-f-bling-client-secret" placeholder="••••••••" autocomplete="off">
             </div>
-            <div style="margin-bottom:12px">
+            <div style="margin-bottom:10px">
               <label class="int-form-lbl">Token de Acesso <span style="color:var(--muted);font-size:11px">(Access Token V3)</span></label>
               <input class="int-form-input" type="text" id="int-f-bling-access-token" placeholder="Opcional" autocomplete="off">
             </div>
-            <div style="margin-bottom:12px">
+            <div style="margin-bottom:10px">
               <label class="int-form-lbl">API Key <span style="color:var(--muted);font-size:11px">(API V2)</span></label>
               <input class="int-form-input" type="text" id="int-f-bling-api-key" placeholder="Opcional" autocomplete="off">
             </div>
@@ -18849,7 +18922,7 @@ if (id === 'dfs-kpis') {
             </div>`;
           footer.innerHTML = `
             <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
-            <button class="btn-int-save" onclick="intAddBling()" style="background:#00B28A;">Salvar Bling</button>`;
+            <button class="btn-int-save" onclick="intAddBling()" style="background:#00B28A;">Salvar Manualmente</button>`;
         }
         document.getElementById('int-modal-overlay').classList.add('open');
       };
@@ -18887,6 +18960,35 @@ if (id === 'dfs-kpis') {
         // Abre janela OAuth com Client ID do cliente
         const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/tiny-callback');
         const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${REDIR}&response_type=code&scope=openid+offline_access&state=${id}`;
+        window.open(authUrl, '_blank', 'width=620,height=720');
+      };
+
+      window.intAddBlingOAuth = async function(){
+        const label = document.getElementById('int-f-bling-label').value.trim();
+        if(!label){ alert('Informe o nome da conta.'); return; }
+        
+        const id = 'bling_'+label.toLowerCase().replace(/\s+/g,'_');
+        const mods = [];
+        if(document.getElementById('int-f-bling-mod-vendas')?.checked)  mods.push('vendas');
+        if(document.getElementById('int-f-bling-mod-estoque')?.checked) mods.push('estoque');
+        
+        // Salva estado para o callback recuperar
+        window._blingPendingAccountId = id;
+        window._blingPendingModules   = mods.join(',');
+        
+        intCloseModalDirect();
+        
+        // Adiciona card temporário
+        if(!INT_CATALOG.erps.find(i=>i.id===id)){
+          INT_CATALOG.erps.push({ id, label:'Bling - '+label, logo:BLING_LOGO_IMG, type:'token', chave: id+'_token' });
+          intRender();
+        }
+        
+        // Abre janela OAuth do Bling (link de convite)
+        const BLING_CLIENT_ID = document.getElementById('int-f-bling-client-id')?.value.trim() || '7d24d3e4ab13c4e803b0441f52170ddc261395b7';
+        const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/bling-callback');
+        const state = encodeURIComponent(id);
+        const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${encodeURIComponent(BLING_CLIENT_ID)}&redirect_uri=${REDIR}&state=${state}`;
         window.open(authUrl, '_blank', 'width=620,height=720');
       };
 
