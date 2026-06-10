@@ -18985,7 +18985,8 @@ if (id === 'dfs-kpis') {
         }
         
         // Abre janela OAuth do Bling (link de convite)
-        const BLING_CLIENT_ID = document.getElementById('int-f-bling-client-id')?.value.trim() || '7d24d3e4ab13c4e803b0441f52170ddc261395b7';
+        // Client ID fixo do aplicativo cadastrado no Bling
+        const BLING_CLIENT_ID = '7d24d3e4ab13c4e803b0441f52170ddc261395b7';
         const REDIR = encodeURIComponent('https://have-gestor-frontend.vercel.app/bling-callback');
         const state = encodeURIComponent(id);
         const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${encodeURIComponent(BLING_CLIENT_ID)}&redirect_uri=${REDIR}&state=${state}`;
