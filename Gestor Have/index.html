@@ -18883,30 +18883,6 @@ if (id === 'dfs-kpis') {
               <input class="int-form-input" type="text" id="int-f-bling-label" placeholder="Ex: Autoequip">
               <div class="int-hint">Identificador desta conexão.</div>
             </div>
-            <div style="margin-bottom:12px">
-              <button class="btn-int-save" onclick="intAddBlingOAuth()" style="background:#00B28A;width:100%;">&#128279; Autorizar com Bling</button>
-              <div class="int-hint" style="text-align:center;margin-top:4px">Abre o login do Bling em nova janela para autorizar automaticamente.</div>
-            </div>
-            <div style="margin:14px 0;text-align:center;position:relative">
-              <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border)"></div>
-              <span style="position:relative;background:var(--panel);padding:0 10px;font-size:12px;color:var(--muted)">ou insira manualmente</span>
-            </div>
-            <div style="margin-bottom:10px">
-              <label class="int-form-lbl">Client ID <span style="color:var(--muted);font-size:11px">(API V3)</span></label>
-              <input class="int-form-input" type="text" id="int-f-bling-client-id" placeholder="Client ID" autocomplete="off">
-            </div>
-            <div style="margin-bottom:10px">
-              <label class="int-form-lbl">Client Secret <span style="color:var(--muted);font-size:11px">(API V3)</span></label>
-              <input class="int-form-input" type="password" id="int-f-bling-client-secret" placeholder="••••••••" autocomplete="off">
-            </div>
-            <div style="margin-bottom:10px">
-              <label class="int-form-lbl">Token de Acesso <span style="color:var(--muted);font-size:11px">(Access Token V3)</span></label>
-              <input class="int-form-input" type="text" id="int-f-bling-access-token" placeholder="Opcional" autocomplete="off">
-            </div>
-            <div style="margin-bottom:10px">
-              <label class="int-form-lbl">API Key <span style="color:var(--muted);font-size:11px">(API V2)</span></label>
-              <input class="int-form-input" type="text" id="int-f-bling-api-key" placeholder="Opcional" autocomplete="off">
-            </div>
             <div style="margin-bottom:4px">
               <label class="int-form-lbl">O que deseja sincronizar?</label>
               <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
@@ -18922,7 +18898,7 @@ if (id === 'dfs-kpis') {
             </div>`;
           footer.innerHTML = `
             <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
-            <button class="btn-int-save" onclick="intAddBling()" style="background:#00B28A;">Salvar Manualmente</button>`;
+            <button class="btn-int-save" onclick="intAddBlingOAuth()" style="background:#00B28A;">&#128279; Autorizar com Bling</button>`;
         }
         document.getElementById('int-modal-overlay').classList.add('open');
       };
