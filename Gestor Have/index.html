@@ -18882,19 +18882,6 @@ if (id === 'dfs-kpis') {
               <label class="int-form-lbl">Nome da conta (ex: Autoequip)</label>
               <input class="int-form-input" type="text" id="int-f-bling-label" placeholder="Ex: Autoequip">
               <div class="int-hint">Identificador desta conexão.</div>
-            </div>
-            <div style="margin-bottom:4px">
-              <label class="int-form-lbl">O que deseja sincronizar?</label>
-              <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                  <input type="checkbox" id="int-f-bling-mod-vendas" checked style="width:15px;height:15px;accent-color:var(--accent)">
-                  <span>&#128722; <b>Vendas</b> <span style="color:var(--muted);font-size:11px">(pedidos, receita)</span></span>
-                </label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                  <input type="checkbox" id="int-f-bling-mod-estoque" checked style="width:15px;height:15px;accent-color:var(--accent)">
-                  <span>&#128230; <b>Estoque</b> <span style="color:var(--muted);font-size:11px">(posição atual por SKU)</span></span>
-                </label>
-              </div>
             </div>`;
           footer.innerHTML = `
             <button class="btn-int-cancel" onclick="intCloseModalDirect()">Cancelar</button>
